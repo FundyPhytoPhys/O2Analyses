@@ -16,13 +16,13 @@ knitr::opts_chunk$set(fig.path='Figs/')
 
 ```{r set project variables}
 Project <- "PICO"
-DataOut <- file.path("..", "ImportedData", "OLIS")
+DataOut <- file.path("..", "Data", "ProcessedData", fsep = .Platform$file.sep)
 
-DataIn <- file.path("..", "OLISSpectraCorr", "SySlCCASingleChosen", fsep = .Platform$file.sep)
+DataIn <- file.path("..", "Data", "RawData", "OLIS", fsep = .Platform$file.sep)
 
-FileID <- "Smooth"
+FileID <- ".txt"
 
-#MDPicoGoogle <- "https://docs.google.com/spreadsheets/d/1Lerp5u25kzBtaBbnOYElYqUP59cn68gJpxxayhnGdkw/edit#gid=0"
+MetaData <- "https://docs.google.com/spreadsheets/d/1ZXpwR7Gfto-uRzVdXzMpQF4frbrvMLH_IyLqonFZRSw/edit#gid=0"
 
 FileEncode <- "UTF-8" 
 Delimiter <- ""
@@ -35,15 +35,11 @@ HeaderRows <- 0
 # libraries; Note check actual dependencies
 library(tidyverse)
 library(lubridate)
-library(stringr)
 library(broom)
-library(knitr)
 library(OneR)
 library(zoo)
 library(strucchange)
 
-library(dplyr)
-library(magrittr)
 library(googledrive)
 library(googlesheets4)
 library(readxl)
@@ -51,12 +47,12 @@ library(readxl)
 library(ggspectra)
 library(ggpubr)
 library(caret)
+library(photobiologyWavebands)
 ```
 
 ```{r set colours}
 Wavelengths_nm = c(445, 470, 505, 535, 590)
-Colours_nm = c("darkblue", "dodgerblue", "darkgreen", "yellowgreen",  "darkorange")
-
+Colours_nm = c(w_length2rgb(Wavelengths_nm[1]), w_length2rgb(Wavelengths_nm[2]), w_length2rgb(Wavelengths_nm[3]), w_length2rgb(Wavelengths_nm[4]), w_length2rgb(Wavelengths_nm[590]))
 
 names(Colours_nm) <- Wavelengths_nm
 Colours_nm
@@ -87,41 +83,61 @@ unique(duplicated(OlisFiles))
 # 
 #HeaderRows <- 0
 
-read.delim_plus <- function(flnm, filencode, delimiter, headerrows){read.delim(flnm, fileEncoding = filencode, sep = delimiter,  skip = headerrows, header = TRUE, row.names = NULL) %>%
-     mutate(Filename = flnm, Cdatetime = ymd_hms(file.info(flnm)$ctime))
+read.delim_plus <- function(flnm, filencode, delimiter, headerrows){read.delim(file = flnm, header = FALSE, fileEncoding = filencode, sep = delimiter,  skip = headerrows,  row.names = NULL) %>%
+     mutate(Filename = flnm)
 }
 
+#header = TRUE,
+
 #read.delim_long meant for map over a vector of filepaths to read, convert to long format and tidy the imported data
-read.delim_long <- function(flnm, filencode, delimiter, headerrows){read.delim(flnm, fileEncoding = filencode, sep = delimiter,  skip = headerrows, header = TRUE, row.names = NULL) %>%
-    mutate(Filename = flnm, Cdatetime = ymd_hms(file.info(flnm)$ctime)) %>%
- rename(nm = OLIS.3D.ASCII) %>%
-  mutate(FirstLastSpec = str_extract(Filename, "_[A-Z][a-z][A-Z][a-z][:digit:][:digit:][:digit:][:digit:]_[A-Z][a-z][A-Z][a-z][:digit:][:digit:][:digit:][:digit:]_")) %>%
-  mutate(SampleNumbers = str_extract_all(FirstLastSpec, "[:digit:][:digit:][:digit:][:digit:]")) %>%
-  mutate(FirstSampleNumber = as.numeric(map(SampleNumbers, ~.[[1]]))) %>%
-  mutate(LastSampleNumber = as.numeric(map(SampleNumbers, ~.[[2]]))) %>%
-  mutate(OperatorID = str_extract(Filename,"[A-Z][a-z][A-Z][a-z]")) %>%
-  pivot_longer(cols = starts_with("X"), names_to = "SpectraID", values_to = "Abs") %>%
-  mutate(SampleCode = as.numeric(str_remove(SpectraID, "X"))) %>%
-  mutate(SampleNumber = SampleCode - min(SampleCode, na.rm = TRUE) + FirstSampleNumber) %>%
-  relocate(OperatorID, SampleNumber) %>%
-  unite(col = SampleID, OperatorID:SampleNumber, sep = "", remove = FALSE) %>%
-  arrange(SampleID, nm) %>%
-  relocate(SampleID, nm, Abs) %>%
-  mutate(SpectraDate = str_extract(Filename, "/[:digit:][:digit:][:digit:][:digit:][:digit:][:digit:][:digit:][:digit:]_"),
-         SpectraDate = str_remove_all(SpectraDate, "_"),
-         SpectraDate = str_remove_all(SpectraDate, "/"),
-         SpectraDate = ymd(SpectraDate)
-  )
-}
+# read.delim_long <- function(flnm, filencode, delimiter, headerrows){read.delim(flnm, fileEncoding = filencode, sep = delimiter,  skip = headerrows, header = TRUE, row.names = NULL) %>%
+#     mutate(Filename = flnm, Cdatetime = ymd_hms(file.info(flnm)$ctime)) %>%
+#  rename(nm = OLIS.3D.ASCII) %>%
+#   mutate(FirstLastSpec = str_extract(Filename, "_[A-Z][a-z][A-Z][a-z][:digit:][:digit:][:digit:][:digit:]_[A-Z][a-z][A-Z][a-z][:digit:][:digit:][:digit:][:digit:]_")) %>%
+#   mutate(SampleNumbers = str_extract_all(FirstLastSpec, "[:digit:][:digit:][:digit:][:digit:]")) %>%
+#   mutate(FirstSampleNumber = as.numeric(map(SampleNumbers, ~.[[1]]))) %>%
+#   mutate(LastSampleNumber = as.numeric(map(SampleNumbers, ~.[[2]]))) %>%
+#   mutate(OperatorID = str_extract(Filename,"[A-Z][a-z][A-Z][a-z]")) %>%
+#   pivot_longer(cols = starts_with("X"), names_to = "SpectraID", values_to = "Abs") %>%
+#   mutate(SampleCode = as.numeric(str_remove(SpectraID, "X"))) %>%
+#   mutate(SampleNumber = SampleCode - min(SampleCode, na.rm = TRUE) + FirstSampleNumber) %>%
+#   relocate(OperatorID, SampleNumber) %>%
+#   unite(col = SampleID, OperatorID:SampleNumber, sep = "", remove = FALSE) %>%
+#   arrange(SampleID, nm) %>%
+#   relocate(SampleID, nm, Abs) %>%
+#   mutate(SpectraDate = str_extract(Filename, "/[:digit:][:digit:][:digit:][:digit:][:digit:][:digit:][:digit:][:digit:]_"),
+#          SpectraDate = str_remove_all(SpectraDate, "_"),
+#          SpectraDate = str_remove_all(SpectraDate, "/"),
+#          SpectraDate = ymd(SpectraDate)
+#   )
+# }
 ```
 
 
-# Import OLISSpectra corrected files
-```{r import from specific OLIS corrected file containing multiple spectra}
+# Import OLIS files
+```{r importspecific OLIS file}
 
-TargetFile <-  OlisFiles
+Spectra <- OlisFiles |> 
+  map_df(~read.delim_plus(flnm = ., filencode = FileEncode, delimiter = Delimiter, headerrows = HeaderRows)) |>
+  rename(nm = V1,
+         A = V2) |>
+  mutate(Filename = str_remove(string = Filename, pattern = "../Data/RawData/OLIS/")) |>
+  mutate(Filename = str_remove(string = Filename, pattern = ".txt")) |>
+    separate(col = Filename, into = c("Project", "DateTime", "ID", "O2_uM"), sep = "([\\/\\_\\:])", remove = FALSE) |>
+  mutate(DateTime = lubridate::ymd_hm(DateTime))
 
-TargetSpectra <- TargetFile %>% map_df(~read.delim_plus(flnm = ., filencode = FileEncode, delimiter = Delimiter, headerrows = HeaderRows)) %>% 
+  
+Spectra %>%
+  ggplot() +
+  geom_point(aes(x = nm, y = A)) +
+  facet_grid(rows = vars(ID), cols = vars(O2_uM)) +
+  theme_bw()
+```
+
+# Subtract baseline
+
+
+%>% 
   pivot_longer(., -c(`OLIS.3D.ASCII`, Filename, Cdatetime), values_to = "Absorbance", names_to = "SampleID") %>%
   filter(!is.na(Absorbance)) %>%
   rename(nm = `OLIS.3D.ASCII`)   

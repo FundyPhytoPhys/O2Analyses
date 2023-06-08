@@ -22,7 +22,7 @@ DataIn <- file.path("..", "Data", "RawData", "OLIS", fsep = .Platform$file.sep)
 
 FileID <- ".txt"
 
-MetaData <- "https://docs.google.com/spreadsheets/d/1ZXpwR7Gfto-uRzVdXzMpQF4frbrvMLH_IyLqonFZRSw/edit#gid=0"
+Catalog <- "https://docs.google.com/spreadsheets/d/1ZXpwR7Gfto-uRzVdXzMpQF4frbrvMLH_IyLqonFZRSw/edit#gid=0"
 
 FileEncode <- "UTF-8" 
 Delimiter <- ""
@@ -140,7 +140,12 @@ Baseline <- Spectra |>
   filter(ID == "Pro99")
 
 Spectra <- Spectra |>
-  mutate(ABase = A - Baseline$A)
+  mutate(ABase = A - Baseline$A)  |>
+  group_by(ID, O2_uM) |>
+  mutate(ANorm = ABase/max(ABase)) |>
+  ungroup()
+
+
 
 Spectra |>
   ggplot() +
@@ -157,41 +162,110 @@ Spectra |>
   facet_grid(rows = vars(ID), cols = vars(O2_uM)) +
   theme_bw()
 
+Spectra |>
+  ggplot() +
+  geom_point(aes(x = nm, y = ANorm)) +
+  facet_grid(rows = vars(ID), cols = vars(O2_uM)) +
+  theme_bw()
+
 ```
+
+# 2nd derivative spectra to detect small shifts in absorbance
+```{r second derivative}
+#https://stackoverflow.com/questions/49762128/rolling-regression-by-group-in-the-tidyverse?noredirect=1&lq=1
+
+#function to generate slope from ratio of covariance to variance
+ slope <- . %>% { cov(.[, 2], .[, 1]) / var(.[, 2])}
+ 
+#range rolling window variables; be careful with different data sets
+ NmperRow <- ((Baseline$nm[length(Baseline$nm)]- Baseline$nm[1]) +1)/nrow(Baseline)
+
+FirstRange <- 10
+SecondRange <- 10
+
+Spectra <- Spectra %>%
+  group_by(Filename) %>%
+  mutate(FirstDeriv = rollapplyr(cbind(ANorm, nm), FirstRange, slope, by.column = FALSE, align = 'right', fill = NA)) %>%
+  mutate(SecondDeriv = rollapplyr(cbind(FirstDeriv, nm), SecondRange, slope, by.column = FALSE, align = 'right', fill = NA)) %>%
+     ungroup()
+
+
+# 
+# #different approach
+# olis_spectra <- olis_spectra %>%
+#   group_by(filename) %>%
+#   mutate(diffnm = nm - lag(nm, n =  FirstRange),
+#          diffAbs750_0 = Abs750_0 - lag(Abs750_0, n = FirstRange),
+#          dAdnm = diffAbs750_0/diffnm) %>%
+#   mutate(SecondDriveAlt = dAdnm/FirstRange) %>%
+#   ungroup()
+# ```
+# 
+# 
+```
+
+```{r second deriv plots}
+Spectra |>
+  ggplot() +
+  geom_point(aes(x = nm, y = SecondDeriv)) +
+  facet_grid(rows = vars(ID), cols = vars(O2_uM)) +
+  theme_bw()
+```
+
 
 # Pivot 2 and 250 µM O2 data into separate columns
-```{r 2 and 250 uM O2 columns}
+```{r uM O2 separate columns}
 SpectraWide <- Spectra |>
-  pivot_wider(id_cols = c(nm, Project, ID), names_from = c(O2_uM), values_from = c(Filename, A, ABase))
+  pivot_wider(id_cols = c(nm, Project, ID), names_from = c(O2_uM), values_from = c(Filename, A, ABase, ANorm, FirstDeriv, SecondDeriv))
+
+
+SpectraWide |>
+  ggplot() +
+  geom_point(aes(x = nm, y = ABase_2)) +
+  geom_point(aes(x = nm, y = ABase_250), colour = "red") +
+  facet_grid(rows = vars(ID)) +
+  theme_bw()
+  
+SpectraWide |>
+  ggplot() +
+  geom_point(aes(x = nm, y = SecondDeriv_2)) +
+  geom_point(aes(x = nm, y = SecondDeriv_250), colour = "red") +
+  facet_grid(rows = vars(ID)) +
+  theme_bw()
+
+SpectraWide |>
+  ggplot() +
+  geom_line(aes(x = nm, y = SecondDeriv_2), size = 0.5) +
+  geom_line(aes(x = nm, y = SecondDeriv_250), size = 0.1, colour = "red") +
+  facet_grid(cols = vars(ID)) +
+  coord_cartesian(xlim = c(500, 600)) + 
+  theme_bw()
 
 ```
 
 
+# Difference spectra
+```{r difference spectra}
 
+SpectraWide <- SpectraWide |>
+  mutate(A2sub250 = ANorm_2 - ANorm_250)
 
-%>% 
-  pivot_longer(., -c(`OLIS.3D.ASCII`, Filename, Cdatetime), values_to = "Absorbance", names_to = "SampleID") %>%
-  filter(!is.na(Absorbance)) %>%
-  rename(nm = `OLIS.3D.ASCII`)   
-  #separate(col = SampleID, into = c("SampleID", "Replicate"), sep = "_")
-
-TargetSpectraLong <- TargetSpectra %>%
-  # rename(nm = OLIS.3D.ASCII) %>%
-  separate(col = Filename, into = c("fp1", "fp2", "fp3", "SpectraDate", "Project", "Source", "Range", "Type", "Correction", "Smooth"), sep = "([\\/\\_\\:])", remove = FALSE) 
-
-TargetSpectraLong2 <- TargetSpectraLong %>%
-  select(-c(fp1, fp2, fp3, Type, Correction, Smooth, SampleID)) %>% 
-  rename(CultureID = Source) %>% 
-  mutate(SpectraDate = ymd(`SpectraDate`)) 
+SpectraWide |>
+  ggplot() +
+  geom_point(aes(x = nm, y = A2sub250 * 10)) +
+  geom_point(aes(x = nm, y = ABase_2), colour = "red") +
+  facet_grid(rows = vars(ID)) +
+  theme_bw()
 ```
+
 
 Load Multiculti catalog
-```{r load local multiculticatalog, message = FALSE, warning = FALSE, echo=FALSE}
+```{r load multiculticatalog, message = FALSE, warning = FALSE, echo=FALSE}
 gs4_deauth()
 
 # imagine this is the URL or ID of a Sheet readable by anyone (with a link)
 # MultiCulti metadata
-MetaData <- read_sheet("https://docs.google.com/spreadsheets/d/1ZXpwR7Gfto-uRzVdXzMpQF4frbrvMLH_IyLqonFZRSw/edit#gid=0") %>%
+MetaData <- read_sheet(Catalog)%>%
   # read_sheet has an annoying "feature" to set the type of columns it can't parse to a list.
   # ggplot/dplyr doesn't like working with a dataframe of lists.
   # In this case WL is set to a list since some values are numbers, some are strings, some are blank.
@@ -203,41 +277,42 @@ MetaData <- read_sheet("https://docs.google.com/spreadsheets/d/1ZXpwR7Gfto-uRzVd
 as.data.frame(MetaData)
 
 MetaData <- MetaData %>%
-   mutate(ExpDate = ymd(ExpDate),
-          ExpEndDate = ymd_hms(`ExpEndDate`))
+   mutate(ExpDate = lubridate::ymd(ExpDate),
+          ExpEndDate = lubridate::ymd_hms(`ExpEndDate`))
 ```
 
 
 # Merge OLISSpectra with MetaData
-```{r OLISDateSpectra with MetaData}
-
-#OLISSpectraMeta <- left_join(x = TargetSpectraLong2, y = MetaData, by = c("CultureID" = "ID"))
-
-#OLISSpectraDirtyMeta <- left_join(x = OLISSpectraDirty, y = MetaData,  by = c("SampleID" = "ID"))
-
-# rm(MetaData)
-# rm(OLISSpectra)
-#remove large MetaData dataframe to lower memory overhead
+```{r SpectraWide with MetaData}
 
 
-OLISSpectraMeta <- MetaData %>%
-  left_join(., TargetSpectraLong2, by = c("ID" = "CultureID")) %>% 
-  filter(Run == "70") 
-
-OLISSpectraMeta <- OLISSpectraMeta %>%
-  rename("FilenameOlis" = "Filename") %>% 
-  select(-c(PrimaryOperator, doi, ProjectID, Inoc_mL, Media_mL, InnocDate, Tube, Plate, Well, Salinity,  N2, Ar, CO2, Media, MediaDate, SourceSalinity, OptodeCh, InocpH, FinalpH, Par_ueAdjusted, DateOfAdjustment, ElaspedHoursAtAdjustment, ...44, ...45, Description, Motivation, MC, EndDate,  ExpCul))
-          
-
-
-OLISSpectraMeta <- OLISSpectraMeta %>%
-group_by(ID) %>%
-  arrange(SpectraDate) %>%
-  mutate(E_days = as.numeric((SpectraDate - ExpDate[1]))) %>%
-ungroup()
-
+SpectraMeta <- SpectraWide %>%
+  left_join(., MetaData, by = c("ID"))
+            
+SpectraMeta |>
+  ggplot() +
+  geom_line(aes(x = nm, y = SecondDeriv_2), size = 0.5) +
+  geom_line(aes(x = nm, y = SecondDeriv_250), size = 0.1, colour = "red") +
+  facet_grid(cols = vars(Strain), rows = vars(Par_ue)) +
+  coord_cartesian(xlim = c(500, 600)) + 
+  theme_bw()            
 
 ```
+Spectra with MetaData
+```{r spectra with metadata}
+SpectraMeta |>
+  ggplot() +
+  geom_line(aes(x = nm, y = ANorm_2), size = 0.5) +
+  geom_line(aes(x = nm, y = ANorm_250), size = 0.1, colour = "red") +
+  facet_grid(cols = vars(Strain), rows = vars(Par_ue)) +
+ # coord_cartesian(xlim = c(500, 600)) + 
+  theme_bw()   
+```
+
+Add Turner Chlorophyll data to estimate a* etc.
+
+
+
 
 Normalization
 https://www.digitalocean.com/community/tutorials/normalize-data-in-r
@@ -265,739 +340,241 @@ https://www.digitalocean.com/community/tutorials/normalize-data-in-r
 ```
 
 
-CCA Plot
-```{r}
-OLISSpectraMetaPlot <- OLISSpectraMeta %>%
-  filter(SpectraDate == "2022-05-23") %>% 
-  filter(Strain != "MIT9313") %>% 
-  filter(Strain != "SS120") %>% 
-  filter(Strain != "MED4") %>% 
-    filter(Strain != "132R") %>% 
-    filter(Strain != "48R") %>% 
-    filter(Strain != "56G") %>% 
-    filter(Strain != "60G") %>% 
-    filter(WL != "WW") %>% 
-  #filter(WL == "660") %>% 
-  filter(Par_ue == "60" |
-        Par_ue == "300") %>% 
-  filter(Run != "56") %>% # nie
-  filter(Run != "59") %>% # niezly
-  filter(Run != "63") %>% # nie
-  filter(Run != "68") %>% # niezly
-  filter(Run == "70") %>% 
-
-  ggplot() +
-  geom_point(aes(x = nm, y = Absorbance, label = ID)) +
-  #geom_point(aes(x = nm, y = Absorbance, colour = as.factor(WL), label = ID)) +
-  scale_color_manual(values = Colours_nm) +
-  guides(colour = FALSE) +
-  labs(y = "Absorbance", x = "Wavelength (nm)") +
-  # scale_y_continuous(breaks=seq(0, 0.2, by = 0.05)) +
-  # coord_cartesian(ylim = c (0, 0.2)) +
-  ggh4x::facet_nested(rows = vars(Par_ue),cols = vars(Strain, WL), labeller = labeller(Ex_WL = label_both, strain = label_value, WL = label_both, Photoperiod = label_both, Par_ue = label_both)) +
-  theme_bw()
-OLISSpectraMetaPlot
-
-
-
-
-Absorbance440 <- OLISSpectraMeta %>% 
-  filter(nm == 440) %>%
-  mutate(Abs440 = Absorbance) %>%
-  select(ID, Strain, Abs440, Par_ue)
-
-OLISSpectraMetaPlot <- OLISSpectraMeta %>%
-  filter(SpectraDate == "2022-05-23") %>% 
-  filter(Strain != "MIT9313") %>% 
-  filter(Strain != "SS120") %>% 
-  filter(Strain != "MED4") %>% 
-    filter(Strain != "132R") %>% 
-    filter(Strain != "48R") %>% 
-    filter(Strain != "56G") %>% 
-    filter(Strain != "60G") %>% 
-    filter(WL != "WW") %>% 
-  #filter(WL == "660") %>% 
-  filter(Par_ue == "60" |
-        Par_ue == "300") %>% 
-  filter(Run != "56") %>% # nie
-  filter(Run != "59") %>% # niezly
-  filter(Run != "63") %>% # nie
-  filter(Run != "68") %>% # niezly
-  filter(Run == "70") %>% 
-  left_join(., Absorbance440) %>%
-  # group_by(WL, Strain, Par_ue) %>%
-  mutate(AbsNorm440 = Absorbance / Abs440) %>%
-
-  ggplot() +
-  geom_point(aes(x = nm, y = AbsNorm440, label = ID)) +
-  #geom_point(aes(x = nm, y = Absorbance, colour = as.factor(WL), label = ID)) +
-  scale_color_manual(values = Colours_nm) +
-  guides(colour = FALSE) +
-  labs(y = "Absorbance", x = "Wavelength (nm)") +
-  # scale_y_continuous(breaks=seq(0, 0.2, by = 0.05)) +
-  # coord_cartesian(ylim = c (0, 0.2)) +
-  ggh4x::facet_nested(rows = vars(Par_ue),cols = vars(Strain, WL), labeller = labeller(Ex_WL = label_both, strain = label_value, WL = label_both, Photoperiod = label_both, Par_ue = label_both)) +
-  theme_bw()
-OLISSpectraMetaPlot
-
-
-
-
-
-
-Absorbance710 <- OLISSpectraMeta %>% 
-  filter(nm == 710) %>%
-  mutate(Abs710 = Absorbance) %>%
-  select(ID, Strain, Abs710, Par_ue)
-
-OLISSpectraMetaPlot <- OLISSpectraMeta %>%
-  filter(SpectraDate == "2022-05-23") %>% 
-  filter(Strain != "MIT9313") %>% 
-  filter(Strain != "SS120") %>% 
-  filter(Strain != "MED4") %>% 
-    filter(Strain != "132R") %>% 
-    filter(Strain != "48R") %>% 
-    filter(Strain != "56G") %>% 
-    filter(Strain != "60G") %>% 
-    filter(WL != "WW") %>% 
-  #filter(WL == "660") %>% 
-  filter(Par_ue == "60" |
-        Par_ue == "300") %>% 
-  filter(Run != "56") %>% # nie
-  filter(Run != "59") %>% # niezly
-  filter(Run != "63") %>% # nie
-  filter(Run != "68") %>% # niezly
-  filter(Run == "70") %>% 
-  left_join(., Absorbance710) %>%
-  # group_by(WL, Strain, Par_ue) %>%
-  mutate(AbsNorm710 = Absorbance / Abs710) %>%
-
-  ggplot() +
-  geom_point(aes(x = nm, y = AbsNorm710, label = ID)) +
-  #geom_point(aes(x = nm, y = Absorbance, colour = as.factor(WL), label = ID)) +
-  scale_color_manual(values = Colours_nm) +
-  guides(colour = FALSE) +
-  labs(y = "Absorbance", x = "Wavelength (nm)") +
-  # scale_y_continuous(breaks=seq(0, 0.2, by = 0.05)) +
-  # coord_cartesian(ylim = c (0, 0.2)) +
-  ggh4x::facet_nested(rows = vars(Par_ue),cols = vars(Strain, WL), labeller = labeller(Ex_WL = label_both, strain = label_value, WL = label_both, Photoperiod = label_both, Par_ue = label_both)) +
-  theme_bw()
-OLISSpectraMetaPlot
-
-```
-
-```{r}
-OLISSpectraMetaPlot <- OLISSpectraMeta %>%
-
-  filter(SpectraDate == "2022-05-23") %>% 
-  filter(Strain != "MIT9313") %>% 
-  filter(Strain != "SS120") %>% 
-  filter(Strain != "MED4") %>% 
-    filter(Strain != "132R") %>% 
-    filter(Strain != "48R") %>% 
-    filter(Strain != "56G") %>% 
-    filter(Strain != "60G") %>% 
-    filter(WL != "WW") %>% 
-  #filter(WL == "660") %>% 
-  filter(Par_ue == "60" |
-        Par_ue == "300") %>% 
-  filter(Run != "56") %>% # nie
-  filter(Run != "59") %>% # niezly
-  filter(Run != "63") %>% # nie
-  filter(Run != "68") %>% # niezly
-  filter(Run == "70") %>% 
-
-  ggplot() +
-  #geom_point(aes(x = nm, y = Absorbance, label = ID), show.legend = "none") +
-  #geom_point(aes(x = nm, y = Absorbance, colour = as.factor(WL), label = ID)) +
-  geom_line(aes(x = nm, y = Absorbance, colour = as.factor(WL), label = ID), show.legend = "none", size = 1) +
-  scale_color_manual(values = c("530" ="darkgreen", "660" = "red")) +
-  #guides(colour = FALSE) +
-  labs(y = "Absorbance", x = "Wavelength (nm)") +
-  #scale_y_continuous(breaks=seq(0, 0.2, by = 0.05)) +
-  #coord_cartesian(ylim = c (0, 0.2)) +
-  ggh4x::facet_nested(rows = vars(Par_ue),cols = vars(Strain), labeller = labeller(Ex_WL = label_both, strain = label_value, WL = label_both, Photoperiod = label_both, Par_ue = label_both)) +
-  theme_bw()
-OLISSpectraMetaPlot
-
-
-
-#colorlines Norm440
-Absorbance440 <- OLISSpectraMeta %>% 
-  filter(nm == 440) %>%
-  mutate(Abs440 = Absorbance) %>%
-  select(ID, Strain, Abs440, Par_ue)
-
-OLISSpectraMetaPlot <- OLISSpectraMeta %>%
-  filter(SpectraDate == "2022-05-23") %>% 
-  filter(Strain != "MIT9313") %>% 
-  filter(Strain != "SS120") %>% 
-  filter(Strain != "MED4") %>% 
-    filter(Strain != "132R") %>% 
-    filter(Strain != "48R") %>% 
-    filter(Strain != "56G") %>% 
-    filter(Strain != "60G") %>% 
-    filter(WL != "WW") %>% 
-  #filter(WL == "660") %>% 
-  filter(Par_ue == "60" |
-        Par_ue == "300") %>% 
-  filter(Run != "56") %>% # nie
-  filter(Run != "59") %>% # niezly
-  filter(Run != "63") %>% # nie
-  filter(Run != "68") %>% # niezly
-  filter(Run == "70") %>% 
-  left_join(., Absorbance440) %>%
-  # group_by(WL, Strain, Par_ue) %>%
-  mutate(AbsNorm440 = Absorbance / Abs440) %>%
-
-  ggplot() +
-  #geom_point(aes(x = nm, y = AbsNorm, label = ID)) +
-  geom_line(aes(x = nm, y = AbsNorm440, colour = as.factor(WL), label = ID), show.legend = "none", size = 1) +
-  #geom_point(aes(x = nm, y = Absorbance, colour = as.factor(WL), label = ID)) +
-  scale_color_manual(values = c("530" ="darkgreen", "660" = "red")) +
-  #guides(colour = FALSE) +
-  labs(y = "Absorbance", x = "Wavelength (nm)") +
-  # scale_y_continuous(breaks=seq(0, 0.2, by = 0.05)) +
-  # coord_cartesian(ylim = c (0, 0.2)) +
-  ggh4x::facet_nested(rows = vars(Par_ue),cols = vars(Strain), labeller = labeller(Ex_WL = label_both, strain = label_value, WL = label_both, Photoperiod = label_both, Par_ue = label_both)) +
-  theme_bw()
-OLISSpectraMetaPlot
-
-
-
-#dashed and solid lines Norm440
-Absorbance440 <- OLISSpectraMeta %>% 
-  filter(nm == 440) %>%
-  mutate(Abs440 = Absorbance) %>%
-  select(ID, Strain, Abs440, Par_ue)
-
-OLISSpectraMetaPlot <- OLISSpectraMeta %>%
-  filter(SpectraDate == "2022-05-23") %>% 
-  filter(Strain != "MIT9313") %>% 
-  filter(Strain != "SS120") %>% 
-  filter(Strain != "MED4") %>% 
-    filter(Strain != "132R") %>% 
-    filter(Strain != "48R") %>% 
-    filter(Strain != "56G") %>% 
-    filter(Strain != "60G") %>% 
-    filter(WL != "WW") %>% 
-  filter(Par_ue == "60" |
-        Par_ue == "300") %>% 
-  filter(Run != "56") %>% # nie
-  filter(Run != "59") %>% # niezly
-  filter(Run != "63") %>% # nie
-  filter(Run != "68") %>% # niezly
-  filter(Run == "70") %>% 
-  left_join(., Absorbance440) %>%
-  # group_by(WL, Strain, Par_ue) %>%
-  mutate(AbsNorm440 = Absorbance / Abs440) %>%
-
-  ggplot() +
-  geom_line(aes(x = nm, y = AbsNorm440, label = ID, linetype = as.factor(WL)), show.legend = "none", size = 1) +
-  #scale_color_manual(values = c("530" ="darkgreen", "660" = "red")) +
-  scale_linetype_manual(values=c("530" = "solid", "660" = "dashed")) +
-  guides(colour = FALSE, linotype = FALSE) +
-  labs(y = "Absorbance", x = "Wavelength (nm)") +
-  # scale_y_continuous(breaks=seq(0, 0.2, by = 0.05)) +
-  # coord_cartesian(ylim = c (0, 0.2)) +
-  ggh4x::facet_nested(rows = vars(Par_ue),cols = vars(Strain), labeller = labeller(Ex_WL = label_both, strain = label_value, WL = label_both, Photoperiod = label_both, Par_ue = label_both)) +
-  theme_bw()
-OLISSpectraMetaPlot
-
-
-#dashed and solid color lines Norm440
-Absorbance440 <- OLISSpectraMeta %>% 
-  filter(nm == 440) %>%
-  mutate(Abs440 = Absorbance) %>%
-  select(ID, Strain, Abs440, Par_ue)
-
-OLISSpectraMetaPlot <- OLISSpectraMeta %>%
-  filter(SpectraDate == "2022-05-23") %>% 
-  filter(Strain != "MIT9313") %>% 
-  filter(Strain != "SS120") %>% 
-  filter(Strain != "MED4") %>% 
-    filter(Strain != "132R") %>% 
-    filter(Strain != "48R") %>% 
-    filter(Strain != "56G") %>% 
-    filter(Strain != "60G") %>% 
-    filter(WL != "WW") %>% 
-  filter(Par_ue == "60" |
-        Par_ue == "300") %>% 
-  filter(Run != "56") %>% # nie
-  filter(Run != "59") %>% # niezly
-  filter(Run != "63") %>% # nie
-  filter(Run != "68") %>% # niezly
-  filter(Run == "70") %>% 
-  left_join(., Absorbance440) %>%
-  # group_by(WL, Strain, Par_ue) %>%
-  mutate(AbsNorm440 = Absorbance / Abs440) %>%
-
-  ggplot() +
-  geom_line(aes(x = nm, y = AbsNorm440, label = ID, linetype = as.factor(WL), colour = as.factor(WL)), show.legend = "none", size = 1) +
-  #scale_color_manual(values = c("530" ="darkgreen", "660" = "red")) +
-  scale_linetype_manual(values=c("530" = "solid", "660" = "dashed")) +
-  scale_color_manual(values = c("530" ="darkgreen", "660" = "red")) +
-  guides(colour = FALSE, linotype = FALSE) +
-  labs(y = "Absorbance", x = "Wavelength (nm)") +
-  # scale_y_continuous(breaks=seq(0, 0.2, by = 0.05)) +
-  # coord_cartesian(ylim = c (0, 0.2)) +
-  ggh4x::facet_nested(rows = vars(Par_ue),cols = vars(Strain), labeller = labeller(Ex_WL = label_both, strain = label_value, WL = label_both, Photoperiod = label_both, Par_ue = label_both)) +
-  theme_bw()
-OLISSpectraMetaPlot
-
-
-  
-
-
-
-#colorlines Norm710
-Absorbance710 <- OLISSpectraMeta %>% 
-  filter(nm == 710) %>%
-  mutate(Abs710 = Absorbance) %>%
-  select(ID, Strain, Abs710, Par_ue)
-
-OLISSpectraMetaPlot <- OLISSpectraMeta %>%
-  filter(SpectraDate == "2022-05-23") %>% 
-  filter(Strain != "MIT9313") %>% 
-  filter(Strain != "SS120") %>% 
-  filter(Strain != "MED4") %>% 
-    filter(Strain != "132R") %>% 
-    filter(Strain != "48R") %>% 
-    filter(Strain != "56G") %>% 
-    filter(Strain != "60G") %>% 
-    filter(WL != "WW") %>% 
-  #filter(WL == "660") %>% 
-  filter(Par_ue == "60" |
-        Par_ue == "300") %>% 
-  filter(Run != "56") %>% # nie
-  filter(Run != "59") %>% # niezly
-  filter(Run != "63") %>% # nie
-  filter(Run != "68") %>% # niezly
-  filter(Run == "70") %>% 
-  left_join(., Absorbance710) %>%
-  # group_by(WL, Strain, Par_ue) %>%
-  mutate(AbsNorm710 = Absorbance / Abs710) %>%
-
-  ggplot() +
-  #geom_point(aes(x = nm, y = AbsNorm, label = ID)) +
-  geom_line(aes(x = nm, y = AbsNorm710, colour = as.factor(WL), label = ID), show.legend = "none", size = 1) +
-  #geom_point(aes(x = nm, y = Absorbance, colour = as.factor(WL), label = ID)) +
-  scale_color_manual(values = c("530" ="darkgreen", "660" = "red")) +
-  #guides(colour = FALSE) +
-  labs(y = "Absorbance", x = "Wavelength (nm)") +
-  # scale_y_continuous(breaks=seq(0, 0.2, by = 0.05)) +
-  # coord_cartesian(ylim = c (0, 0.2)) +
-  ggh4x::facet_nested(rows = vars(Par_ue),cols = vars(Strain), labeller = labeller(Ex_WL = label_both, strain = label_value, WL = label_both, Photoperiod = label_both, Par_ue = label_both)) +
-  theme_bw()
-OLISSpectraMetaPlot
-
-
-
-#dashed and solid lines Norm710
-Absorbance710 <- OLISSpectraMeta %>% 
-  filter(nm == 710) %>%
-  mutate(Abs710 = Absorbance) %>%
-  select(ID, Strain, Abs710, Par_ue)
-
-OLISSpectraMetaPlot <- OLISSpectraMeta %>%
-  filter(SpectraDate == "2022-05-23") %>% 
-  filter(Strain != "MIT9313") %>% 
-  filter(Strain != "SS120") %>% 
-  filter(Strain != "MED4") %>% 
-    filter(Strain != "132R") %>% 
-    filter(Strain != "48R") %>% 
-    filter(Strain != "56G") %>% 
-    filter(Strain != "60G") %>% 
-    filter(WL != "WW") %>% 
-  filter(Par_ue == "60" |
-        Par_ue == "300") %>% 
-  filter(Run != "56") %>% # nie
-  filter(Run != "59") %>% # niezly
-  filter(Run != "63") %>% # nie
-  filter(Run != "68") %>% # niezly
-  filter(Run == "70") %>% 
-  left_join(., Absorbance710) %>%
-  # group_by(WL, Strain, Par_ue) %>%
-  mutate(AbsNorm710 = Absorbance / Abs710) %>%
-
-  ggplot() +
-  geom_line(aes(x = nm, y = AbsNorm710, label = ID, linetype = as.factor(WL), colour = as.factor(WL)), show.legend = "none", size = 1) +
-  scale_linetype_manual(values=c("530" = "solid", "660" = "dashed")) +
-  scale_color_manual(values = c("530" ="darkgreen", "660" = "red")) +
-  guides(colour = FALSE, linotype = FALSE) +
-  labs(y = "Absorbance", x = "Wavelength (nm)") +
-  # scale_y_continuous(breaks=seq(0, 0.2, by = 0.05)) +
-  # coord_cartesian(ylim = c (0, 0.2)) +
-  ggh4x::facet_nested(rows = vars(Par_ue),cols = vars(Strain), labeller = labeller(Ex_WL = label_both, strain = label_value, WL = label_both, Photoperiod = label_both, Par_ue = label_both)) +
-  theme_bw()
-OLISSpectraMetaPlot
-
-```
-
-```{r prelimplot2, fig.height = 6, fig.width = 8, warning = FALSE}
-
-#dashed and solid color lines Norm440
-Absorbance440 <- OLISSpectraMeta %>% 
-  filter(nm == 440) %>%
-  mutate(Abs440 = Absorbance) %>%
-  select(ID, Strain, Abs440, Par_ue)
-
-OLISSpectraMetaPlot <- OLISSpectraMeta %>%
-  filter(SpectraDate == "2022-05-23") %>% 
-  filter(Strain != "MIT9313") %>% 
-  filter(Strain != "SS120") %>% 
-  filter(Strain != "MED4") %>% 
-    filter(Strain != "132R") %>% 
-    filter(Strain != "48R") %>% 
-    filter(Strain != "56G") %>% 
-    filter(Strain != "60G") %>% 
-    filter(WL != "WW") %>% 
-  filter(Par_ue == "60" |
-        Par_ue == "300") %>% 
-  filter(Run != "56") %>% # nie
-  filter(Run != "59") %>% # niezly
-  filter(Run != "63") %>% # nie
-  filter(Run != "68") %>% # niezly
-  filter(Run == "70") %>% 
-  left_join(., Absorbance440) %>%
-  # group_by(WL, Strain, Par_ue) %>%
-  mutate(AbsNorm440 = Absorbance / Abs440) %>%
-
-  ggplot() +
-  geom_line(aes(x = nm, y = AbsNorm440, label = ID, linetype = as.factor(WL), colour = as.factor(WL)), show.legend = "none", size = 1) +
-  #scale_color_manual(values = c("530" ="darkgreen", "660" = "red")) +
-  scale_linetype_manual(values=c("530" = "solid", "660" = "dashed")) +
-  scale_color_manual(values = c("530" ="darkgreen", "660" = "red")) +
-  guides(colour = FALSE, linotype = FALSE) +
-  labs(y = "Absorbance", x = "Wavelength (nm)") +
-  # scale_y_continuous(breaks=seq(0, 0.2, by = 0.05)) +
-  # coord_cartesian(ylim = c (0, 0.2)) +
-  ggh4x::facet_nested(rows = vars(Strain),cols = vars(Par_ue), labeller = labeller(Ex_WL = label_both, strain = label_value, WL = label_both, Photoperiod = label_both, Par_ue = label_both)) +
-  theme_bw()
-OLISSpectraMetaPlot
-
-
-
-#dashed and solid lines Norm710
-Absorbance710 <- OLISSpectraMeta %>% 
-  filter(nm == 710) %>%
-  mutate(Abs710 = Absorbance) %>%
-  select(ID, Strain, Abs710, Par_ue)
-
-OLISSpectraMetaPlot <- OLISSpectraMeta %>%
-  filter(SpectraDate == "2022-05-23") %>% 
-  filter(Strain != "MIT9313") %>% 
-  filter(Strain != "SS120") %>% 
-  filter(Strain != "MED4") %>% 
-    filter(Strain != "132R") %>% 
-    filter(Strain != "48R") %>% 
-    filter(Strain != "56G") %>% 
-    filter(Strain != "60G") %>% 
-    filter(WL != "WW") %>% 
-  filter(Par_ue == "60" |
-        Par_ue == "300") %>% 
-  filter(Run != "56") %>% # nie
-  filter(Run != "59") %>% # niezly
-  filter(Run != "63") %>% # nie
-  filter(Run != "68") %>% # niezly
-  filter(Run == "70") %>% 
-  left_join(., Absorbance710) %>%
-  # group_by(WL, Strain, Par_ue) %>%
-  mutate(AbsNorm710 = Absorbance / Abs710) %>%
-
-  ggplot() +
-  geom_line(aes(x = nm, y = AbsNorm710, label = ID, linetype = as.factor(WL), colour = as.factor(WL)), show.legend = "none", size = 1) +
-  scale_linetype_manual(values=c("530" = "solid", "660" = "dashed")) +
-  scale_color_manual(values = c("530" ="darkgreen", "660" = "red")) +
-  guides(colour = FALSE, linotype = FALSE) +
-  labs(y = "Absorbance", x = "Wavelength (nm)") +
-  # scale_y_continuous(breaks=seq(0, 0.2, by = 0.05)) +
-  # coord_cartesian(ylim = c (0, 0.2)) +
-  ggh4x::facet_nested(rows = vars(Strain),cols = vars(Par_ue), labeller = labeller(Ex_WL = label_both, strain = label_value, WL = label_both, Photoperiod = label_both, Par_ue = label_both)) +
-  theme_bw()
-OLISSpectraMetaPlot
-```
-
-```{r}
-
-OLISSpectraMeta440 <- OLISSpectraMeta %>%
-  filter(Strain == "BA127R"|
-        Strain == "BA77G") %>% 
-  filter(Par_ue == "60" |
-        Par_ue == "300") %>% 
-  filter(Run == "70") %>% 
-  left_join(., Absorbance440) %>%
-  mutate(AbsNorm440 = Absorbance / Abs440) %>% 
-  filter(nm >= 400 & nm <= 700) 
-  
- 
-OLISSpectraMeta710 <- OLISSpectraMeta %>%
-  filter(Strain == "BA127R"|
-        Strain == "BA77G") %>% 
-  filter(Par_ue == "60" |
-        Par_ue != "300") %>% 
-  filter(Run == "70") %>% 
-  left_join(., Absorbance710) %>%
-  mutate(AbsNorm710 = Absorbance / Abs710) 
-```
-```{r prelimplot2, fig.height = 6, fig.width = 8, warning = FALSE}
-#dashed and solid color lines Norm440
-
-OLISSpectraMeta440Plot <- OLISSpectraMeta440 %>%
-  ggplot() +
-  geom_line(aes(x = nm, y = AbsNorm440, label = ID, linetype = as.factor(WL), colour = as.factor(WL)), show.legend = "none", size = 1) +
-  #scale_color_manual(values = c("530" ="darkgreen", "660" = "red")) +
-  scale_linetype_manual(values=c("530" = "solid", "660" = "dashed")) +
-  scale_color_manual(values = c("530" ="darkgreen", "660" = "red")) +
-  guides(colour = FALSE, linotype = FALSE) +
-  labs(y = "Absorbance", x = "Wavelength (nm)") +
-  # scale_y_continuous(breaks=seq(0, 0.2, by = 0.05)) +
-  # coord_cartesian(ylim = c (0, 0.2)) +
-  ggh4x::facet_nested(rows = vars(Strain),cols = vars(Par_ue), labeller = labeller(Ex_WL = label_both, strain = label_value, WL = label_both, Photoperiod = label_both, Par_ue = label_both)) +
-  theme_bw()
-OLISSpectraMeta440Plot
-
-
-OLISSpectraMeta710Plot <- OLISSpectraMeta710 %>%
-  ggplot() +
-  geom_line(aes(x = nm, y = AbsNorm710, label = ID, linetype = as.factor(WL), colour = as.factor(WL)), show.legend = "none", size = 1) +
-  #scale_color_manual(values = c("530" ="darkgreen", "660" = "red")) +
-  scale_linetype_manual(values=c("530" = "solid", "660" = "dashed")) +
-  scale_color_manual(values = c("530" ="darkgreen", "660" = "red")) +
-  guides(colour = FALSE, linotype = FALSE) +
-  labs(y = "Absorbance", x = "Wavelength (nm)") +
-  # scale_y_continuous(breaks=seq(0, 0.2, by = 0.05)) +
-  # coord_cartesian(ylim = c (0, 0.2)) +
-  ggh4x::facet_nested(rows = vars(Strain),cols = vars(Par_ue), labeller = labeller(Ex_WL = label_both, strain = label_value, WL = label_both, Photoperiod = label_both, Par_ue = label_both)) +
-  theme_bw()
-OLISSpectraMeta710Plot
-```
-
-
-
-#Combine OLISspectra with Jaz spectra
-Jaz file
-```{r}
-Project <- "PICO"
-DataIn <- file.path("..", "ImportedData", "Jaz", fsep = .Platform$file.sep)
-
-FileEncode <- "UTF-8" 
-Delimiter <- ","
-
-HeaderRows <- 0
-```
-
-Jaz file
-Exported from PICO_SySlJazSpec_MultiCulti.Rmd only first time in session
-```{r list tidied data files}
-list.files(path = DataIn, pattern = Project, full.names = TRUE)
-```
-
-Turner file
-```{r read ProcessFile}
-JazFile <- "../ImportedData/Jaz/PICO_SySlJazSpec_MultiCulti.Rds"
-
-JazFileName <- str_split(string = JazFile, "/")[[1]][3] %>%
-  str_remove(pattern = ".Rds") 
-
-JazData <- readRDS(JazFile)  %>%
-  ungroup()
-
-colnames(JazData)
-```
-
-```{r}
-JazData <- JazData %>%
-   mutate(WavelengthRound = round(Wavelength))
-colnames(JazData)
-
-JazDataRound <- JazData %>%
-group_by(Filename, WavelengthRound) %>%
-  summarize(Counts, Filename, Instrument, Date, Strain, Par, WL, CDateTime, WavelengthRound, CountsMean = mean(Counts)) %>% 
-ungroup()
-
-JazDataRound <- JazDataRound %>%
-  summarize(Filename, Strain, Par, WL, WavelengthRound, CountsMean) %>%
-  unique()
-
-
-JazDataRound <- JazDataRound %>%
-  #filter(Strain == "BA127R") %>% 
-  #filter(Par == "60") %>% 
-  #filter(WL == "660") %>% 
-  filter(WavelengthRound >= 400 & WavelengthRound <= 700) 
-
-```
-
-```{r}
-# JazData440 <- JazData %>%
-#   mutate(Counts10000 = Counts/10000/4)
-```
-
-
-```{r}
-# JazData710 <- JazData %>%
-#   mutate(Counts10000 = Counts/10000/2*4)
-```
-
-Normalization at 647
-```{r}
-EmissionJazRed <- JazDataRound %>% 
-  group_by(WL, Strain, Par) %>% 
-  filter(WL == "661") %>%
-  filter(WavelengthRound == 647) %>%
-  mutate(EmJaz647 = CountsMean) %>% 
-  select(Strain, EmJaz647, Par) %>% 
-  ungroup()
-  
-JazDataRoundRedMeta <- JazDataRound %>%
-  left_join(., EmissionJazRed) %>%
-  mutate(EmNormJaz647 = CountsMean / EmJaz647) 
-```
-
-Normalization at 521
-```{r}
-
-EmissionJazGreen <- JazDataRound %>% 
-  group_by(WL, Strain, Par) %>% 
-  filter(WL == "531") %>%
-  filter(WavelengthRound == 521) %>%
-  mutate(EmJaz521 = CountsMean) %>% 
-  select(Strain, EmJaz521, Par) %>% 
-  ungroup()
-  
-JazDataRoundGreenMeta <- JazDataRound %>%
-  left_join(., EmissionJazGreen) %>%
-  mutate(EmNormJaz521 = CountsMean / EmJaz521) 
-  
-```
-
-
-```{r}
-JazDataRoundMetaAll2 <- JazDataRoundRedMeta %>%
-
-  left_join(., JazDataRoundGreenMeta, by = c("Par" = "Par", "WavelengthRound" = "WavelengthRound", "Strain" = "Strain", "WL" = "WL", "Filename" = "Filename", "CountsMean" = "CountsMean")) %>%
-  unique()
-
-```
 
 
 ```{r prelimplot2, fig.height = 6, fig.width = 8, warning = FALSE}
-JazDataPlot <- JazDataRoundMetaAll2 %>%
-  ggplot() +
-  geom_line(aes(x = WavelengthRound, y = EmNormJaz647, linetype = as.factor(WL), colour = as.factor(WL)), show.legend = "none", size = 1) +
-  geom_line(aes(x = WavelengthRound, y = EmNormJaz521, linetype = as.factor(WL), colour = as.factor(WL)), show.legend = "none", size = 1) +
-  #scale_color_manual(values = c("530" ="darkgreen", "660" = "red")) +
-  scale_linetype_manual(values=c("531" = "solid", "661" = "dashed")) +
-  scale_color_manual(values = c("531" ="darkgreen", "661" = "red")) +
-  guides(colour = FALSE, linotype = FALSE) +
-  labs(y = "Absorbance", x = "Wavelength (nm)") +
-  # scale_y_continuous(breaks=seq(0, 0.2, by = 0.05)) +
-  # coord_cartesian(ylim = c (0, 0.2)) +
-  # ggh4x::facet_nested(rows = vars(Strain),cols = vars(Par_ue), labeller = labeller(Ex_WL = label_both, strain = label_value, WL = label_both, Photoperiod = label_both, Par_ue = label_both)) +
-  theme_bw()
-JazDataPlot
+# 
+# #dashed and solid color lines Norm440
+# Absorbance440 <- OLISSpectraMeta %>% 
+#   filter(nm == 440) %>%
+#   mutate(Abs440 = Absorbance) %>%
+#   select(ID, Strain, Abs440, Par_ue)
+# 
+# OLISSpectraMetaPlot <- OLISSpectraMeta %>%
+#   filter(SpectraDate == "2022-05-23") %>% 
+#   filter(Strain != "MIT9313") %>% 
+#   filter(Strain != "SS120") %>% 
+#   filter(Strain != "MED4") %>% 
+#     filter(Strain != "132R") %>% 
+#     filter(Strain != "48R") %>% 
+#     filter(Strain != "56G") %>% 
+#     filter(Strain != "60G") %>% 
+#     filter(WL != "WW") %>% 
+#   filter(Par_ue == "60" |
+#         Par_ue == "300") %>% 
+#   filter(Run != "56") %>% # nie
+#   filter(Run != "59") %>% # niezly
+#   filter(Run != "63") %>% # nie
+#   filter(Run != "68") %>% # niezly
+#   filter(Run == "70") %>% 
+#   left_join(., Absorbance440) %>%
+#   # group_by(WL, Strain, Par_ue) %>%
+#   mutate(AbsNorm440 = Absorbance / Abs440) %>%
+# 
+#   ggplot() +
+#   geom_line(aes(x = nm, y = AbsNorm440, label = ID, linetype = as.factor(WL), colour = as.factor(WL)), show.legend = "none", size = 1) +
+#   #scale_color_manual(values = c("530" ="darkgreen", "660" = "red")) +
+#   scale_linetype_manual(values=c("530" = "solid", "660" = "dashed")) +
+#   scale_color_manual(values = c("530" ="darkgreen", "660" = "red")) +
+#   guides(colour = FALSE, linotype = FALSE) +
+#   labs(y = "Absorbance", x = "Wavelength (nm)") +
+#   # scale_y_continuous(breaks=seq(0, 0.2, by = 0.05)) +
+#   # coord_cartesian(ylim = c (0, 0.2)) +
+#   ggh4x::facet_nested(rows = vars(Strain),cols = vars(Par_ue), labeller = labeller(Ex_WL = label_both, strain = label_value, WL = label_both, Photoperiod = label_both, Par_ue = label_both)) +
+#   theme_bw()
+# OLISSpectraMetaPlot
+# 
+# 
+# 
+# #dashed and solid lines Norm710
+# Absorbance710 <- OLISSpectraMeta %>% 
+#   filter(nm == 710) %>%
+#   mutate(Abs710 = Absorbance) %>%
+#   select(ID, Strain, Abs710, Par_ue)
+# 
+# OLISSpectraMetaPlot <- OLISSpectraMeta %>%
+#   filter(SpectraDate == "2022-05-23") %>% 
+#   filter(Strain != "MIT9313") %>% 
+#   filter(Strain != "SS120") %>% 
+#   filter(Strain != "MED4") %>% 
+#     filter(Strain != "132R") %>% 
+#     filter(Strain != "48R") %>% 
+#     filter(Strain != "56G") %>% 
+#     filter(Strain != "60G") %>% 
+#     filter(WL != "WW") %>% 
+#   filter(Par_ue == "60" |
+#         Par_ue == "300") %>% 
+#   filter(Run != "56") %>% # nie
+#   filter(Run != "59") %>% # niezly
+#   filter(Run != "63") %>% # nie
+#   filter(Run != "68") %>% # niezly
+#   filter(Run == "70") %>% 
+#   left_join(., Absorbance710) %>%
+#   # group_by(WL, Strain, Par_ue) %>%
+#   mutate(AbsNorm710 = Absorbance / Abs710) %>%
+# 
+#   ggplot() +
+#   geom_line(aes(x = nm, y = AbsNorm710, label = ID, linetype = as.factor(WL), colour = as.factor(WL)), show.legend = "none", size = 1) +
+#   scale_linetype_manual(values=c("530" = "solid", "660" = "dashed")) +
+#   scale_color_manual(values = c("530" ="darkgreen", "660" = "red")) +
+#   guides(colour = FALSE, linotype = FALSE) +
+#   labs(y = "Absorbance", x = "Wavelength (nm)") +
+#   # scale_y_continuous(breaks=seq(0, 0.2, by = 0.05)) +
+#   # coord_cartesian(ylim = c (0, 0.2)) +
+#   ggh4x::facet_nested(rows = vars(Strain),cols = vars(Par_ue), labeller = labeller(Ex_WL = label_both, strain = label_value, WL = label_both, Photoperiod = label_both, Par_ue = label_both)) +
+#   theme_bw()
+# OLISSpectraMetaPlot
 ```
-
 
 ```{r}
 
-OLISSpectraMetaAll <- OLISSpectraMeta440 %>%
-  full_join(., JazDataRoundMetaAll2, by = c("Par_ue" = "Par", "nm" = "WavelengthRound", "WL" = "WL", "Strain" = "Strain")) %>% 
-  unique()
-#colnames(O2MetaAll)
+# OLISSpectraMeta440 <- OLISSpectraMeta %>%
+#   filter(Strain == "BA127R"|
+#         Strain == "BA77G") %>% 
+#   filter(Par_ue == "60" |
+#         Par_ue == "300") %>% 
+#   filter(Run == "70") %>% 
+#   left_join(., Absorbance440) %>%
+#   mutate(AbsNorm440 = Absorbance / Abs440) %>% 
+#   filter(nm >= 400 & nm <= 700) 
+#   
+#  
+# OLISSpectraMeta710 <- OLISSpectraMeta %>%
+#   filter(Strain == "BA127R"|
+#         Strain == "BA77G") %>% 
+#   filter(Par_ue == "60" |
+#         Par_ue != "300") %>% 
+#   filter(Run == "70") %>% 
+#   left_join(., Absorbance710) %>%
+#   mutate(AbsNorm710 = Absorbance / Abs710) 
 ```
+
+```{r prelimplot2, fig.height = 6, fig.width = 8, warning = FALSE}
+# #dashed and solid color lines Norm440
+# 
+# OLISSpectraMeta440Plot <- OLISSpectraMeta440 %>%
+#   ggplot() +
+#   geom_line(aes(x = nm, y = AbsNorm440, label = ID, linetype = as.factor(WL), colour = as.factor(WL)), show.legend = "none", size = 1) +
+#   #scale_color_manual(values = c("530" ="darkgreen", "660" = "red")) +
+#   scale_linetype_manual(values=c("530" = "solid", "660" = "dashed")) +
+#   scale_color_manual(values = c("530" ="darkgreen", "660" = "red")) +
+#   guides(colour = FALSE, linotype = FALSE) +
+#   labs(y = "Absorbance", x = "Wavelength (nm)") +
+#   # scale_y_continuous(breaks=seq(0, 0.2, by = 0.05)) +
+#   # coord_cartesian(ylim = c (0, 0.2)) +
+#   ggh4x::facet_nested(rows = vars(Strain),cols = vars(Par_ue), labeller = labeller(Ex_WL = label_both, strain = label_value, WL = label_both, Photoperiod = label_both, Par_ue = label_both)) +
+#   theme_bw()
+# OLISSpectraMeta440Plot
+# 
+# 
+# OLISSpectraMeta710Plot <- OLISSpectraMeta710 %>%
+#   ggplot() +
+#   geom_line(aes(x = nm, y = AbsNorm710, label = ID, linetype = as.factor(WL), colour = as.factor(WL)), show.legend = "none", size = 1) +
+#   #scale_color_manual(values = c("530" ="darkgreen", "660" = "red")) +
+#   scale_linetype_manual(values=c("530" = "solid", "660" = "dashed")) +
+#   scale_color_manual(values = c("530" ="darkgreen", "660" = "red")) +
+#   guides(colour = FALSE, linotype = FALSE) +
+#   labs(y = "Absorbance", x = "Wavelength (nm)") +
+#   # scale_y_continuous(breaks=seq(0, 0.2, by = 0.05)) +
+#   # coord_cartesian(ylim = c (0, 0.2)) +
+#   ggh4x::facet_nested(rows = vars(Strain),cols = vars(Par_ue), labeller = labeller(Ex_WL = label_both, strain = label_value, WL = label_both, Photoperiod = label_both, Par_ue = label_both)) +
+#   theme_bw()
+# OLISSpectraMeta710Plot
+# ```
+
+Turner Data
+
 
 
 ```{r prelimplot2, fig.height = 6, fig.width = 8, warning = FALSE}
-#dashed and solid color lines Norm440
-data_text <- data.frame(
-  WL   = c("530", "660"),
-  Strain  = c("BA127R", "BA77G"),
-  label = c('A)', 'B)'))
-
-OLISSpectraMetaAllPlot <- OLISSpectraMetaAll %>%
-  filter(Par_ue == 60) %>% 
-  ggplot() +
-  geom_line(aes(x = nm, y = AbsNorm440, label = ID, linetype = as.factor(WL), colour = as.factor(WL)), show.legend = "none", lwd=0.7) +
-  geom_line(aes(x = nm, y = EmNormJaz647, linetype = as.factor(WL), colour = as.factor(WL)), show.legend = "none", lwd=0.7) +
-  geom_line(aes(x = nm, y = EmNormJaz521, linetype = as.factor(WL), colour = as.factor(WL)), show.legend = "none", lwd=0.7) +
-  geom_text(data=data_text, aes(x=400, y=1.15, label=label), size=5) +
-  #scale_color_manual(values = c("530" ="darkgreen", "660" = "red")) +
-  scale_linetype_manual(values=c("530" = "solid", "660" = "97", "531" = "2468", "661" = "dotdash")) +
-  scale_color_manual(values = c("530" ="palegreen4", "660" = "brown3", "531" ="palegreen4", "661" = "brown3")) +
-  guides(colour = FALSE, linotype = FALSE) +
-  labs(y = "Absorbance", x = "Wavelength (nm)") +
-  scale_y_continuous(breaks=seq(0, 1.2, by = 0.4)) +
-  coord_cartesian(ylim = c (0, 1.3)) +
-  ggh4x::facet_nested(rows = vars(Strain), labeller = labeller(Ex_WL = label_both, strain = label_value, WL = label_both, Photoperiod = label_both, Par_ue = label_both)) +
-  theme_bw() +
-      theme(panel.grid.minor = element_blank(),
-        axis.text = element_text(size=12),
-        axis.title = element_text(size=14),
-        strip.background = element_rect(fill="white"),
-        strip.text = element_text(size=12),
-        axis.title.y = element_text(margin=margin(r=10)),
-        axis.title.x = element_text(margin=margin(t=10)),
-        legend.background = element_rect(fill="transparent"),
-        legend.position = c(0.92,0.94),
-        legend.text = element_text(size=12))
-OLISSpectraMetaAllPlot
-
-
-OLISSpectraMetaAllPlot <- OLISSpectraMetaAll %>%
-  filter(Par_ue == 300) %>% 
-  ggplot() +
-  geom_line(aes(x = nm, y = AbsNorm440, label = ID, linetype = as.factor(WL), colour = as.factor(WL)), show.legend = "none", lwd=0.7) +
-  geom_line(aes(x = nm, y = EmNormJaz647, linetype = as.factor(WL), colour = as.factor(WL)), show.legend = "none", lwd=0.7) +
-  geom_line(aes(x = nm, y = EmNormJaz521, linetype = as.factor(WL), colour = as.factor(WL)), show.legend = "none", lwd=0.7) +
-  geom_text(data=data_text, aes(x=400, y=1.15, label=label), size=5) +
-  #scale_color_manual(values = c("530" ="darkgreen", "660" = "red")) +
-  scale_linetype_manual(values=c("530" = "solid", "660" = "97", "531" = "2468", "661" = "dotdash")) +
-  scale_color_manual(values = c("530" ="palegreen4", "660" = "brown3", "531" ="palegreen4", "661" = "brown3")) +
-  guides(colour = FALSE, linotype = FALSE) +
-  labs(y = "Absorbance", x = "Wavelength (nm)") +
-  scale_y_continuous(breaks=seq(0, 1.2, by = 0.4)) +
-  coord_cartesian(ylim = c (0, 1.3)) +
-  ggh4x::facet_nested(rows = vars(Strain), labeller = labeller(Ex_WL = label_both, strain = label_value, WL = label_both, Photoperiod = label_both, Par_ue = label_both)) +
-  theme_bw() +
-      theme(panel.grid.minor = element_blank(),
-        axis.text = element_text(size=12),
-        axis.title = element_text(size=14),
-        strip.background = element_rect(fill="white"),
-        strip.text = element_text(size=12),
-        axis.title.y = element_text(margin=margin(r=10)),
-        axis.title.x = element_text(margin=margin(t=10)),
-        legend.background = element_rect(fill="transparent"),
-        legend.position = c(0.92,0.94),
-        legend.text = element_text(size=12))
-OLISSpectraMetaAllPlot
+# #dashed and solid color lines Norm440
+# data_text <- data.frame(
+#   WL   = c("530", "660"),
+#   Strain  = c("BA127R", "BA77G"),
+#   label = c('A)', 'B)'))
+# 
+# OLISSpectraMetaAllPlot <- OLISSpectraMetaAll %>%
+#   filter(Par_ue == 60) %>% 
+#   ggplot() +
+#   geom_line(aes(x = nm, y = AbsNorm440, label = ID, linetype = as.factor(WL), colour = as.factor(WL)), show.legend = "none", lwd=0.7) +
+#   geom_line(aes(x = nm, y = EmNormJaz647, linetype = as.factor(WL), colour = as.factor(WL)), show.legend = "none", lwd=0.7) +
+#   geom_line(aes(x = nm, y = EmNormJaz521, linetype = as.factor(WL), colour = as.factor(WL)), show.legend = "none", lwd=0.7) +
+#   geom_text(data=data_text, aes(x=400, y=1.15, label=label), size=5) +
+#   #scale_color_manual(values = c("530" ="darkgreen", "660" = "red")) +
+#   scale_linetype_manual(values=c("530" = "solid", "660" = "97", "531" = "2468", "661" = "dotdash")) +
+#   scale_color_manual(values = c("530" ="palegreen4", "660" = "brown3", "531" ="palegreen4", "661" = "brown3")) +
+#   guides(colour = FALSE, linotype = FALSE) +
+#   labs(y = "Absorbance", x = "Wavelength (nm)") +
+#   scale_y_continuous(breaks=seq(0, 1.2, by = 0.4)) +
+#   coord_cartesian(ylim = c (0, 1.3)) +
+#   ggh4x::facet_nested(rows = vars(Strain), labeller = labeller(Ex_WL = label_both, strain = label_value, WL = label_both, Photoperiod = label_both, Par_ue = label_both)) +
+#   theme_bw() +
+#       theme(panel.grid.minor = element_blank(),
+#         axis.text = element_text(size=12),
+#         axis.title = element_text(size=14),
+#         strip.background = element_rect(fill="white"),
+#         strip.text = element_text(size=12),
+#         axis.title.y = element_text(margin=margin(r=10)),
+#         axis.title.x = element_text(margin=margin(t=10)),
+#         legend.background = element_rect(fill="transparent"),
+#         legend.position = c(0.92,0.94),
+#         legend.text = element_text(size=12))
+# OLISSpectraMetaAllPlot
+# 
+# 
+# OLISSpectraMetaAllPlot <- OLISSpectraMetaAll %>%
+#   filter(Par_ue == 300) %>% 
+#   ggplot() +
+#   geom_line(aes(x = nm, y = AbsNorm440, label = ID, linetype = as.factor(WL), colour = as.factor(WL)), show.legend = "none", lwd=0.7) +
+#   geom_line(aes(x = nm, y = EmNormJaz647, linetype = as.factor(WL), colour = as.factor(WL)), show.legend = "none", lwd=0.7) +
+#   geom_line(aes(x = nm, y = EmNormJaz521, linetype = as.factor(WL), colour = as.factor(WL)), show.legend = "none", lwd=0.7) +
+#   geom_text(data=data_text, aes(x=400, y=1.15, label=label), size=5) +
+#   #scale_color_manual(values = c("530" ="darkgreen", "660" = "red")) +
+#   scale_linetype_manual(values=c("530" = "solid", "660" = "97", "531" = "2468", "661" = "dotdash")) +
+#   scale_color_manual(values = c("530" ="palegreen4", "660" = "brown3", "531" ="palegreen4", "661" = "brown3")) +
+#   guides(colour = FALSE, linotype = FALSE) +
+#   labs(y = "Absorbance", x = "Wavelength (nm)") +
+#   scale_y_continuous(breaks=seq(0, 1.2, by = 0.4)) +
+#   coord_cartesian(ylim = c (0, 1.3)) +
+#   ggh4x::facet_nested(rows = vars(Strain), labeller = labeller(Ex_WL = label_both, strain = label_value, WL = label_both, Photoperiod = label_both, Par_ue = label_both)) +
+#   theme_bw() +
+#       theme(panel.grid.minor = element_blank(),
+#         axis.text = element_text(size=12),
+#         axis.title = element_text(size=14),
+#         strip.background = element_rect(fill="white"),
+#         strip.text = element_text(size=12),
+#         axis.title.y = element_text(margin=margin(r=10)),
+#         axis.title.x = element_text(margin=margin(t=10)),
+#         legend.background = element_rect(fill="transparent"),
+#         legend.position = c(0.92,0.94),
+#         legend.text = element_text(size=12))
+# OLISSpectraMetaAllPlot
 
 ```
 
 ```{r}
-OLISSpectraMetaAll2 <- OLISSpectraMeta710 %>%
-  full_join(., JazData710, by = c("Par_ue" = "Par", "nm" = "Wavelength", "AbsNorm710" = "Counts10000", "WL" = "WL", "Strain" = "Strain")) %>% 
-  unique()
-#colnames(O2MetaAll)
+# OLISSpectraMetaAll2 <- OLISSpectraMeta710 %>%
+#   full_join(., JazData710, by = c("Par_ue" = "Par", "nm" = "Wavelength", "AbsNorm710" = "Counts10000", "WL" = "WL", "Strain" = "Strain")) %>% 
+#   unique()
+# #colnames(O2MetaAll)
 ```
 
 
 ```{r prelimplot2, fig.height = 6, fig.width = 8, warning = FALSE}
 #dashed and solid color lines Norm710
-OLISSpectraMetaAll2Plot <- OLISSpectraMetaAll2 %>%
-  ggplot() +
-  geom_line(aes(x = nm, y = AbsNorm710, label = ID, linetype = as.factor(WL), colour = as.factor(WL)), show.legend = "none", size = 1) +
-  #scale_color_manual(values = c("530" ="darkgreen", "660" = "red")) +
-  scale_linetype_manual(values=c("530" = "dotted", "660" = "dotdash", "531" = "solid", "661" = "longdash")) +
-  scale_color_manual(values = c("530" ="darkgreen", "660" = "red", "531" ="darkgreen", "661" = "red")) +
-  guides(colour = FALSE, linotype = FALSE) +
-  labs(y = "Absorbance", x = "Wavelength (nm)") +
-  scale_y_continuous(breaks=seq(0, 10, by = 2.5)) +
-  coord_cartesian(ylim = c (0, 10)) +
-  ggh4x::facet_nested(rows = vars(Strain), cols = vars(Par_ue), labeller = labeller(Ex_WL = label_both, strain = label_value, WL = label_both, Photoperiod = label_both, Par_ue = label_both)) +
-  theme_bw()
-OLISSpectraMetaAll2Plot
+# OLISSpectraMetaAll2Plot <- OLISSpectraMetaAll2 %>%
+#   ggplot() +
+#   geom_line(aes(x = nm, y = AbsNorm710, label = ID, linetype = as.factor(WL), colour = as.factor(WL)), show.legend = "none", size = 1) +
+#   #scale_color_manual(values = c("530" ="darkgreen", "660" = "red")) +
+#   scale_linetype_manual(values=c("530" = "dotted", "660" = "dotdash", "531" = "solid", "661" = "longdash")) +
+#   scale_color_manual(values = c("530" ="darkgreen", "660" = "red", "531" ="darkgreen", "661" = "red")) +
+#   guides(colour = FALSE, linotype = FALSE) +
+#   labs(y = "Absorbance", x = "Wavelength (nm)") +
+#   scale_y_continuous(breaks=seq(0, 10, by = 2.5)) +
+#   coord_cartesian(ylim = c (0, 10)) +
+#   ggh4x::facet_nested(rows = vars(Strain), cols = vars(Par_ue), labeller = labeller(Ex_WL = label_both, strain = label_value, WL = label_both, Photoperiod = label_both, Par_ue = label_both)) +
+#   theme_bw()
+# OLISSpectraMetaAll2Plot
 ```
 
 
@@ -1007,15 +584,6 @@ OLISSpectraMetaAll2Plot
 #   plotly::ggplotly()
 ```
 
-
-Preliminary plot of TargetSpectra (reality therapy)
-```{r prelimplot}
-# TargetSpectra %>% ggplot() +
-#   geom_point(aes(x = nm, y = Abs, colour = SampleID), size = 0.1) +
-#   labs(title = TargetSpectra$SpectraDate[1]) +
-#   theme_bw()
-
-```
 
 ```{r}
 # TargetSpectraLong %>% 
@@ -1032,299 +600,6 @@ Preliminary plot of TargetSpectra (reality therapy)
 #   facet_grid(rows = vars(Source))
 ```
 
-
-
-# Import and concatenate all files from OLISSpectra
-```{r import all .asc files from OLISSpectra folder}
-# #This chunk runs slowly.  Be sure all files are saved to local harddrive (force DropBox 'smartsync' to 'Local'
-# #The resulting data object is large depending upon the number of files included
-# 
-# #not yet sure how to import data from selected sub-set of date folders.
-# #One approach would be a double map approach; capture the character vector of desired sub-folders, then feed that to preceding map function.
-# 
-# # OLISFiles <- list.files(path = file.path("..", DataPath, OLISDate, fsep = .Platform$file.sep), pattern = ".asc", full.names = TRUE, recursive = "TRUE")
-# 
-# #pattern = ".asc" only lists .asc files, not .ols files
-# 
-# #assumes that SampleID follows Campbell Lab format of AaBb1111 and that file name contains _SampleID_ in the format AaBb1234
-# 
-# OLISSpectra <- OlisFiles %>% 
-#   map_df(~read.delim_long(flnm = ., filencode = FileEncode, delimiter = Delimiter, headerrows = HeaderRows))
-# 
-# #length check for imported spectra
-# print("OLISSpectra Tubes")
-# nrow(OLISSpectra)/(710-374)
-# 
-# OLISSpectra[1:10,]
-# 
-# #flag whether SampleID accord with First and Last Sample Numbers
-# OLISSpectra <- OLISSpectra %>%
-#   group_by(SpectraDate) %>%
-#   mutate(NumberFlagLast = if_else(max(SampleNumber, na.rm = TRUE) == LastSampleNumber, 1,0),
-#          NumberFlagFirst = if_else(min(SampleNumber, na.rm = TRUE)  == FirstSampleNumber, 1, 0)) %>%
-#   ungroup()
-# 
-# print("OLISSpectra NumberFlag Test")
-# nrow(OLISSpectra)
-# unique(OLISSpectra$Filename)
-# 
-# # OLISSpectraClean <- OLISSpectra %>%
-# #   filter(NumberFlagFirst == 1,
-# #          NumberFlagLast == 1)
-# # nrow(OLISSpectraClean)
-# # unique(OLISSpectraClean$Filename)
-# # 
-# # setdiff(OLISSpectra$Filename, unique(OLISSpectraClean$Filename))
-# # # intersect(MetaData$ID, OLISSpectra$SampleID)
-# # 
-# # OLISSpectraDirty <- OLISSpectra %>%
-# #   filter(NumberFlagFirst == 0 | NumberFlagLast == 0)
-# # 
-# # unique(OLISSpectraDirty$Filename)
-# # 
-# # nrow(OLISSpectraDirty)
-# # 
-# # nrow(OLISSpectra %>%
-# #        filter(NumberFlagFirst == 1))
-# # 
-# # nrow(OLISSpectra %>%
-# #        filter(NumberFlagLast == 1))
-# # 
-# # nrow(OLISSpectra %>%
-# #        filter(NumberFlagFirst == 0))
-# # 
-# # nrow(OLISSpectra %>%
-# #        filter(NumberFlagLast == 0))
-
-```
-
-# Clean up imported files to remove rows where SampleID or SpectraDateTime
-Turn off NumberFlag failed filter for now
-```{r OLISSpectra cleanup}
-# nrow(OLISSpectra)
-# 
-# OLISSpectra <- OLISSpectra %>%
-#   filter(!is.na(SampleID),
-#          !is.na(SpectraDate))
-# 
-# #,NumberFlag == 1
-# nrow(OLISSpectra)
-```
-
-
-
-# Clean up unneeded columns and rows from OLISSpectraMeta to save memory
-# Many rows fail on 'Strain', possible problem?
-```{r Clean up OLISSpectraMeta}
-# nrow(OLISSpectraMeta)
-# length(OLISSpectraMeta)
-# 
-# not_all_na <- function(x) {!all(is.na(x))}
-# 
-# OLISSpectraMeta <- OLISSpectraMeta %>%
-#   select_if(not_all_na) %>%
-#   filter(!is.na(Strain))
-# 
-# nrow(OLISSpectraMeta)
-# length(OLISSpectraMeta)
-
-```
-
-```{r generate SpectraGrowthDay}
-# #label each row with the SpectraDay elapsed since ExpDate
-# OLISSpectraMeta <- OLISSpectraMeta %>%
-#   mutate(ExpDate = ymd(ExpDate)) %>%
-#   mutate(DateTest = if_else(ExpDate < SpectraDate, 1, 0)) %>%
-#   filter(DateTest == 1) %>%
-#   group_by(SampleID) %>%
-#   mutate(SpectraGrowthDay = difftime(ymd(SpectraDate), ymd(ExpDate)), "days")
-# 
-# unique(OLISSpectraMeta$SpectraGrowthDay)
-# 
-# # OLISSpectraDirtyMeta <- OLISSpectraDirtyMeta %>%
-# #   mutate(ExpDate = ymd(ExpDate)) %>%
-# #   mutate(DateTest = if_else(ExpDate < SpectraDate, 1, 0)) %>%
-# #   filter(DateTest == 1) %>%
-# #   group_by(SampleID) %>%
-# #   mutate(SpectraGrowthDay = difftime(ymd(SpectraDate), ymd(ExpDate)), "days")
-# 
-# #unique(OLISSpectraDirtyMeta$Filename)
-# #unique(OLISSpectraDirtyMeta$SpectraGrowthDay)
-```
-
-
-# Preliminary plots of OLISSpectra
-Doug set plot colours to match spectral values
-```{r strain plot}
-
-# Xvar = sym("nm")
-# Yvar = sym("Abs")
-# 
-# Groupvar1 = sym("Filename")
-# Groupvar2 = sym("WL")
-# Groupvar3 = sym("Strain")
-# Groupvar4 = sym("Par_ue")
-# Groupvar5 = sym("Photoperiod")
-# TargetStrain = sym("BA48R, BA127R, BA56G, BA77G")
-# 
-# # Colourvar = sym("pH")
-# # Rowvar = sym("par_ue")
-# # Colvar = sym("alkalinity")
-# # Filtervar = sym("par_ue")
-# 
-# #https://stackoverflow.com/questions/11353287/how-do-you-add-a-general-label-to-facets-in-ggplot2
-# 
-# OLISSpectraMeta %>% 
-#   #filter(WL != "WL") %>%
-#   filter(Photoperiod %in% c(8, 12, 16)) %>%
-#   filter(Strain %in% c("BA48R", "BA127R", "BA56G", "BA77G")) %>%
-#   filter(Par_ue %in% c(30, 90, 180, 300)) %>%
-#   ggplot() +
-#   geom_point(aes(x = !!Xvar, y = !!Yvar), size = 0.1) +
-#   facet_grid(rows = vars(!!Groupvar3), cols = vars(!!Groupvar4)) +
-#   theme_bw() +
-#   #coord_cartesian(ylim = c(0, 1.5)) + 
-#   scale_y_continuous(sec.axis = sec_axis(~ . , name = Groupvar3, breaks = NULL, labels = NULL)) +
-#   scale_x_continuous(sec.axis = sec_axis(~ . , name = Groupvar4, breaks = NULL, labels = NULL))
-# 
-# #, colour = as.factor(!!Groupvar2)
-# #labels(caption = paste(nm, "nm; PAR", par, "uE"))
-# #filter(!!filtervar %in% c(0,32,35)) %>%
-# 
-# # scale_colour_manual(values = Colours_nm) +
-#    
-# OLISSpectraMeta %>% 
-#   #filter(SpectraGrowthDay %in% c(6,7,8)) %>%
-#   ggplot() +
-#   geom_point(aes(x = !!Xvar, y = !!Yvar, colour = as.factor(!!Groupvar5)), size = 0.1) +
-#   facet_grid(rows = vars(!!Groupvar3), cols = vars(!!Groupvar4)) +
-#   theme_bw() +
-#   scale_y_continuous(sec.axis = sec_axis(~ . , name = Groupvar3, breaks = NULL, labels = NULL)) +
-#   scale_x_continuous(sec.axis = sec_axis(~ . , name = Groupvar4, breaks = NULL, labels = NULL))
-
-```
-
-# Save assembled spectra data set
-```{r save Olis}
-
-saveRDS(OLISSpectraMeta, file.path(DataOut, paste(Project, "OLISSpectraMetaCCAChosen.Rds", sep = "_"), fsep = .Platform$file.sep))
-
-```
-
-6 Jan 10:19
-What does Sylwia want to do with these spectra?
-
-i) Check changes in pigment peak heights across growth conditions within a strain
-  Draft implementation with 'OLISDeconvolute.Rmd'
-  
-ii) How do pigments change over growth trajectory within a strain
-    Draft implementation with 'OLISDeconvolute.Rmd'
-      Qualitative visualization through ggplot of spectra taken repeatedly from SampleID
-      
-iii) Check OLIS spectra correlated with calculated pigment contents; Yes
-   Draft implementation with 'OLISDeconvolute.Rmd'
-
-iv) Evaluate pigment content per cell and per ml (with cell counts)
-  Draft implementation with 'OLISDeconvolute.Rmd'
-  
-
-So: Will need to extract values for particular absorbance peaks
-Possibly: Deconvolute absorbance peaks into separate contributions from multiple different pigments  (Need to find appropriate package(s) for this)
-   Draft implementation with 'OLISDeconvolute.Rmd'
-
-Need to implement plots overlaying spectra from the same strain under different growth conditions.
-Need to implement plots overlaying spectra from the same strain at different growth points
-
-Think about matrix plot with perhaps strain, Par_ue, WL, photoperiod, growth stage as 'visual grammar'
-
-Find code from light attenuation work to show rainbow colour gradient 'rug' along bottom.
-
-```{r oldcode, warning=FALSE, message=FALSE}
-
-# base <- olis_spectra %>%
-#   filter(filename == baseline)
-# 
-# olis_spectra$base <- base$Abs
-# 
-# olis_spectra <- olis_spectra %>% 
-#   mutate(CorrAbs = Abs - base)
-# 
-# olis_spectra <- olis_spectra %>%
-#   group_by(filename) %>%
-#   mutate(AbsNorm750 = (CorrAbs/CorrAbs[length(CorrAbs)]),
-#          Abs750_0 = (CorrAbs - CorrAbs[length(CorrAbs)])) %>%
-#   ungroup()
-```
-
-
-
-```{r save spectra plots}
-# ggsave(filename = file.path("plots", paste(project, 
-# str_c(strains, collapse = "_"), str_c(startdate, collapse = "_"),"olis_plot.png", sep = "_"),fsep = .Platform$file.sep ), plot = olis_plot)
-```
-
-```{r second derivative}
-#https://stackoverflow.com/questions/49762128/rolling-regression-by-group-in-the-tidyverse?noredirect=1&lq=1
-
-#function to generate slope from ratio of covariance to variance
-# slope <- . %>% { cov(.[, 2], .[, 1]) / var(.[, 2])}
-# 
-# #range rolling window variables; be careful with different data sets
-# NmperRow <- ((base$nm[length(base$nm)]- base$nm[1]) +1)/nrow(base)
-# FirstRange <- 6
-# SecondRange <- 6
-#             
-# olis_spectra <- olis_spectra %>%
-#   group_by(filename) %>%
-#   mutate(FirstDeriv = rollapplyr(cbind(Abs750_0, nm), FirstRange, slope, by.column = FALSE, align = 'right', fill = NA)) %>%
-#     mutate(SecondDeriv = rollapplyr(cbind(FirstDeriv, nm), SecondRange, slope, by.column = FALSE, align = 'right', fill = NA)) %>%
-#     ungroup()
-# 
-# #different approach
-# olis_spectra <- olis_spectra %>%
-#   group_by(filename) %>%
-#   mutate(diffnm = nm - lag(nm, n =  FirstRange),
-#          diffAbs750_0 = Abs750_0 - lag(Abs750_0, n = FirstRange),
-#          dAdnm = diffAbs750_0/diffnm) %>%
-#   mutate(SecondDriveAlt = dAdnm/FirstRange) %>%
-#   ungroup()
-# ```
-# 
-# 
-# ```{r second deriv plots}
-# #set variables for plotting
-# groupvar = sym("filename")
-# xvar = sym("nm")
-# yvar = sym("SecondDeriv")
-# # colourvar = sym("pH")
-# # rowvar = sym("par_ue")
-# # colvar = sym("alkalinity")
-# # #filtervar = sym("par_ue")
-# 
-# second_deriv_plot <- olis_spectra %>%
-#   filter(filename != baseline) %>%
-#   ggplot() +
-#   geom_line(aes(x = !!xvar, y = !!yvar, colour = !!groupvar)) +
-#   theme_bw() +
-#   facet_wrap(vars(strain), nrow = 2, ncol = 1, ) +
-#   coord_cartesian(xlim = c(450, 750), ylim = c(-0.002, 0.002)) +
-#   labs(title = "second_deriv_plot")
-# 
-# second_deriv_plot 
-# 
-# second_derivalt_plot <- olis_spectra %>%
-#   filter(filename != baseline) %>%
-#   ggplot() +
-#   geom_line(aes(x = !!xvar, y = SecondDriveAlt, colour = !!groupvar)) +
-#   theme_bw() +
-#   facet_wrap(vars(strain), nrow = 2, ncol = 1, ) +
-#   coord_cartesian(xlim = c(450, 750), ylim = c(-0.002, 0.002)) +
-#   labs(title = "second_derivalt_plot")
-# 
-# second_derivalt_plot 
-#labels(caption = paste(nm, "nm; PAR", par, "uE"))
-#filter(!!filtervar %in% c(0,32,35)) %>%
-```
 
 
 ```{r save Olis}

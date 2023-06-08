@@ -135,6 +135,38 @@ Spectra %>%
 ```
 
 # Subtract baseline
+```{r subtract baseline}
+Baseline <- Spectra |>
+  filter(ID == "Pro99")
+
+Spectra <- Spectra |>
+  mutate(ABase = A - Baseline$A)
+
+Spectra |>
+  ggplot() +
+  geom_point(aes(x = nm, y = ABase)) +
+  facet_grid(rows = vars(ID), cols = vars(O2_uM)) +
+  theme_bw()
+
+Spectra <- Spectra |>
+  filter(ID != "Pro99")
+
+Spectra |>
+  ggplot() +
+  geom_point(aes(x = nm, y = ABase)) +
+  facet_grid(rows = vars(ID), cols = vars(O2_uM)) +
+  theme_bw()
+
+```
+
+# Pivot 2 and 250 µM O2 data into separate columns
+```{r 2 and 250 uM O2 columns}
+SpectraWide <- Spectra |>
+  pivot_wider(id_cols = c(nm, Project, ID), names_from = c(O2_uM), values_from = c(Filename, A, ABase))
+
+```
+
+
 
 
 %>% 

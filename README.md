@@ -52,8 +52,7 @@ Use standard variable names for MetaDataCatalog
 
 ### Data Dictionary
 URL for Data Dictionary, or Data Dictionary filename
-example:
-https://docs.google.com/spreadsheets/d/1KzHZETwASnt4XW69HYufHwlWaE_E-yHkLDqetiOYqBg/edit#gid=671854404
+https://docs.google.com/spreadsheets/d/1kIOuIdFbeKLpaNsNrbcv9BzME3v8eskB5MqfaDIqnKE/edit#gid=0
 
 ### Data/RawData
 

@@ -1,12 +1,12 @@
-# Project Title
+# Analyses of O2 Responses of Phytoplankton Photosynthesis
 
 ## Summary
 
-Provide a brief description of the project - 150 words.
+Photosystem II (FRRf) light response  curves and whole cell absorbance (OLIS integrating cavity) measured at 250, 25 and 2.5 µmol O~2~ l^-1^, to analyse how changing [O~2~] alters photosynthetic performance.
 
 ## Highly Qualified Personnel
 
-- Name, Institution, email, ORCID 0000-0000-0000-0000
+- Julie Nadeau, Mount Allison University, janadeau@mta.ca, ORCID 0000-0000-0000-0000
 
 ## Principle Investigators
 
@@ -26,7 +26,7 @@ Provide a brief description of the project - 150 words.
 
 ## Keywords
 
-List keywords separated by commas
+Picocyanobacteria, Prochlorococcus, electron transport, Photosynthesis
 
 ## Additional information and support
 

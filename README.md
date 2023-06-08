@@ -2,7 +2,7 @@
 
 ## Summary
 
-Photosystem II (FRRf) light response  curves and whole cell absorbance (OLIS integrating cavity) measured at 250, 25 and 2.5 µmol O~2~ l^-1^, to analyse how changing [O~2~] alters photosynthetic performance.
+Photosystem II (FRRf) light response  curves and whole cell absorbance (OLIS integrating cavity) measured at 250, 25 and 2.5 µmol O2 l-1, to analyse how changing [O2] alters photosynthetic performance.
 
 ## Highly Qualified Personnel
 

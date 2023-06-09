@@ -37,12 +37,12 @@ knitr::opts_chunk$set(fig.path='Figs/')
 # Set Project Variables
 ```{r set project variables}
 Project <- "PICO"
-DataOut <- file.path("..", "Data", "ProcessedData", "FRRf")
+DataOut <- file.path("..", "Data", "ProcessedData")
 CalibData <- file.path("..", "Data",  "CalibrationData")
 
-Run <- "MiSaProchloro"
+Run <- "O2Analyses"
 
-DataIn <- file.path("..", "RawData", "MiSa", "Solisense", fsep = .Platform$file.sep)
+DataIn <- file.path("..", "RawData", "Solisense", fsep = .Platform$file.sep)
 
 FileID <- "fit"
 
@@ -88,8 +88,10 @@ ActPARCrossCal <- ActPARCrossCal |>
 
 ```{r set colours}
 Wavelengths_nm = c(445, 470, 505, 535, 590)
-Colours_nm = c(w_length2rgb(445), w_length2rgb(470), w_length2rgb(505),  w_length2rgb(535), w_length2rgb(590))
-names(Colours_nm) <-  Wavelengths_nm
+Colours_nm = c(w_length2rgb(Wavelengths_nm[1]), w_length2rgb(Wavelengths_nm[2]), w_length2rgb(Wavelengths_nm[3]), w_length2rgb(Wavelengths_nm[4]), w_length2rgb(Wavelengths_nm[5]))
+
+names(Colours_nm) <- Wavelengths_nm
+Colours_nm
 
 ```
 

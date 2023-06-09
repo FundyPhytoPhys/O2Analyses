@@ -36,9 +36,9 @@ HeaderRows <- 0
 library(tidyverse)
 library(lubridate)
 library(broom)
-library(OneR)
+#library(OneR)
 library(zoo)
-library(strucchange)
+#library(strucchange)
 
 library(googledrive)
 library(googlesheets4)
@@ -311,6 +311,13 @@ SpectraMeta |>
 
 Add Turner Chlorophyll data to estimate a* etc.
 
+
+
+```{r savespectra}
+#filename Project_ExpDateYYYYMMDD_SpectraMeta.rds
+
+saveRDS(SpectraMeta, file = file.path("..", "Data", "ProcessedData", paste(Project, SpectraMeta$ExpDate[1],  "SpectraMeta.rds", sep = "_")))
+```
 
 
 

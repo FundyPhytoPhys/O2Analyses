@@ -15,9 +15,6 @@ output:
 csl: plos-one.csl
 ---
 
-
-test 
-
 This .Rmd imports and tidys fit data from the Solisense kinetic fluorometer software.
 It does not perform the underlying fits of the induction/relaxation profiles from FRRf protocols.
 
@@ -28,7 +25,6 @@ Corrected values for Excitation; this 'happens' during the re-fit if the proper 
 Corrected values for ActPAR for cuvette (no TC) and for jacket (TC)
   Recalibration for ActPAR to ActPARCorr done post-hoc herein
 
-Add more ETR estimators  
   
 # Set Chunk Options
 
@@ -40,9 +36,9 @@ knitr::opts_chunk$set(fig.path='Figs/')
 
 # Set Project Variables
 ```{r set project variables}
-Project <- "FluorO2"
-DataOut <- file.path("..", "ImportData", "FRRf")
-CalibData <- file.path("..", "CalibrationData")
+Project <- "PICO"
+DataOut <- file.path("..", "Data", "ProcessedData", "FRRf")
+CalibData <- file.path("..", "Data",  "CalibrationData")
 
 Run <- "MiSaProchloro"
 

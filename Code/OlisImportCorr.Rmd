@@ -28,6 +28,8 @@ FileID <- ".txt"
 
 Catalog <- "https://docs.google.com/spreadsheets/d/1ZXpwR7Gfto-uRzVdXzMpQF4frbrvMLH_IyLqonFZRSw/edit#gid=0"
 
+ChlTurner <- "https://docs.google.com/spreadsheets/d/13mQm0B3siS65UuGjNdzvpHFomfuwn6aAg7dBoq1IqrM/edit#gid=0"
+
 FileEncode <- "UTF-8" 
 Delimiter <- ""
 
@@ -263,7 +265,7 @@ SpectraWide |>
 ```
 
 
-Load Multiculti catalog
+Load Multiculti catalog and ChlTurner
 ```{r load multiculticatalog, message = FALSE, warning = FALSE, echo=FALSE}
 gs4_deauth()
 
@@ -283,21 +285,34 @@ as.data.frame(MetaData)
 MetaData <- MetaData %>%
    mutate(ExpDate = lubridate::ymd(ExpDate),
           ExpEndDate = lubridate::ymd_hms(`ExpEndDate`))
+# find units for chl
+ChlData <- read_sheet(ChlTurner) |>
+  mutate(Chl = as.numeric(Reading_rfu) * as.numeric(Chl_slope) + as.numeric(Chl_intercept))
+
 ```
 
 
-# Merge OLISSpectra with MetaData
+# Merge OLISSpectra with MetaData and ChlData
 ```{r SpectraWide with MetaData}
 
 
 SpectraMeta <- SpectraWide %>%
   left_join(., MetaData, by = c("ID"))
-            
+
+SpectraMeta <- SpectraMeta |>
+  mutate(O2_uM = case_when(O2 == 0 ~ 2,
+                           O2 == 1 ~ 25,
+                           O2 == 21 ~ 250)) |>
+  select(-c("...44", "...45", "DateOfAdjustment", "ElaspedHoursAtAdjustment", "Par_ueAdjusted", "Description", "Motivation"))
+    
+SpectraMeta <- SpectraMeta |>
+  left_join(ChlData, join_by(ID == CultureID))
+        
 SpectraMeta |>
   ggplot() +
   geom_line(aes(x = nm, y = SecondDeriv_2), size = 0.5) +
   geom_line(aes(x = nm, y = SecondDeriv_250), size = 0.1, colour = "red") +
-  facet_grid(cols = vars(Strain), rows = vars(Par_ue)) +
+  facet_grid(cols = vars(Strain), rows = vars(Par_ue, O2_uM)) +
   coord_cartesian(xlim = c(500, 600)) + 
   theme_bw()            
 
@@ -308,12 +323,14 @@ SpectraMeta |>
   ggplot() +
   geom_line(aes(x = nm, y = ANorm_2), size = 0.5) +
   geom_line(aes(x = nm, y = ANorm_250), size = 0.1, colour = "red") +
-  facet_grid(cols = vars(Strain), rows = vars(Par_ue)) +
+  facet_grid(cols = vars(Strain), rows = vars(Par_ue, O2_uM)) +
  # coord_cartesian(xlim = c(500, 600)) + 
   theme_bw()   
 ```
 
 Add Turner Chlorophyll data to estimate a* etc.
+add Chl units
+ask about adding a collum to catalog for sample time
 
 
 

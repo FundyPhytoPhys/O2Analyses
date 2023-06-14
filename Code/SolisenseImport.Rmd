@@ -427,7 +427,7 @@ SolFitsMeta |>
 
 
 ```{r save SolFitsTrim data}
-saveRDS(SolFitsTrim2, file.path(DataOut, paste(Project, Run, "SolFitsTrim.Rds", sep = "_"), fsep = .Platform$file.sep))
+saveRDS(SolFitsMeta, file.path(DataOut, paste(Project, Run, "SolFitsMeta.Rds", sep = "_"), fsep = .Platform$file.sep))
 ```
 
 

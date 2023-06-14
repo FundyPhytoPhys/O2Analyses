@@ -181,7 +181,7 @@ SolFitsTrim <- SolFits %>%
   mutate(Filename = str_remove(string = Filename, pattern = "../Data/RawData/Solisense/"),
          Filename = str_remove(string = Filename, pattern = "_fit.csv")
          ) %>%
-  separate(Filename, into = c("Project", "RunDateTime", "CultureID", "Ex_WL", "O2_uM"), sep = "([\\/\\_])", remove = FALSE) %>%
+  separate(Filename, into = c("Project", "RunDateTime", "CultureID", "Ex_WL", "MeasureO2_uM"), sep = "([\\/\\_])", remove = FALSE) %>%
   mutate(RunDateTime = ymd_hm(RunDateTime), 
          TIME = as.character(TIME)) %>%  #time-column may be read in as factor, and as.character changes it to numeric; using lubdridate::hms would only change the format to 13H 4M 2S but does not work later to merge into one DateTime-column
   rename(SourceDataFile = `Source DataFile`,
@@ -189,7 +189,7 @@ SolFitsTrim <- SolFits %>%
          ObsTime = TIME,
          FvFm = "Fv/Fm") %>%
   mutate(Ex_WL = as.factor(as.numeric(Ex_WL)),
-         O2_uM = as.factor(as.numeric(O2_uM))) %>%
+         MeasureO2_uM = as.factor(as.numeric(MeasureO2_uM))) %>%
   mutate(across(.cols = c(Light_1:alpP680Q), .fns = as.numeric)) %>%
   rename(StartDateTimeSol = RunDateTime) %>%
   rename(nm445 = Light_1,
@@ -273,7 +273,7 @@ SolFitsTrim <- SolFitsTrim %>%
 SolFitsTrim %>%
   filter(Dark1s == 0) %>%
   ggplot() +
-  geom_point(aes(x = ActPARCorr, y = FvFm, colour = as.factor(O2_uM))) +
+  geom_point(aes(x = ActPARCorr, y = FvFm, colour = MeasureO2_uM)) +
   #scale_colour_manual(values = Colours_nm) +
   facet_grid(cols = vars(Ex_WL), rows = vars(CultureID)) +
   theme_bw()
@@ -281,16 +281,16 @@ SolFitsTrim %>%
 SolFitsTrim %>%
   filter(Dark1s == 0) %>%
   ggplot() +
-  geom_point(aes(x = LR_s, y = FvFm, colour = as.factor(O2_uM), size = ActPARCorr)) +
+  geom_point(aes(x = LR_s, y = FvFm, colour = MeasureO2_uM, size = ActPARCorr)) +
   #scale_colour_manual(values = Colours_nm) +
-  facet_grid(cols = vars(Ex_WL, O2_uM), rows = vars(CultureID)) +
+  facet_grid(cols = vars(Ex_WL, MeasureO2_uM), rows = vars(CultureID)) +
   theme_bw()
 
 SolFitsTrim %>%
   filter(Dark1s == 0) %>%
   filter(Tau2QA < 20000) %>%
   ggplot() +
-  geom_point(aes(x = LR_s, y = Tau2QA, colour = as.factor(O2_uM), size = LR_s)) +
+  geom_point(aes(x = LR_s, y = Tau2QA, colour = MeasureO2_uM, size = LR_s)) +
   #scale_colour_manual(values = Colours_nm) +
   facet_grid(cols = vars(Ex_WL), rows = vars(CultureID)) +
   theme_bw()
@@ -298,7 +298,7 @@ SolFitsTrim %>%
 SolFitsTrim %>%
   #filter(Dark1s != 0) %>%
   ggplot() +
-  geom_point(aes(x = ActPARCorr, y = Alp2QA, colour = as.factor(O2_uM), size = LR_s)) +
+  geom_point(aes(x = ActPARCorr, y = Alp2QA, colour = MeasureO2_uM, size = LR_s)) +
   #scale_colour_manual(values = Colours_nm) +
   facet_grid(cols = vars(Ex_WL), rows = vars(CultureID)) +
   theme_bw() 
@@ -351,8 +351,8 @@ SolFitsTrim2 <- SolFitsTrim %>%
 SolFitsTrim2 %>%
   filter(Dark1s == 0) %>%
   ggplot() +
-  geom_point(aes(x = ActPARCorr, y = ETRqpOxbo, colour = O2_uM)) +
-  geom_line(aes(x = ActPARCorr, y = ETRqpOxbo, colour = O2_uM)) +
+  geom_point(aes(x = ActPARCorr, y = ETRqpOxbo, colour = MeasureO2_uM)) +
+  geom_line(aes(x = ActPARCorr, y = ETRqpOxbo, colour = MeasureO2_uM)) +
   #scale_colour_manual(values = Colours_nm) +
   facet_grid(cols = vars(Ex_WL), rows = vars(CultureID)) +
   theme(strip.text.y = element_text(size = 5, angle=0)) +
@@ -364,7 +364,7 @@ SolFitsTrim2 %>%
 SolFitsTrim2 %>%
   filter(Dark1s == 0) %>%
   ggplot() +
-  geom_point(aes(x = ETRqp, y = ETRqpOxbo, colour = O2_uM)) +
+  geom_point(aes(x = ETRqp, y = ETRqpOxbo, colour = MeasureO2_uM)) +
   #scale_colour_manual(values = Colours_nm) +
   facet_grid(cols = vars(Ex_WL), rows = vars(CultureID)) +
   geom_abline(intercept = 0, slope = 1, linetype = "dashed") + 
@@ -377,7 +377,7 @@ SolFitsTrim2 %>%
 SolFitsTrim2 %>%
   filter(Dark1s == 0) %>%
   ggplot() +
-  geom_point(aes(x = C_WtTau, y = qpOxbo, colour =  O2_uM)) +
+  geom_point(aes(x = C_WtTau, y = qpOxbo, colour =  MeasureO2_uM)) +
   #scale_colour_manual(values = Colours_nm) +
   facet_grid(cols = vars(Ex_WL), rows = vars(CultureID)) +
   geom_abline(intercept = 0, slope = 1, linetype = "dashed") + 
@@ -391,7 +391,7 @@ SolFitsTrim2 %>%
 SolFitsTrim2 %>%
   filter(Dark1s == 0) %>%
   ggplot() +
-  geom_point(aes(x =  JVPSII_aLHIIminmax, y = JVPSII_ETRqpOxbo, colour = O2_uM)) +
+  geom_point(aes(x =  JVPSII_aLHIIminmax, y = JVPSII_ETRqpOxbo, colour = MeasureO2_uM)) +
   #scale_colour_manual(values = Colours_nm) +
   geom_abline(intercept = 0, slope = 1, linetype = "dashed") + 
   #coord_fixed(ratio = 1) +

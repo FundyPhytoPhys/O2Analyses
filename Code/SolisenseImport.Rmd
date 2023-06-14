@@ -157,7 +157,8 @@ SolFitsTrim <- SolFits %>%
          ObsDate = DATE,
          ObsTime = TIME,
          FvFm = "Fv/Fm") %>%
-  mutate(Ex_WL = as.factor(as.numeric(Ex_WL))) %>%
+  mutate(Ex_WL = as.factor(as.numeric(Ex_WL)),
+         O2_uM = as.factor(as.numeric(O2_uM))) %>%
   mutate(across(.cols = c(Light_1:alpP680Q), .fns = as.numeric)) %>%
   rename(StartDateTimeSol = RunDateTime) %>%
   rename(nm445 = Light_1,

@@ -267,6 +267,9 @@ SolFitsTrim %>%
 
 ```
 
+
+
+
 Oxborough & Baker 1997 for Fo'
 ```{r estimate parameters}
 #think about nest_by and map?

@@ -58,6 +58,33 @@ library(caret)
 library(photobiologyWavebands)
 ```
 
+Load Multiculti catalog and ChlTurner
+```{r load multiculticatalog, message = FALSE, warning = FALSE, echo=FALSE}
+gs4_deauth()
+
+# imagine this is the URL or ID of a Sheet readable by anyone (with a link)
+# MultiCulti metadata
+MetaData <- read_sheet(Catalog)%>%
+  # read_sheet has an annoying "feature" to set the type of columns it can't parse to a list.
+  # ggplot/dplyr doesn't like working with a dataframe of lists.
+  # In this case WL is set to a list since some values are numbers, some are strings, some are blank.
+  # To fix this, first drop all rows missing WL, then unlist.
+  # Must first drop NA rows since unlist will collapse NULL lists, then the unlisted WL is a shorter length than original WL column, which mutate doesn't like.
+  drop_na(WL) %>%
+  mutate(WL = unlist(WL))
+
+as.data.frame(MetaData)
+
+MetaData <- MetaData %>%
+   mutate(ExpDate = lubridate::ymd(ExpDate),
+          ExpEndDate = lubridate::ymd_hms(`ExpEndDate`))
+# find units for chl
+ChlData <- read_sheet(ChlTurner) |>
+  mutate(Chl = as.numeric(Reading_rfu) * as.numeric(Chl_slope) + as.numeric(Chl_intercept))
+
+```
+
+
 ```{r set colours}
 Wavelengths_nm = c(445, 470, 505, 535, 590)
 Colours_nm = c(w_length2rgb(Wavelengths_nm[1]), w_length2rgb(Wavelengths_nm[2]), w_length2rgb(Wavelengths_nm[3]), w_length2rgb(Wavelengths_nm[4]), w_length2rgb(Wavelengths_nm[5]))
@@ -267,33 +294,6 @@ SpectraWide |>
 ```
 
 
-Load Multiculti catalog and ChlTurner
-```{r load multiculticatalog, message = FALSE, warning = FALSE, echo=FALSE}
-gs4_deauth()
-
-# imagine this is the URL or ID of a Sheet readable by anyone (with a link)
-# MultiCulti metadata
-MetaData <- read_sheet(Catalog)%>%
-  # read_sheet has an annoying "feature" to set the type of columns it can't parse to a list.
-  # ggplot/dplyr doesn't like working with a dataframe of lists.
-  # In this case WL is set to a list since some values are numbers, some are strings, some are blank.
-  # To fix this, first drop all rows missing WL, then unlist.
-  # Must first drop NA rows since unlist will collapse NULL lists, then the unlisted WL is a shorter length than original WL column, which mutate doesn't like.
-  drop_na(WL) %>%
-  mutate(WL = unlist(WL))
-
-as.data.frame(MetaData)
-
-MetaData <- MetaData %>%
-   mutate(ExpDate = lubridate::ymd(ExpDate),
-          ExpEndDate = lubridate::ymd_hms(`ExpEndDate`))
-# find units for chl
-ChlData <- read_sheet(ChlTurner) |>
-  mutate(Chl = as.numeric(Reading_rfu) * as.numeric(Chl_slope) + as.numeric(Chl_intercept))
-
-```
-
-
 # Merge OLISSpectra with MetaData and ChlData
 ```{r SpectraWide with MetaData}
 
@@ -305,7 +305,7 @@ SpectraMeta <- SpectraMeta |>
   mutate(O2_uM = case_when(O2 == 0 ~ 2,
                            O2 == 1 ~ 25,
                            O2 == 21 ~ 250)) |>
-  select(-c("...44", "...45", "DateOfAdjustment", "ElaspedHoursAtAdjustment", "Par_ueAdjusted", "Description", "Motivation"))
+    select(-c("Description", "Motivation", "doi", "Par_ueAdjusted", "DateOfAdjustment", "ElaspedHoursAtAdjustment", "...44", "...45")) 
     
 SpectraMeta <- SpectraMeta |>
   left_join(ChlData, join_by(ID == CultureID))

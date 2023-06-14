@@ -49,6 +49,10 @@ DataIn <- file.path("..", "Data", "RawData", "Solisense", fsep = .Platform$file.
 
 FileID <- "fit"
 
+Catalog <- "https://docs.google.com/spreadsheets/d/1ZXpwR7Gfto-uRzVdXzMpQF4frbrvMLH_IyLqonFZRSw/edit#gid=0"
+
+ChlTurner <- "https://docs.google.com/spreadsheets/d/13mQm0B3siS65UuGjNdzvpHFomfuwn6aAg7dBoq1IqrM/edit#gid=0"
+
 FileEncode <- "UTF-8" 
 Delimiter <- ","
 
@@ -70,8 +74,34 @@ library(photobiologyWavebands) #R colours from nm values
 library(broom) #formatting model outputs
 
 #https://googlesheets4.tidyverse.org/
-# library(googledrive)
-# library(googlesheets4)
+library(googledrive)
+library(googlesheets4)
+
+```
+
+Load Multiculti catalog and ChlTurner
+```{r load multiculticatalog, message = FALSE, warning = FALSE, echo=FALSE}
+gs4_deauth()
+
+# imagine this is the URL or ID of a Sheet readable by anyone (with a link)
+# MultiCulti metadata
+MetaData <- read_sheet(Catalog)%>%
+  # read_sheet has an annoying "feature" to set the type of columns it can't parse to a list.
+  # ggplot/dplyr doesn't like working with a dataframe of lists.
+  # In this case WL is set to a list since some values are numbers, some are strings, some are blank.
+  # To fix this, first drop all rows missing WL, then unlist.
+  # Must first drop NA rows since unlist will collapse NULL lists, then the unlisted WL is a shorter length than original WL column, which mutate doesn't like.
+  drop_na(WL) %>%
+  mutate(WL = unlist(WL))
+
+as.data.frame(MetaData)
+
+MetaData <- MetaData %>%
+   mutate(ExpDate = lubridate::ymd(ExpDate),
+          ExpEndDate = lubridate::ymd_hms(`ExpEndDate`))
+# find units for chl
+ChlData <- read_sheet(ChlTurner) |>
+  mutate(Chl = as.numeric(Reading_rfu) * as.numeric(Chl_slope) + as.numeric(Chl_intercept))
 
 ```
 
@@ -370,6 +400,28 @@ SolFitsTrim2 %>%
   scale_y_continuous(sec.axis = sec_axis(~ . , name = "CultureID", breaks = NULL, labels = NULL)) +
   scale_x_continuous(sec.axis = sec_axis(~ . , name = "Ex_WL", breaks = NULL, labels = NULL)) 
 
+
+```
+Merge SolFitsTrim with MetaData & Turner Chl Data 
+# Merge OLISSpectra with MetaData and ChlData
+```{r SolFitsTrim with MetaData and ChlData}
+
+SolFitsMeta <- SolFitsTrim2 %>%
+  left_join(., MetaData, join_by(CultureID == ID)) |>
+   mutate(O2_uM = case_when(O2 == 0 ~ 2,
+                           O2 == 1 ~ 25,
+                           O2 == 21 ~ 250)) |>
+  select(-c("Description", "Motivation", "doi", "Par_ueAdjusted", "DateOfAdjustment", "ElaspedHoursAtAdjustment", "...44", "...45")) 
+
+    
+SolFitsMeta <- SolFitsMeta |>
+  left_join(ChlData, join_by(CultureID == CultureID))
+        
+SolFitsMeta |>
+  ggplot() +
+  geom_point(aes(x = ActPARCorr, y = FvFm)) +
+  facet_grid(cols = vars(Strain), rows = vars(Par_ue, O2_uM)) +
+  theme_bw()            
 
 ```
 

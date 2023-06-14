@@ -1,18 +1,18 @@
 ---
-title: "O2 LRC Fitting"
+title: "ETR LRC Fitting"
 output: html_notebook
 author: Douglas A. Campbell
 ---
 
 ##Introduction
-We use an optode to measure [O2] µmol l-1 in suspensions of phytoplankton.
-Changes in [O2] reflect (hopefully) oxygen evolution or oxygen consumption by the cell suspension.
+We import tidied data from Solisense FRRf from suspensions of phytoplankton.
+Changes in fluorescence parameters reflect photophysiology of  the cell suspension.
 
 ## Materials and Methods
 
-This .Rmd Rworkbook imports O2, FRRf and Metadata in .Rds after import through  O2Import and a  SoliSenseImport, and comparison through a FRRO2Compare  
+This .Rmd Rworkbook imports FRRf and Metadata in .Rds after import through a  SoliSenseImport.  
 
-It fits and plots models for JVPSII and O2 light response curves, and reports the parameters of the fits.
+It fits and plots models for PSII ETR (e- PSII-1 s-1) and JVPSII (uncalibrated e- L-1 s-1) light response curves, and reports the parameters of the fits.
 
 # Set Chunk Options
 ```{r setup, include = FALSE}
@@ -22,9 +22,9 @@ knitr::opts_chunk$set(fig.path='Figs/')
 
 ```{r set project variables}
 #"..", takes up a level in the directory path
-Project <- "FluorO2"
+Project <- "PICO"
 
-Run <- "SySlBiolSteps"
+Run <- "O2Analyses"
 
 TC <- "TC"
 

@@ -25,6 +25,7 @@ Corrected values for Excitation; this 'happens' during the re-fit if the proper 
 Corrected values for ActPAR for cuvette (no TC) and for jacket (TC)
   Recalibration for ActPAR to ActPARCorr done post-hoc herein
 
+Issue: Imported and processing data from more than one MultiCulti RunDate but labelling saved .rds with date of first MultiCultiRun
   
 # Set Chunk Options
 
@@ -42,7 +43,7 @@ CalibData <- file.path("..", "Data",  "CalibrationData")
 
 Run <- "O2Analyses"
 
-ExpDate <- "2023-05-27" #date of MultiCulti growth start
+ExpDate <- "2023-05-27" #date of first MultiCulti growth start
 
 DataIn <- file.path("..", "Data", "RawData", "Solisense", fsep = .Platform$file.sep)
 
@@ -241,11 +242,18 @@ SolFitsTrim <- SolFitsTrim %>%
 ```{r prelimplots}
 SolFitsTrim %>%
   filter(Dark1s == 0) %>%
-  filter(Tau2QA < 20000) %>%
   ggplot() +
   geom_point(aes(x = ActPARCorr, y = FvFm, colour = as.factor(O2_uM))) +
   #scale_colour_manual(values = Colours_nm) +
   facet_grid(cols = vars(Ex_WL), rows = vars(CultureID)) +
+  theme_bw()
+
+SolFitsTrim %>%
+  filter(Dark1s == 0) %>%
+  ggplot() +
+  geom_point(aes(x = LR_s, y = FvFm, colour = as.factor(O2_uM), size = ActPARCorr)) +
+  #scale_colour_manual(values = Colours_nm) +
+  facet_grid(cols = vars(Ex_WL, O2_uM), rows = vars(CultureID)) +
   theme_bw()
 
 SolFitsTrim %>%
@@ -367,7 +375,7 @@ SolFitsTrim2 %>%
 
 
 ```{r save SolFitsTrim data}
-saveRDS(SolFitsTrim2, file.path(DataOut, paste(Project, ExpDate, "SolFitsTrim.Rds", sep = "_"), fsep = .Platform$file.sep))
+saveRDS(SolFitsTrim2, file.path(DataOut, paste(Project, Run, "SolFitsTrim.Rds", sep = "_"), fsep = .Platform$file.sep))
 ```
 
 

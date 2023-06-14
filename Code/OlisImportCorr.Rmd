@@ -20,6 +20,8 @@ knitr::opts_chunk$set(fig.path='Figs/')
 
 ```{r set project variables}
 Project <- "PICO"
+Run <- "O2Analyses"
+
 DataOut <- file.path("..", "Data", "ProcessedData", fsep = .Platform$file.sep)
 
 DataIn <- file.path("..", "Data", "RawData", "OLIS", fsep = .Platform$file.sep)
@@ -337,7 +339,7 @@ ask about adding a collum to catalog for sample time
 ```{r savespectra}
 #filename Project_ExpDateYYYYMMDD_SpectraMeta.rds
 
-saveRDS(SpectraMeta, file = file.path("..", "Data", "ProcessedData", paste(Project, SpectraMeta$ExpDate[1],  "SpectraMeta.rds", sep = "_")))
+saveRDS(SpectraMeta, file = file.path("..", "Data", "ProcessedData", paste(Project, Run,  "SpectraMeta.rds", sep = "_")))
 ```
 
 
@@ -510,11 +512,12 @@ https://www.digitalocean.com/community/tutorials/normalize-data-in-r
 # OLISSpectraMeta710Plot
 # ```
 
-Turner Data
+#Turner Data
 
 
 
-```{r prelimplot2, fig.height = 6, fig.width = 8, warning = FALSE}
+
+#```{r prelimplot2, fig.height = 6, fig.width = 8, warning = FALSE}
 # #dashed and solid color lines Norm440
 # data_text <- data.frame(
 #   WL   = c("530", "660"),

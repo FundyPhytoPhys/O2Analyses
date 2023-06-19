@@ -201,12 +201,12 @@ plot(x = TestI, y = lrc(I = TestI, a = 1, Pmax = 100))
 #Platt et al., 1980
 #Harrison & Platt, 1986
 #lrc with beta inhibition with increasing light
-grcplatt <- function(I, a, b, Pmax){Pmax * (1-exp(-a*I/Pmax)) * exp(-b*I/Pmax)}
+lrcplatt <- function(I, a, b, Pmax){Pmax * (1-exp(-a*I/Pmax)) * exp(-b*I/Pmax)}
 
 alpha <- function(I, a,  Pmax){Pmax * (1-exp(-a*I/Pmax))}
 beta <- function(I, b, Pmax){Pmax * exp(-b*I/Pmax)}
 
-plot(x = TestI, y = grcplatt(I = TestI, a = 1, b = 0.1, Pmax = 100))
+plot(x = TestI, y = lrcplatt(I = TestI, a = 1, b = 0.1, Pmax = 100))
 plot(x = TestI, y = beta(I = TestI, b = 0.1, Pmax = 100))
 plot(x = TestI, y = alpha(I = TestI, a = 1, Pmax = 100))
 
@@ -224,46 +224,41 @@ plot(x = TestI, y = alpha(I = TestI, a = 1, Pmax = 100))
 
 Alpha_est = 1
 Pmax_est = 100
+Beta_est = 0.1
+
+ #        LR_s < 70) |>  #avoid including 'late' points that may have accumulated O2?
 
 ETRModels <- SolFitsMeta %>%
   filter(Dark1s == 0) |>
   nest(.by = c("Project", "Strain", "Ex_WL", "Par_ue", "O2_uM", "MeasureO2_uM")) %>%
-  mutate(LRC_model = map(data, possibly(~nlsLM(ETRqpOxbo ~ lrc(I = ActPARCorr, a, Pmax),
+  mutate(LRC_model = map(data, possibly(~nlsLM(.$ETRqpOxbo ~ lrc(I = .$ActPARCorr, a, Pmax),
+                                      data = .x,
+                                      start = list(a = Alpha_est, Pmax = Pmax_est),
+                                      lower = c(0,0),
+                                      control = nls.lm.control(maxiter = 100)
+                                      )
+                                      ), NULL)
+         ) |>
+  mutate(LRC_Param = map(LRC_model, broom::tidy),
+        LRC_Qual = map(LRC_model, broom::glance),
+        LRC_Predict = map(LRC_model, broom::augment)) |>
+  mutate(LRCplatt_model = map(data, possibly(~nlsLM(.$ETRqpOxbo ~ lrcplatt(I = .$ActPARCorr, a, b, Pmax),
+                                      data = .x,
                                                start = list(a = Alpha_est,
+                                                            b = Beta_est,
                                                             Pmax = Pmax_est),
-                                               control = nls.lm.control(maxiter = 100)
-                                               ), NULL)
-                         )
-  )
+                                       lower = c(0,0,0),
+                                      control = nls.lm.control(maxiter = 100)
+                                      )
+                                      ), NULL)
+         ) |>
+ mutate(LRCplatt_Param = map(LRCplatt_model, broom::tidy),
+        LRCplatt_Qual = map(LRCplatt_model, broom::glance),
+        LRCplatt_Predict = map(LRCplatt_model, broom::augment))
 
 
-# %>%
-#    mutate(LRC_Param = map(LRC_model, tidy),
-#           LRC_Predict = map(LRC_model, augment))  %>%
-#     mutate(LRCdR_model = map(data,possibly(~nlsLM(O2_umolugChls ~ lrc_dr(I = ActPARCorrinter, a, Pmax, R, d),
-#                                data = .x,
-#                                start = list(a = alpha_est,
-#                                             Pmax = max(.$O2_umolugChls, na.rm = TRUE),
-#                                             R = min(.$O2_umolugChls, na.rm = TRUE),
-#                                             d = alpha_est/10),
-#                                control = nls.lm.control(maxiter = 100),
-#                           ), NULL)
-#                           )
-#           )  %>%
-#      mutate(LRCdR_Param = map(LRCdR_model, tidy),
-#             LRCdR_Predict = map(LRCdR_model, augment)) %>%
-#    mutate(LRCbeta_model = map(data, possibly(~nlsLM(O2_umolugChls ~ lrc_beta(I = ActPARCorrinter, a, b, R),
-#                                data = .x,
-#                                start = list(a = alpha_est,
-#                                             b = alpha_est/10,
-#                                             R = min(.$O2_umolugChls, na.rm = TRUE)),
-#                                control = nls.lm.control(maxiter = 100),
-#                           ), NULL)
-#                           )
-#           ) %>%
-#   mutate(LRCbeta_Param = map(LRCbeta_model, tidy),
-#           LRCbeta_Predict = map(LRCbeta_model, augment))
-  
+
+
 
 ```
 
@@ -272,51 +267,35 @@ ETRModels <- SolFitsMeta %>%
 # Adding legend for lines
 #https://community.rstudio.com/t/adding-manual-legend-to-ggplot2/41651/2
 
-line_colours = c("O2_umolugChls" = "green",
+line_colours = c("ETRqpOxbo" = "green",
             "fitted" = "black",
             "residual" = "red")
 
-O2Models %>%
+ETRModels %>%
   unnest(LRC_Predict) %>%
-  ggplot(aes(x = ActPARCorrinter)) +
-  geom_point(aes(y = O2_umolugChls, colour =  "O2_umolugChls")) +
+  ggplot(aes(x = ActPARCorr)) +
+  geom_point(aes(y = ETRqpOxbo, colour =  "ETRqpOxbo")) +
   geom_line(aes(y = `.fitted`, colour = "fitted")) +
   geom_point(aes(y = `.resid`, colour = "residual"), size = 0.5) +
   geom_hline(yintercept = 0, linetype = "dashed") + 
   labs(colour = "Legend", title = "LRC") + 
   scale_colour_manual(values = line_colours) +
   scale_x_continuous(expand = c(0,0)) +
-  facet_grid(cols = vars(Ex_WL), rows = vars(Strain, Par_ue, WL)) +
+  facet_grid(cols = vars(Strain, Par_ue, O2_uM), rows = vars(MeasureO2_uM)) +
   theme_bw()
 
-
- O2Models %>%
-  unnest(LRCdR_Predict) %>%
-  ggplot(aes(x = ActPARCorrinter)) +
-  geom_point(aes(y = O2_umolugChls, colour =  "O2_umolugChls")) +
+ETRModels %>%
+  unnest(LRCplatt_Predict) %>%
+  ggplot(aes(x = ActPARCorr)) +
+  geom_point(aes(y = ETRqpOxbo, colour =  "ETRqpOxbo")) +
   geom_line(aes(y = `.fitted`, colour = "fitted")) +
   geom_point(aes(y = `.resid`, colour = "residual"), size = 0.5) +
-  geom_hline(yintercept = 0, linetype = "dashed") +
-  labs(colour = "Legend", title = "LRCdR") +
+  geom_hline(yintercept = 0, linetype = "dashed") + 
+  labs(colour = "Legend", title = "LRC") + 
   scale_colour_manual(values = line_colours) +
   scale_x_continuous(expand = c(0,0)) +
-  facet_grid(cols = vars(Ex_WL), rows = vars(Strain, Par_ue, WL)) +
+  facet_grid(cols = vars(Strain, Par_ue, O2_uM), rows = vars(MeasureO2_uM)) +
   theme_bw()
-
- O2Models %>%
-  unnest(LRCbeta_Predict) %>%
-  ggplot(aes(x = ActPARCorrinter)) +
-  geom_point(aes(y = O2_umolugChls, colour =  "O2_umolugChls")) +
-  geom_line(aes(y = `.fitted`, colour = "fitted")) +
-  geom_point(aes(y = `.resid`, colour = "residual"), size = 0.5) +
-  geom_hline(yintercept = 0, linetype = "dashed") +
-  labs(colour = "Legend", title = "LRCbeta") +
-  scale_colour_manual(values = line_colours) +
-  scale_x_continuous(expand = c(0,0)) +
-  facet_grid(cols = vars(Ex_WL), rows = vars(Strain, Par_ue, WL)) +
-  theme_bw()
-
-
 
 ```
 

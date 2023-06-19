@@ -29,16 +29,16 @@ Run <- "O2Analyses"
 TC <- "TC"
 
 
-FileID <- "O2FRRfMeta"
+FileID <- "SolFitsMeta"
 
-DataIn <- file.path("..", "FitData")
-ChlDataIn <- file.path("..","ImportData")
+DataIn <- file.path("..", "Data", "ProcessedData")
 #DataOut <- file.path("..","ImportData", "Optode")
 
-
-
 #Set URL for MetaData
-#MetaDataURL <- "https://docs.google.com/spreadsheets/d/1ZXpwR7Gfto-uRzVdXzMpQF4frbrvMLH_IyLqonFZRSw/edit#gid=0"
+#Catalog <- "https://docs.google.com/spreadsheets/d/1ZXpwR7Gfto-uRzVdXzMpQF4frbrvMLH_IyLqonFZRSw/edit#gid=0"
+
+ChlTurner <- "https://docs.google.com/spreadsheets/d/13mQm0B3siS65UuGjNdzvpHFomfuwn6aAg7dBoq1IqrM/edit#gid=0"
+
 ```
 
 
@@ -83,95 +83,87 @@ This chunk reads in the MetaData catalog from googlesheets
 ```
 
 ```{r read imported O2, FRRf and meta data}
-O2FRRfMeta <- readRDS(file.path(DataIn, paste(paste(Project, Run, TC, FileID, sep = "_"), ".Rds", sep = "")))
-
-O2FRRfMeta <- O2FRRfMeta %>%
-  select(-c("ObsTime", "ObsDateTime", "Time__mSec", "Run.x",  "carQt", "p680Q", "p680Qt", "S/N_raw", "fQB", "PAR_3", "PAR_4", "PAR_5", "PAR_6", "QBP_Size", "Run.y", "Description", "doi", "Inoc_mL", "Media_mL", "ExpCul", "InnocDate", "Source", "SourceSalinity", "Optode", "OptodeCh", "ExpStartTime", "O2lm" ))
-
+SolFitsMeta <- readRDS(file.path(DataIn, paste(paste(Project, Run, FileID, sep = "_"), ".Rds", sep = "")))
 
 ```
 
 
 ```{r prelimplot}
-O2FRRfMeta %>%
+SolFitsMeta %>%
   ggplot() +
-  geom_point(aes(x = ActPARCorr, y = O2_umolLs, colour = Ex_WL)) +
+  geom_point(aes(x = LR_s, y = FvFm, colour = Ex_WL)) +
   scale_colour_manual(values = Colours_nm) +
-  facet_grid(rows = vars(Ex_WL), cols = vars(CultureID)) +
+  facet_grid(rows = vars(Dark1s), cols = vars(CultureID)) +
+  theme_bw()
+
+SolFitsMeta %>%
+  filter(Dark1s == 0) |>
+  ggplot() +
+  geom_point(aes(x = LR_s, y = FvFm, colour = Ex_WL)) +
+  scale_colour_manual(values = Colours_nm) +
+  facet_grid(rows = vars(MeasureO2_uM), cols = vars(CultureID)) +
   theme_bw()
 ```
 
 ```{r read chl}
-Chl <- readRDS(file.path(ChlDataIn, "PICO_ChlTurnerAll.Rds" ))
-
-#collapse to averages
-ChlAv <- Chl %>%
-  select(-c("Chl_ugL", "Chl_ugmL", "cellsml", "Chla_ugN")) %>%
-  unique() %>%
-  select(-c("Strain", "InnocDate", "ExpDate", "Par_ue", "Photoperiod" , "Calculated_µmolPhotons_m-2d-1", "Tube", "O2", "WL","LightShape", ))
+# Chl <- readRDS(file.path(ChlDataIn, "PICO_ChlTurnerAll.Rds" ))
+# 
+# #collapse to averages
+# ChlAv <- Chl %>%
+#   select(-c("Chl_ugL", "Chl_ugmL", "cellsml", "Chla_ugN")) %>%
+#   unique() %>%
+#   select(-c("Strain", "InnocDate", "ExpDate", "Par_ue", "Photoperiod" , "Calculated_µmolPhotons_m-2d-1", "Tube", "O2", "WL","LightShape", ))
 ```
 
-# Merge O2FRRfMeta & Chl Data
-```{r merge O2FRRfMeta chl}
-O2FRRfMeta <- left_join(x = O2FRRfMeta, y = ChlAv, by = join_by("CultureID", "ObsDate" == "DATE"))
+# Merge SolFitsMeta & Chl Data
+```{r merge SolFitsMeta chl}
+# SolFitsMeta <- left_join(x = SolFitsMeta, y = ChlAv, by = join_by("CultureID", "ObsDate" == "DATE"))
 
-```
-
-# O2 per chl
-O2 per cell
-```{r o2 per chl}
-O2FRRfMeta <- O2FRRfMeta %>%
-  mutate(O2_umolugChls = O2_umolLs/(meanChl_ugmL * 1000),
-    O2evln_O2ugChls = O2evln_O2ls/(meanChl_ugmL * 1000),
-    O2_umolCells = O2_umolLs/(meancellsml * 1000),
-    O2evln_O2Cells = O2evln_O2ls/(meancellsml * 1000))
 ```
 
 
-```{r O2 chl prelimplot}
-O2FRRfMeta %>%
+```{r ETR  prelimplot}
+SolFitsMeta %>%
   ggplot() +
-  geom_point(aes(x = ActPARCorr, y = O2_umolugChls, colour = Ex_WL)) +
+  geom_point(aes(x = LR_s, y =  ETRqpOxbo, colour = Ex_WL)) +
   scale_colour_manual(values = Colours_nm) +
-  facet_grid(rows = vars(Ex_WL), cols = vars(CultureID)) +
+  facet_grid(rows = vars(MeasureO2_uM), cols = vars(CultureID)) +
   theme_bw()
 
-O2FRRfMeta %>%
+SolFitsMeta %>%
+  filter(LR_s < 70,
+         Strain == "MED4") |>
   ggplot() +
-  geom_point(aes(x = ActPARCorr, y = O2evln_O2ugChls, colour = Ex_WL)) +
+  geom_point(aes(x = ActPARCorr, y =  ETRqpOxbo, colour = Ex_WL)) +
   scale_colour_manual(values = Colours_nm) +
-  facet_grid(rows = vars(Ex_WL), cols = vars(CultureID)) +
+  facet_grid(rows = vars(MeasureO2_uM), cols = vars(Par_ue, O2_uM)) +
   theme_bw()
 
-O2FRRfMeta %>%
+SolFitsMeta %>%
+  filter(LR_s < 70,
+         Strain == "SS120") |>
   ggplot() +
-  geom_point(aes(x = ActPARCorr, y = ETRCtauav, colour = Ex_WL)) +
+  geom_point(aes(x = ActPARCorr, y =  ETRqpOxbo, colour = Ex_WL)) +
   scale_colour_manual(values = Colours_nm) +
-  facet_grid(rows = vars(Ex_WL), cols = vars(CultureID)) +
-  theme_bw()
-```
-
-```{r O2 cell prelimplot}
-O2FRRfMeta %>%
-  ggplot() +
-  geom_point(aes(x = ActPARCorr, y =  O2_umolCells, colour = Ex_WL)) +
-  scale_colour_manual(values = Colours_nm) +
-  facet_grid(rows = vars(Ex_WL), cols = vars(CultureID)) +
+  facet_grid(rows = vars(MeasureO2_uM), cols = vars(Par_ue, O2_uM)) +
   theme_bw()
 
-O2FRRfMeta %>%
+SolFitsMeta %>%
+  filter(LR_s < 70,
+         Strain == "MIT9313") |>
   ggplot() +
-  geom_point(aes(x = ActPARCorr, y = O2evln_O2Cells, colour = Ex_WL)) +
+  geom_point(aes(x = ActPARCorr, y =  ETRqpOxbo, colour = Ex_WL)) +
   scale_colour_manual(values = Colours_nm) +
-  facet_grid(rows = vars(Ex_WL), cols = vars(CultureID)) +
+  facet_grid(rows = vars(MeasureO2_uM), cols = vars(Par_ue, O2_uM)) +
   theme_bw()
 
-O2FRRfMeta %>%
+SolFitsMeta %>%
   ggplot() +
-  geom_point(aes(x = O2_umolCells, y = O2_umolugChls, colour = Ex_WL)) +
+  geom_point(aes(x = ActPARCorr, y =  ETRqpOxbo, colour = Ex_WL)) +
   scale_colour_manual(values = Colours_nm) +
-  facet_grid(rows = vars(Ex_WL), cols = vars(CultureID)) +
   theme_bw()
+
+
 ```
 # Define model equations
 Citations: Ma X, Liu Q, Zhang Z, Zhang Z, Zhou Z, Jiang Y, et al. (2021) Effects of photosynthetic models on the calculation results of photosynthetic response parameters in young Larix principis- rupprechtii Mayr. plantation. PLoS ONE 16(12): e0261683. https://doi.org/10.1371/journal.pone.0261683
@@ -195,21 +187,32 @@ d: change in respiration under illumination.
 linear <- function(I, m, b){(I*m) + b
   }
 
+TestI = c(0:600)
 
-lrc <- function(I, a, Pmax, R){((a * I * Pmax)/((a*I) + Pmax)) - R
+lrc <- function(I, a, Pmax){((a * I * Pmax)/((a*I) + Pmax))
 }
+
+plot(x = TestI, y = lrc(I = TestI, a = 1, Pmax = 100))
 
 # # function with beta photoinhibition
 # lrc_beta <- function(I, a, b, g, R){(a * (((1 - (b*I))/(1 + (g*I)))*I)) - R
 # }
 
-# function with beta photoinhibition
-lrc_beta <- function(I, a, b, R){(a * (((1 - (b*I)))*I)) - R
-}
+#Platt et al., 1980
+#Harrison & Platt, 1986
+#lrc with beta inhibition with increasing light
+grcplatt <- function(I, a, b, Pmax){Pmax * (1-exp(-a*I/Pmax)) * exp(-b*I/Pmax)}
+
+alpha <- function(I, a,  Pmax){Pmax * (1-exp(-a*I/Pmax))}
+beta <- function(I, b, Pmax){Pmax * exp(-b*I/Pmax)}
+
+plot(x = TestI, y = grcplatt(I = TestI, a = 1, b = 0.1, Pmax = 100))
+plot(x = TestI, y = beta(I = TestI, b = 0.1, Pmax = 100))
+plot(x = TestI, y = alpha(I = TestI, a = 1, Pmax = 100))
 
 # function with light-dependent acceleration of Respiration
-lrc_dr <- function(I, a, Pmax, R, d){((a * I * Pmax)/((a*I) + Pmax)) - (R + (R * I^2 * d))
-}
+#lrc_dr <- function(I, a, Pmax, R, d){((a * I * Pmax)/((a*I) + Pmax)) - (R + (R * I^2 * d))
+#}
 
 ```
 
@@ -217,51 +220,49 @@ lrc_dr <- function(I, a, Pmax, R, d){((a * I * Pmax)/((a*I) + Pmax)) - (R + (R *
 # Fit model equations
 ```{r fit models}
 
-alpha_est =  (max(O2FRRfMeta$O2_umolugChls, na.rm = TRUE) - min(O2FRRfMeta$O2_umolugChls, na.rm = TRUE))/(max(O2FRRfMeta$ActPARCorrinter, na.rm = TRUE) - min(O2FRRfMeta$ActPARCorrinter, na.rm = TRUE))
+#alpha_est =  (max(SolFitsMeta$O2_umolugChls, na.rm = TRUE) - min(SolFitsMeta$O2_umolugChls, na.rm = TRUE))/(max(SolFitsMeta$ActPARCorrinter, na.rm = TRUE) - min(SolFitsMeta$ActPARCorrinter, na.rm = TRUE))
+
+Alpha_est = 1
+Pmax_est = 100
+
+ETRModels <- SolFitsMeta %>%
+  filter(Dark1s == 0) |>
+  nest(.by = c("Project", "Strain", "Ex_WL", "Par_ue", "O2_uM", "MeasureO2_uM")) %>%
+  mutate(LRC_model = map(data, possibly(~nlsLM(ETRqpOxbo ~ lrc(I = ActPARCorr, a, Pmax),
+                                               start = list(a = Alpha_est,
+                                                            Pmax = Pmax_est),
+                                               control = nls.lm.control(maxiter = 100)
+                                               ), NULL)
+                         )
+  )
 
 
-O2Models <- O2FRRfMeta %>%
-  filter(!is.na(E_days)) %>%
-  filter(E_days %in% c(3,4,5,7)) %>%
-  nest(.by = c("Project", "Strain", "Ex_WL", "Par_ue":"Temp_c", "WL", "O2_Category")) %>%
-    mutate(Linear_model = map(data, possibly(~lm(O2_umolugChls ~ ActPARCorrinter, data = .)), NULL)
-                        ) %>%
-    mutate(Linear_Param = map(Linear_model, tidy)
-           ) %>%
-  mutate(LRC_model = map(data, possibly(~nlsLM(O2_umolugChls ~ lrc(I = ActPARCorrinter, a, Pmax, R),
-                               data = .x,
-                               start = list(a = alpha_est,
-                                            Pmax = max(.$O2_umolugChls, na.rm = TRUE),
-                                            R = min(.$O2_umolugChls, na.rm = TRUE)),
-                               control = nls.lm.control(maxiter = 100),
-                         ), NULL)
-                          )
-          ) %>%
-   mutate(LRC_Param = map(LRC_model, tidy),
-          LRC_Predict = map(LRC_model, augment))  %>%
-    mutate(LRCdR_model = map(data,possibly(~nlsLM(O2_umolugChls ~ lrc_dr(I = ActPARCorrinter, a, Pmax, R, d),
-                               data = .x,
-                               start = list(a = alpha_est,
-                                            Pmax = max(.$O2_umolugChls, na.rm = TRUE),
-                                            R = min(.$O2_umolugChls, na.rm = TRUE),
-                                            d = alpha_est/10),
-                               control = nls.lm.control(maxiter = 100),
-                          ), NULL)
-                          )
-          )  %>%
-     mutate(LRCdR_Param = map(LRCdR_model, tidy),
-            LRCdR_Predict = map(LRCdR_model, augment)) %>%
-   mutate(LRCbeta_model = map(data, possibly(~nlsLM(O2_umolugChls ~ lrc_beta(I = ActPARCorrinter, a, b, R),
-                               data = .x,
-                               start = list(a = alpha_est,
-                                            b = alpha_est/10,
-                                            R = min(.$O2_umolugChls, na.rm = TRUE)),
-                               control = nls.lm.control(maxiter = 100),
-                          ), NULL)
-                          )
-          ) %>%
-  mutate(LRCbeta_Param = map(LRCbeta_model, tidy),
-          LRCbeta_Predict = map(LRCbeta_model, augment))
+# %>%
+#    mutate(LRC_Param = map(LRC_model, tidy),
+#           LRC_Predict = map(LRC_model, augment))  %>%
+#     mutate(LRCdR_model = map(data,possibly(~nlsLM(O2_umolugChls ~ lrc_dr(I = ActPARCorrinter, a, Pmax, R, d),
+#                                data = .x,
+#                                start = list(a = alpha_est,
+#                                             Pmax = max(.$O2_umolugChls, na.rm = TRUE),
+#                                             R = min(.$O2_umolugChls, na.rm = TRUE),
+#                                             d = alpha_est/10),
+#                                control = nls.lm.control(maxiter = 100),
+#                           ), NULL)
+#                           )
+#           )  %>%
+#      mutate(LRCdR_Param = map(LRCdR_model, tidy),
+#             LRCdR_Predict = map(LRCdR_model, augment)) %>%
+#    mutate(LRCbeta_model = map(data, possibly(~nlsLM(O2_umolugChls ~ lrc_beta(I = ActPARCorrinter, a, b, R),
+#                                data = .x,
+#                                start = list(a = alpha_est,
+#                                             b = alpha_est/10,
+#                                             R = min(.$O2_umolugChls, na.rm = TRUE)),
+#                                control = nls.lm.control(maxiter = 100),
+#                           ), NULL)
+#                           )
+#           ) %>%
+#   mutate(LRCbeta_Param = map(LRCbeta_model, tidy),
+#           LRCbeta_Predict = map(LRCbeta_model, augment))
   
 
 ```

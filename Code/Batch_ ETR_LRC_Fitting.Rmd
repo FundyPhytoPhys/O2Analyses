@@ -1,6 +1,5 @@
 ---
 title: "ETR LRC Fitting"
-output: html_notebook
 author: Douglas A. Campbell
 ---
 
@@ -157,11 +156,11 @@ SolFitsMeta %>%
   facet_grid(rows = vars(MeasureO2_uM), cols = vars(Par_ue, O2_uM)) +
   theme_bw()
 
-SolFitsMeta %>%
-  ggplot() +
-  geom_point(aes(x = ActPARCorr, y =  ETRqpOxbo, colour = Ex_WL)) +
-  scale_colour_manual(values = Colours_nm) +
-  theme_bw()
+# SolFitsMeta %>%
+#   ggplot() +
+#   geom_point(aes(x = ActPARCorr, y =  ETRqpOxbo, colour = Ex_WL)) +
+#   scale_colour_manual(values = Colours_nm) +
+#   theme_bw()
 
 
 ```
@@ -239,9 +238,9 @@ ETRModels <- SolFitsMeta %>%
                                       )
                                       ), NULL)
          ) |>
-  mutate(LRC_Param = map(LRC_model, broom::tidy),
-        LRC_Qual = map(LRC_model, broom::glance),
-        LRC_Predict = map(LRC_model, broom::augment)) |>
+  mutate(LRC_Tidy = map(LRC_model, broom::tidy),
+        LRC_Glance = map(LRC_model, broom::glance),
+        LRC_Augment = map(LRC_model, broom::augment)) |>
   mutate(LRCplatt_model = map(data, possibly(~nlsLM(.$ETRqpOxbo ~ lrcplatt(I = .$ActPARCorr, a, b, Pmax),
                                       data = .x,
                                                start = list(a = Alpha_est,
@@ -252,9 +251,9 @@ ETRModels <- SolFitsMeta %>%
                                       )
                                       ), NULL)
          ) |>
- mutate(LRCplatt_Param = map(LRCplatt_model, broom::tidy),
-        LRCplatt_Qual = map(LRCplatt_model, broom::glance),
-        LRCplatt_Predict = map(LRCplatt_model, broom::augment))
+ mutate(LRCplatt_Tidy = map(LRCplatt_model, broom::tidy),
+        LRCplatt_Glance = map(LRCplatt_model, broom::glance),
+        LRCplatt_Augment = map(LRCplatt_model, broom::augment))
 
 
 
@@ -272,7 +271,7 @@ line_colours = c("ETRqpOxbo" = "green",
             "residual" = "red")
 
 ETRModels %>%
-  unnest(LRC_Predict) %>%
+  unnest(LRC_Augment) %>%
   ggplot(aes(x = ActPARCorr)) +
   geom_point(aes(y = ETRqpOxbo, colour =  "ETRqpOxbo")) +
   geom_line(aes(y = `.fitted`, colour = "fitted")) +
@@ -285,20 +284,65 @@ ETRModels %>%
   theme_bw()
 
 ETRModels %>%
-  unnest(LRCplatt_Predict) %>%
+  unnest(LRCplatt_Augment) %>%
   ggplot(aes(x = ActPARCorr)) +
   geom_point(aes(y = ETRqpOxbo, colour =  "ETRqpOxbo")) +
   geom_line(aes(y = `.fitted`, colour = "fitted")) +
   geom_point(aes(y = `.resid`, colour = "residual"), size = 0.5) +
   geom_hline(yintercept = 0, linetype = "dashed") + 
-  labs(colour = "Legend", title = "LRC") + 
+  labs(colour = "Legend", title = "LRCplatt") + 
   scale_colour_manual(values = line_colours) +
   scale_x_continuous(expand = c(0,0)) +
   facet_grid(cols = vars(Strain, Par_ue, O2_uM), rows = vars(MeasureO2_uM)) +
   theme_bw()
 
 ```
-XXXXX19 June 2023XXXX
+
+nlsLM generates AIC accessed with broom::glance
+```{r aic comparisons}
+#https://www.scribbr.com/statistics/akaike-information-criterion/
+
+#need to remove 'null' models to facilitate conversion of AIC from 'list' derived from 'Glance' column, to dbl
+ETRModelsParam <- ETRModels |>
+  select(-c(data)) |>
+  pivot_longer(cols = -c(Project, Strain, Ex_WL, Par_ue, O2_uM, MeasureO2_uM)) |>
+  drop_na(value) |>  #may need to change to map_lgl
+ # filter(str_detect(name, pattern = "Model") | str_detect(name, pattern = "Glance") | str_detect(name, pattern = "Param")) |>
+  separate(col = name , into = c("ModelType", "Output"), sep = "_") |>
+  pivot_wider(names_from = Output, values_from = value) |>
+  rename(Model = model) |>
+  filter(!map_lgl(Model, is.null)) |>
+  mutate(AIC = map_dbl(Glance, ~ as.numeric(pluck(.x, "AIC")))) |>
+  group_by(Project, Strain, Ex_WL, O2_uM, MeasureO2_uM) |>
+  filter(AIC == min(AIC)) |>
+  ungroup() |>
+  select(-c(Model, Glance)) |>
+  unnest(Tidy) |>
+  select(-c(statistic)) |>
+  pivot_wider(names_from = term, values_from = c(estimate, std.error, p.value))
+
+ETRModelsParam
+
+
+```
+
+Plot alpha and Pmax
+```{r alpha and pmax}
+ETRModelsParam |>
+  ggplot() +
+  geom_point(aes(x = Par_ue, y = estimate_a, colour = MeasureO2_uM)) +
+  geom_errorbar(aes(x = Par_ue, y = estimate_a, ymin = (estimate_a - std.error_a), ymax = (estimate_a + std.error_a), colour = MeasureO2_uM)) +
+  facet_grid(rows = vars(O2_uM), cols = vars(Strain)) + 
+  theme_bw()
+
+ETRModelsParam |>
+  ggplot() +
+  geom_point(aes(x = MeasureO2_uM, y = estimate_Pmax, colour = as.factor(Par_ue))) +
+  geom_errorbar(aes(x = MeasureO2_uM, y = estimate_Pmax, ymin = (estimate_Pmax - std.error_Pmax), ymax = (estimate_Pmax + std.error_Pmax), colour = as.factor(Par_ue))) +
+  facet_grid(rows = vars(O2_uM), cols = vars(Strain)) + 
+  theme_bw()
+```
+
 
 # Report model parameters
 Failing to report outputs from different model fits; rework.
@@ -365,6 +409,13 @@ LRCbeta_Param2 <- tibble(Model = "lrc_beta",
 
 LRCbeta_Param2
 ```
+
+
+
+
+
+
+
 ## LRCdR_model_parameters
 ```{r LRCdR model parameters}
 # function with light-dependent acceleration of Respiration

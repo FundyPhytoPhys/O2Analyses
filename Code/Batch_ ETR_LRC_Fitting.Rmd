@@ -137,7 +137,7 @@ SolFitsMeta %>%
 
 SolFitsMeta %>%
   ggplot() +
-  geom_point(aes(x = LR_s, y = TauWT, colour = as.factor(Dark1s))) +
+  geom_point(aes(x = LR_s, y = TauWT2, colour = as.factor(Dark1s))) +
   facet_grid(rows = vars(MeasureO2_uM), cols = vars(Strain, O2_uM, Par_ue)) +
   theme_bw()
 
@@ -147,7 +147,7 @@ SolFitsMeta %>%
   filter(Dark1s == 0) |>
   ggplot() +
   #geom_point(aes(x = ActPAR, y = Tau1QA, colour = Ex_WL)) +
-  geom_point(aes(x = LR_s, y = TauWT, colour = Ex_WL)) +
+  geom_point(aes(x = LR_s, y = TauWT2, colour = Ex_WL)) +
   scale_colour_manual(values = Colours_nm) +
   facet_grid(rows = vars(MeasureO2_uM), cols = vars(Strain, O2_uM, Par_ue)) +
   theme_bw()

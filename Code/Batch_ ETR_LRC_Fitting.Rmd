@@ -83,19 +83,25 @@ This chunk reads in the MetaData catalog from googlesheets
 
 ```{r read imported O2, FRRf and meta data}
 SolFitsMeta <- readRDS(file.path(DataIn, paste(paste(Project, Run, FileID, sep = "_"), ".Rds", sep = ""))) |>
-  mutate(Alp12QA = Alp1QA + Alp2QA) |>
-  mutate(TauWT2 = (Tau1QA * Alp1QA) + (Tau2QA * Alp2QA),
-         TauWT3 = (Tau1QA * Alp1QA) + (Tau2QA * Alp2QA) + (Tau3QA * Alp3QA))
+  mutate(Alp12QA = Alp1QA + Alp2QA)
 
 ```
+SolFitsMeta variables
+```{r solfitsmeta variables}
+colnames(SolFitsMeta)
 
+unique(SolFitsMeta$ActPARCorr)
+```
 
+Try tile map of qp (heat) vs. ActPARCorr and MeasureO2, facet by strain, growth O2 & growth par_ue
 ```{r prelimplot}
 SolFitsMeta %>%
+  filter(Dark1s == 0) |>
+  filter(WtTau < 20000) |>
   ggplot() +
-  geom_point(aes(x = LR_s, y = FvFm, colour = Ex_WL)) +
+  geom_point(aes(x = ActPARCorr, y = WtTau, colour = Ex_WL)) +
   scale_colour_manual(values = Colours_nm) +
-  facet_grid(rows = vars(Dark1s), cols = vars(CultureID)) +
+  facet_grid(rows = vars(MeasureO2_uM), cols = vars(Strain, O2_uM, Par_ue)) +
   theme_bw()
 
 SolFitsMeta %>%
@@ -109,11 +115,27 @@ SolFitsMeta %>%
 SolFitsMeta %>%
   filter(Dark1s == 0) |>
   ggplot() +
-  geom_point(aes(x = LR_s, y = Tau1QA, colour = Ex_WL)) +
-  #geom_point(aes(x = LR_s, y = Tau2QA, colour = Ex_WL)) +
+  geom_point(aes(x = ActPARCorr, y = qp, colour = Ex_WL)) +
   scale_colour_manual(values = Colours_nm) +
   facet_grid(rows = vars(MeasureO2_uM), cols = vars(Strain, O2_uM, Par_ue)) +
   theme_bw()
+
+SolFitsMeta %>%
+  filter(Dark1s == 0) |>
+  ggplot() +
+  geom_point(aes(x = MeasureO2_uM, y = qp, colour = Ex_WL)) +
+  scale_colour_manual(values = Colours_nm) +
+  facet_grid(rows = vars(ActPARCorr), cols = vars(Strain, O2_uM, Par_ue)) +
+  theme_bw()
+
+SolFitsMeta %>%
+  filter(Dark1s == 0) |>
+  ggplot() +
+  geom_point(aes(x = LR_s, y = qpOxbo, colour = Ex_WL)) +
+  scale_colour_manual(values = Colours_nm) +
+  facet_grid(rows = vars(MeasureO2_uM), cols = vars(Strain, O2_uM, Par_ue)) +
+  theme_bw()
+
 
 SolFitsMeta %>%
   ggplot() +
@@ -179,7 +201,9 @@ SolFitsMeta %>%
 ```
 
 
-```{r ETR  prelimplot}
+```{r prelimplot}
+colnames(SolFitsMeta)
+
 SolFitsMeta %>%
   ggplot() +
   geom_point(aes(x = LR_s, y =  ETRqpOxbo, colour = Ex_WL)) +
@@ -398,7 +422,7 @@ ETRModelsParam |>
   filter(std.error_Pmax < 0.5 * estimate_Pmax) |>
   ggplot() +
   geom_point(aes(x = Par_ue, y = estimate_a, colour = MeasureO2_uM)) +
-  geom_errorbar(aes(x = Par_ue, y = estimate_a, ymin = (estimate_a - std.error_a), ymax = (estimate_a + std.error_a), colour = MeasureO2_uM)) +
+  geom_errorbar(aes(x = Par_ue, y = estimate_a, ymin = (estimate_a - std.error_a), ymax = (estimate_a + std.error_a), colour = MeasureO2_uM), width = 0.3) +
   facet_grid(rows = vars(O2_uM), cols = vars(Strain)) + 
   labs(title = ModType) +
   theme_bw()
@@ -408,7 +432,7 @@ ETRModelsParam |>
   filter(std.error_Pmax < 0.5 * estimate_Pmax) |>
   ggplot() +
   geom_point(aes(x = MeasureO2_uM, y = estimate_Pmax, colour = as.factor(Par_ue))) +
-  geom_errorbar(aes(x = MeasureO2_uM, y = estimate_Pmax, ymin = (estimate_Pmax - std.error_Pmax), ymax = (estimate_Pmax + std.error_Pmax), colour = as.factor(Par_ue))) +
+  geom_errorbar(aes(x = MeasureO2_uM, y = estimate_Pmax, ymin = (estimate_Pmax - std.error_Pmax), ymax = (estimate_Pmax + std.error_Pmax), colour = as.factor(Par_ue)), width = 0.3) +
   facet_grid(rows = vars(O2_uM), cols = vars(Strain)) + 
   labs(title = ModType) +
   theme_bw()
@@ -418,7 +442,7 @@ ETRModelsParam |>
   filter(std.error_Pmax < 0.5 * estimate_Pmax) |>
   ggplot() +
   geom_point(aes(x = MeasureO2_uM, y = estimate_Ek, colour = as.factor(Par_ue))) +
-  geom_errorbar(aes(x = MeasureO2_uM, y = estimate_Ek, ymin = (estimate_Ek - std.error_Ek), ymax = (estimate_Ek + std.error_Ek), colour = as.factor(Par_ue))) +
+  geom_errorbar(aes(x = MeasureO2_uM, y = estimate_Ek, ymin = (estimate_Ek - std.error_Ek), ymax = (estimate_Ek + std.error_Ek), colour = as.factor(Par_ue)), width = 0.3) +
   facet_grid(rows = vars(O2_uM), cols = vars(Strain)) + 
   labs(title = ModType) +
   theme_bw()

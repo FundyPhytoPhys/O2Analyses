@@ -156,23 +156,23 @@ SolFitsMeta %>%
   theme_bw()
 
 
+# 
+# SolFitsMeta %>%
+#   ggplot() +
+#   geom_point(aes(x = LR_s, y = TauWT2, colour = as.factor(Dark1s))) +
+#   facet_grid(rows = vars(MeasureO2_uM), cols = vars(Strain, O2_uM, Par_ue)) +
+#   theme_bw()
 
-SolFitsMeta %>%
-  ggplot() +
-  geom_point(aes(x = LR_s, y = TauWT2, colour = as.factor(Dark1s))) +
-  facet_grid(rows = vars(MeasureO2_uM), cols = vars(Strain, O2_uM, Par_ue)) +
-  theme_bw()
 
 
-
-SolFitsMeta %>%
-  filter(Dark1s == 0) |>
-  ggplot() +
-  #geom_point(aes(x = ActPAR, y = Tau1QA, colour = Ex_WL)) +
-  geom_point(aes(x = LR_s, y = TauWT2, colour = Ex_WL)) +
-  scale_colour_manual(values = Colours_nm) +
-  facet_grid(rows = vars(MeasureO2_uM), cols = vars(Strain, O2_uM, Par_ue)) +
-  theme_bw()
+# SolFitsMeta %>%
+#   filter(Dark1s == 0) |>
+#   ggplot() +
+#   #geom_point(aes(x = ActPAR, y = Tau1QA, colour = Ex_WL)) +
+#   geom_point(aes(x = LR_s, y = TauWT2, colour = Ex_WL)) +
+#   scale_colour_manual(values = Colours_nm) +
+#   facet_grid(rows = vars(MeasureO2_uM), cols = vars(Strain, O2_uM, Par_ue)) +
+#   theme_bw()
 
 SolFitsMeta %>%
   filter(Dark1s == 1) |>
@@ -415,7 +415,7 @@ ETRModelsParam
 Plot alpha, Pmax, Ek
 ```{r alpha and pmax}
 
-ModType = "LRC"
+ModType = "LRCplatt"
 
 ETRModelsParam |>
   filter(ModelType == ModType) |>

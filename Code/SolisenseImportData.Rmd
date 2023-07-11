@@ -1,5 +1,5 @@
 ---
-title: "SolisenseImport"
+title: "SolisenseImportData"
 author:
 - Maximilian Berthold
 - Douglas A. Campbell
@@ -15,17 +15,9 @@ output:
 csl: plos-one.csl
 ---
 
-This .Rmd imports and tidys fit data from the Solisense kinetic fluorometer software.
+This .Rmd imports and tidys underlying data from the Solisense kinetic fluorometer software.
 It does not perform the underlying fits of the induction/relaxation profiles from FRRf protocols.
 
-# Done
-Corrected values for Excitation; this 'happens' during the re-fit if the proper calibration file settings are chosen
-  Refit needs to be done separately for data from Cuvette & Data from water jacket; TC/no TC will need to be segregated somehow.
-  
-Corrected values for ActPAR for cuvette (no TC) and for jacket (TC)
-  Recalibration for ActPAR to ActPARCorr done post-hoc herein
-
-Issue: Imported and processing data from more than one MultiCulti RunDate but labelling saved .rds with date of first MultiCultiRun
   
 # Set Chunk Options
 
@@ -47,7 +39,7 @@ ExpDate <- "2023-05-27" #date of first MultiCulti growth start
 
 DataIn <- file.path("..", "Data", "RawData", "Solisense", fsep = .Platform$file.sep)
 
-FileID <- "fit"
+FileID <- "data"
 
 Catalog <- "https://docs.google.com/spreadsheets/d/1ZXpwR7Gfto-uRzVdXzMpQF4frbrvMLH_IyLqonFZRSw/edit#gid=0"
 
@@ -56,7 +48,7 @@ ChlTurner <- "https://docs.google.com/spreadsheets/d/13mQm0B3siS65UuGjNdzvpHFomf
 FileEncode <- "UTF-8" 
 Delimiter <- ","
 
-HeaderRows <- 0
+HeaderRows <- 14
 
 ```
 
@@ -128,13 +120,13 @@ Colours_nm
 
 ```
 
-```{r list PSI files for file import}
-SolisenseFiles <- list.files(path = DataIn, pattern = FileID, full.names = TRUE, recursive = FALSE)
+```{r list Solisense Data files for file import}
+SolisenseDataFiles <- list.files(path = DataIn, pattern = FileID, full.names = TRUE, recursive = FALSE)
 
-SolisenseFiles
+SolisenseDataFiles
 
 #test for duplicate file names
-unique(duplicated(SolisenseFiles))
+unique(duplicated(SolisenseDataFiles))
 ```
 
 
@@ -154,20 +146,39 @@ read_delim_plus <- function(flnm, delimiter, headerrows, fileencode){read_delim(
 ```
 
 Read Test File
-```{r read example Solisense file}
+```{r read example Solisense Data file}
 #issue with rows with --------;  easy to filter though
-# TestFile <- read.delim_plus(flnm = "../RawData/Solisense/MURIS_202105121400_MaBe3414_445_caloxy_fit.csv", file_encode = FileEncode, delimiter = Delimiter, header_rows = HeaderRows)
+HeaderRows <- 0
+
+TestFile <- read_delim_plus(flnm = "../Data/RawData/Solisense/PICO_202305310950_JuNa1188_445_25_data.csv", delimiter = Delimiter, headerrows = HeaderRows, fileencode = FileEncode)
+
+
+
+|>
+  filter (DataPt != "==========") |>
+  select(-c(`...6`)) |>
+  rename(Time_us = `Time(us)`)
+
+# FileEncode <- "UTF-8" 
+# Delimiter <- ","
+# 
+
 
 ```
 
 purrr::map to read all files
 ```{r read Solisense files}
-SolFits <- SolisenseFiles %>%
-  map_df(~read_delim_plus(flnm =., delimiter = Delimiter, headerrows = HeaderRows, fileencode = FileEncode))
+SolData <- SolisenseDataFiles |>
+  map_df(~read_delim_plus(flnm =., delimiter = Delimiter, headerrows = HeaderRows, fileencode = FileEncode)) |>
+  filter (DataPt != "==========") |>
+  select(-c(`...6`)) |>
+  rename(Time_us = `Time(us)`) |>
+  type_convert()
 
-head(SolFits)
-colnames(SolFits)
-length(unique(SolFits$Filename))
+head(SolData)
+colnames(SolData)
+length(unique(SolData$Filename))
+
 
 ```
 

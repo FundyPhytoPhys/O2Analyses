@@ -180,8 +180,6 @@ Spectra <- Spectra |>
   mutate(ANorm = ABase/max(ABase)) |>
   ungroup()
 
-
-
 Spectra |>
   ggplot() +
   geom_point(aes(x = nm, y = ABase)) +
@@ -325,7 +323,14 @@ SpectraMeta |>
   ggplot() +
   geom_line(aes(x = nm, y = ANorm_2), size = 0.5) +
   geom_line(aes(x = nm, y = ANorm_250), size = 0.1, colour = "red") +
-  facet_grid(cols = vars(Strain), rows = vars(Par_ue, O2_uM)) +
+  facet_grid(cols = vars(Strain), rows = vars(Par_ue, O2_uM, ID)) +
+ # coord_cartesian(xlim = c(500, 600)) + 
+  theme_bw()   
+
+SpectraMeta |>
+  ggplot() +
+  geom_line(aes(x = nm, y = ANorm_2 - ANorm_250), size = 0.5) +
+  facet_grid(cols = vars(Strain), rows = vars(Par_ue, O2_uM, ID)) +
  # coord_cartesian(xlim = c(500, 600)) + 
   theme_bw()   
 ```

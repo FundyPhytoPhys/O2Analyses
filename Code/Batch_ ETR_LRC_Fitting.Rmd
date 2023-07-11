@@ -55,10 +55,11 @@ library(broom)
 
 ```{r set colours}
 Wavelengths_nm = c(445, 470, 505, 535, 590)
-Colours_nm = c("darkblue", "dodgerblue", "darkgreen", "yellowgreen",  "darkorange")
+Colours_nm = c(w_length2rgb(Wavelengths_nm[1]), w_length2rgb(Wavelengths_nm[2]), w_length2rgb(Wavelengths_nm[3]), w_length2rgb(Wavelengths_nm[4]), w_length2rgb(Wavelengths_nm[5]))
 
 names(Colours_nm) <- Wavelengths_nm
 Colours_nm
+
 
 ```
 
@@ -95,14 +96,47 @@ unique(SolFitsMeta$ActPARCorr)
 
 Try tile map of qp (heat) vs. ActPARCorr and MeasureO2, facet by strain, growth O2 & growth par_ue
 ```{r prelimplot}
+
 SolFitsMeta %>%
   filter(Dark1s == 0) |>
-  filter(WtTau < 20000) |>
+  filter(LR_s < 65) |>
+  filter(Strain == "MIT9313") |>
   ggplot() +
-  geom_point(aes(x = ActPARCorr, y = WtTau, colour = Ex_WL)) +
-  scale_colour_manual(values = Colours_nm) +
-  facet_grid(rows = vars(MeasureO2_uM), cols = vars(Strain, O2_uM, Par_ue)) +
+  geom_tile(aes(x = ActPARCorr, y = MeasureO2_uM, colour = qpOxbo, fill = qpOxbo)) +
+  facet_grid(cols = vars(Strain, Par_ue), rows = vars(O2_uM)) +
   theme_bw()
+
+SolFitsMeta %>%
+  filter(Dark1s == 0) |>
+  filter(Strain == "MIT9313") |>
+  filter(LR_s < 65) |>
+  ggplot() +
+  geom_point(aes(x = ActPARCorr, y = qpOxbo, colour = MeasureO2_uM)) +
+  geom_line(aes(x = ActPARCorr, y = qpOxbo, colour = MeasureO2_uM)) +
+  facet_grid(cols = vars(Strain, Par_ue), rows = vars(O2_uM)) +
+  theme_bw()
+
+SolFitsMeta %>%
+  filter(Dark1s == 0) |>
+  filter(Strain == "MIT9313") |>
+  filter(LR_s < 65) |>
+  ggplot() +
+  geom_point(aes(x = ActPARCorr, y = Sig, colour = MeasureO2_uM)) +
+  geom_line(aes(x = ActPARCorr, y = Sig, colour = MeasureO2_uM)) +
+  facet_grid(cols = vars(Strain, Par_ue), rows = vars(O2_uM)) +
+  theme_bw()
+
+SolFitsMeta %>%
+  filter(Dark1s == 0) |>
+  filter(Strain == "MIT9313") |>
+  filter(LR_s < 65) |>
+  ggplot() +
+  geom_point(aes(x = ActPARCorr, y = Tau2QA, colour = MeasureO2_uM)) +
+  geom_line(aes(x = ActPARCorr, y = Tau2QA, colour = MeasureO2_uM)) +
+  facet_grid(cols = vars(Strain, Par_ue), rows = vars(O2_uM)) +
+  theme_bw()
+
+
 
 SolFitsMeta %>%
   filter(Dark1s == 0) |>

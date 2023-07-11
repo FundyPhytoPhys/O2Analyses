@@ -34,26 +34,17 @@ library(photobiology)
 
 ```
 
-```{r}
+```{r set project variables}
 #"..", takes up a level in the directory path
 Project <- "PICO"
 
 #FileID <- "OlisDeco"
-DataIn <- file.path("..","ImportedData", "OLIS")
-#DataOut <- file.path("..","ProcessedData", "OLIS")
+DataIn <- file.path("..","Data", "ImportedData", "OLIS")
 
-DataOut <- file.path("..", "ImportedData", "OLIS")
+DataOut <- file.path("..", "Data", "ProcessedData")
 
 FileEncode <- "UTF-8" 
 #Delimiter <- "\t"
-```
-
-
-```{r set project variables}
-# Project <- "Pico"
-# DataPath <- "OLISProcess"
-# OutPath <- "OLISDecon"
-
 ```
 
 
@@ -67,9 +58,6 @@ Colours_nm
 
 ```
 
-
-6 Jan 10:19
-What does Sylwia want to do with these spectra?
 
 i) Check changes in pigment peak heights across growth conditions within a strain
 ii) How do pigments change over growth trajectory within a strain

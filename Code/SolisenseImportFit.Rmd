@@ -360,6 +360,19 @@ SolFitsTrim2 %>%
   scale_x_continuous(sec.axis = sec_axis(~ . , name = "Ex_WL", breaks = NULL, labels = NULL)) +
   theme_bw()
 
+SolFitsTrim2 %>%
+  filter(Dark1s == 0,
+         MeasureO2_uM == 250) %>%
+  ggplot() +
+  geom_point(aes(x = ActPARCorr, y = Sig)) +
+  geom_line(aes(x = ActPARCorr, y = Sig)) +
+  #scale_colour_manual(values = Colours_nm) +
+  facet_grid(cols = vars(Ex_WL), rows = vars(CultureID)) +
+  theme(strip.text.y = element_text(size = 5, angle=0)) +
+  scale_y_continuous(sec.axis = sec_axis(~ . , name = "CultureID", breaks = NULL, labels = NULL)) +
+  scale_x_continuous(sec.axis = sec_axis(~ . , name = "Ex_WL", breaks = NULL, labels = NULL)) +
+  theme_bw()
+
 
 SolFitsTrim2 %>%
   filter(Dark1s == 0) %>%
@@ -418,8 +431,10 @@ SolFitsMeta <- SolFitsMeta |>
   left_join(ChlData, join_by(CultureID == CultureID))
         
 SolFitsMeta |>
+  filter(MeasureO2_uM == 250,
+         O2_uM == 250) |>
   ggplot() +
-  geom_point(aes(x = ActPARCorr, y = FvFm)) +
+  geom_point(aes(x = ActPARCorr, y = Sig)) +
   facet_grid(cols = vars(Strain), rows = vars(Par_ue, O2_uM)) +
   theme_bw()            
 

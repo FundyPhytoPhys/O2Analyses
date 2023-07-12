@@ -150,11 +150,11 @@ Read Test File
 #issue with rows with --------;  easy to filter though
 DataHeaderRows <- 14
 
-HeaderRows <- c("DateTime:", "RFID_EPC:", "RFID_UserData:", "Barcode:", "PIF:", "PARs:", "Light:", "Cycles:", "Lamps:", "Gain:", "SNR_raw:", "Position:", "DataPt", "----")
+HeaderRowValues <- c("DateTime:", "RFID_EPC:", "RFID_UserData:", "Barcode:", "PIF:", "PARs:", "Light:", "Cycles:", "Lamps:", "Gain:", "SNR_raw:", "Position:", "DataPt", "----")
 
 
 TestFile <- read_delim_plus(flnm = "../Data/RawData/Solisense/PICO_202305310950_JuNa1188_445_25_data.csv", delimiter = Delimiter, headerrows = DataHeaderRows, fileencode = FileEncode) |>
-  filter(!`DataPt` %in% HeaderRows) |>
+  filter(!`DataPt` %in% HeaderRowValues) |>
   filter(`Time(us)` != "99") |>
   select(-c(`...6`)) |>
   rename(Time_us = `Time(us)` )
@@ -197,18 +197,49 @@ TestFile |>
 purrr::map to read all files
 ```{r read Solisense files}
 SolData <- SolisenseDataFiles |>
-  map_df(~read_delim_plus(flnm =., delimiter = Delimiter, headerrows = HeaderRows, fileencode = FileEncode)) |>
-  filter (DataPt != "==========") |>
+  map_df(~read_delim_plus(flnm =., delimiter = Delimiter, headerrows = DataHeaderRows, fileencode = FileEncode)) |>
+   filter(!`DataPt` %in% HeaderRows) |>
+  filter(`Time(us)` != "99") |>
   select(-c(`...6`)) |>
-  rename(Time_us = `Time(us)`) |>
-  type_convert()
+  rename(Time_us = `Time(us)` )
 
 head(SolData)
 colnames(SolData)
 length(unique(SolData$Filename))
 
+SolLights <- SolisenseDataFiles |> 
+  map_df(~read_delim_plus(flnm = ., delimiter = Delimiter, headerrows = 0, fileencode = FileEncode)) |>
+  filter(`----` == "Light:") |>
+  separate(`...2`, c("L1","L2","L3","L4","L5"), sep = ",", remove = TRUE) |>
+  select(-c("----"))
+
+SolLightsLength <- tidyr::uncount(tibble(SolLights), nrow(SolData)/nrow(SolLights)) |>
+  select(-c(Filename))
+
+SolData <- cbind(SolData, SolLightsLength) |>
+  filter(DataPt != "==========") |>
+  type_convert()
+  
+
+head(SolData)
+
 
 ```
+
+```{r SolData plot}
+SolData |>
+   ggplot() +
+  geom_point(aes(x = DataPt, y = EM), colour = "red") +
+  #geom_point(aes(x = DataPt, y = Fit), size = 0.1) +
+  facet_grid(cols = vars(L1), rows = vars(Filename)) +
+  theme_bw()
+  
+```
+
+
+
+
+XXXXXX
 
 
 ```{r tidy SolFitsTrim}

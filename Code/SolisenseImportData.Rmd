@@ -150,36 +150,49 @@ Read Test File
 #issue with rows with --------;  easy to filter though
 DataHeaderRows <- 14
 
-HeaderRows <- c("DateTime:", "RFID_EPC:", "RFID_UserData:", "Barcode:", "PIF:", "PARs:", "Light:", "Cycles:", "Lamps:", "Gain:", "SNR_raw:", "Position:")
+HeaderRows <- c("DateTime:", "RFID_EPC:", "RFID_UserData:", "Barcode:", "PIF:", "PARs:", "Light:", "Cycles:", "Lamps:", "Gain:", "SNR_raw:", "Position:", "DataPt", "----")
 
 
 TestFile <- read_delim_plus(flnm = "../Data/RawData/Solisense/PICO_202305310950_JuNa1188_445_25_data.csv", delimiter = Delimiter, headerrows = DataHeaderRows, fileencode = FileEncode) |>
-  filter(DataPt != "==========")
-
+  filter(!`DataPt` %in% HeaderRows) |>
+  filter(`Time(us)` != "99") |>
+  select(-c(`...6`)) |>
+  rename(Time_us = `Time(us)` )
 
 TestLights <- read_delim_plus(flnm = "../Data/RawData/Solisense/PICO_202305310950_JuNa1188_445_25_data.csv", delimiter = Delimiter, headerrows = 0, fileencode = FileEncode) |>
   filter(`----` == "Light:") |>
-  separate(`...2`, c("L1","L2","L3","L4","L5"), sep = ",", remove = TRUE)
+  separate(`...2`, c("L1","L2","L3","L4","L5"), sep = ",", remove = TRUE) |>
+  select(-c("----"))
 
 #Now expand TestLights to appropriate number of rows for each light...
 
-|>
-  #filter(!`----` %in% DataRowstoDrop) |>
-  filter(`...2` != "99,     100,     227,")
+CurveLength <- nrow(TestFile)/nrow(TestLights)
 
-TestFile |>
-  map(`----`, ~if_else(`----` == `Light:`, `...2'  ))
+#https://stackoverflow.com/questions/62935872/i-want-to-duplicate-observations-rows-in-a-tibble
 
-|>
-  select(-c(`...6`)) |>
-  rename(Time_us = `Time(us)`)
+TestLightsLength <- tidyr::uncount(tibble(TestLights), nrow(TestFile)/nrow(TestLights)) |>
+  select(-c(Filename))
 
-# FileEncode <- "UTF-8" 
-# Delimiter <- ","
-# 
+TestFile <- cbind(TestFile, TestLightsLength) |>
+  filter(DataPt != "==========") |>
+  type_convert()
+  
 
+head(TestFile)
 
 ```
+
+```{r testplot}
+TestFile |>
+  ggplot() +
+  geom_point(aes(x = DataPt, y = EM), colour = "red") +
+  #geom_point(aes(x = DataPt, y = Fit), size = 0.1) +
+  facet_grid(cols = vars(L1)) +
+  theme_bw()
+  
+```
+
+
 
 purrr::map to read all files
 ```{r read Solisense files}

@@ -131,54 +131,68 @@ unique(duplicated(SolisenseDataFiles))
 
 
 ```{r data read adds filename and cdate, warning=FALSE, message=FALSE, echo=FALSE}
-#design choice 2 file reading functions or add a filetype variable to a single function
-#stringsAsFactors =FALSE somewhere? 
-# 
-# read.delim_plus <- function(flnm, file_encode, delimiter, header_rows){read.delim(flnm, fileEncoding = file_encode, sep = delimiter,  skip = header_rows, row.names = NULL) %>% mutate(filename = flnm, cdatetime = ymd_hms(file.info(flnm)$ctime))
-# }
 
 #a read function using tidyverse::read_delim that skips a fixed number of header rows, and adds columns to the dataframe containing the filename and the file creation date time.
 read_delim_plus <- function(flnm, delimiter, headerrows, fileencode){read_delim(flnm, delim = delimiter,  col_names = TRUE,  skip = headerrows, escape_double = FALSE,  locale = locale(encoding = fileencode), trim_ws = TRUE) %>%
     mutate(Filename = flnm)
-  }
+}
 
+read_delim_SolLight <- function(flnm, delimiter, headerrows, fileencode){DataFile <- read_delim(flnm, delim = delimiter,  col_names = TRUE,  skip = headerrows, escape_double = FALSE,  locale = locale(encoding = fileencode), trim_ws = TRUE) |>
+    mutate(Filename = flnm) |> filter(!`DataPt` %in% HeaderRowValues) |>
+  filter(`Time(us)` != "99") |>
+  select(-c(`...6`)) |>
+  rename(Time_us = `Time(us)` )
+  
+  Lights <- read_delim_plus(flnm, delimiter = Delimiter, headerrows = 0, fileencode = FileEncode) |>
+  filter(`----` == "Light:") |>
+  separate(`...2`, c("L1","L2","L3","L4","L5"), sep = ",", remove = TRUE) |>
+  select(-c("----"))
+  
+  LightsLength <- tidyr::uncount(tibble(Lights), nrow(DataFile)/nrow(Lights)) |>
+  select(-c(Filename))
+  
+  SolFile <- cbind(DataFile, LightsLength) |>
+  filter(DataPt != "==========") |>
+  type_convert()
+}
+  
 
 ```
 
 Read Test File
 ```{r read example Solisense Data file}
-#issue with rows with --------;  easy to filter though
-DataHeaderRows <- 14
-
-HeaderRowValues <- c("DateTime:", "RFID_EPC:", "RFID_UserData:", "Barcode:", "PIF:", "PARs:", "Light:", "Cycles:", "Lamps:", "Gain:", "SNR_raw:", "Position:", "DataPt", "----")
-
-
-TestFile <- read_delim_plus(flnm = "../Data/RawData/Solisense/PICO_202305310950_JuNa1188_445_25_data.csv", delimiter = Delimiter, headerrows = DataHeaderRows, fileencode = FileEncode) |>
-  filter(!`DataPt` %in% HeaderRowValues) |>
-  filter(`Time(us)` != "99") |>
-  select(-c(`...6`)) |>
-  rename(Time_us = `Time(us)` )
-
-TestLights <- read_delim_plus(flnm = "../Data/RawData/Solisense/PICO_202305310950_JuNa1188_445_25_data.csv", delimiter = Delimiter, headerrows = 0, fileencode = FileEncode) |>
-  filter(`----` == "Light:") |>
-  separate(`...2`, c("L1","L2","L3","L4","L5"), sep = ",", remove = TRUE) |>
-  select(-c("----"))
-
-#Now expand TestLights to appropriate number of rows for each light...
-
-CurveLength <- nrow(TestFile)/nrow(TestLights)
-
-#https://stackoverflow.com/questions/62935872/i-want-to-duplicate-observations-rows-in-a-tibble
-
-TestLightsLength <- tidyr::uncount(tibble(TestLights), nrow(TestFile)/nrow(TestLights)) |>
-  select(-c(Filename))
-
-TestFile <- cbind(TestFile, TestLightsLength) |>
-  filter(DataPt != "==========") |>
-  type_convert()
-  
-
-head(TestFile)
+# #issue with rows with --------;  easy to filter though
+# DataHeaderRows <- 14
+# 
+# HeaderRowValues <- c("DateTime:", "RFID_EPC:", "RFID_UserData:", "Barcode:", "PIF:", "PARs:", "Light:", "Cycles:", "Lamps:", "Gain:", "SNR_raw:", "Position:", "DataPt", "----")
+# 
+# 
+# TestFile <- read_delim_plus(flnm = "../Data/RawData/Solisense/PICO_202305310950_JuNa1188_445_25_data.csv", delimiter = Delimiter, headerrows = DataHeaderRows, fileencode = FileEncode) |>
+#   filter(!`DataPt` %in% HeaderRowValues) |>
+#   filter(`Time(us)` != "99") |>
+#   select(-c(`...6`)) |>
+#   rename(Time_us = `Time(us)` )
+# 
+# TestLights <- read_delim_plus(flnm = "../Data/RawData/Solisense/PICO_202305310950_JuNa1188_445_25_data.csv", delimiter = Delimiter, headerrows = 0, fileencode = FileEncode) |>
+#   filter(`----` == "Light:") |>
+#   separate(`...2`, c("L1","L2","L3","L4","L5"), sep = ",", remove = TRUE) |>
+#   select(-c("----"))
+# 
+# #Now expand TestLights to appropriate number of rows for each light...
+# 
+# CurveLength <- nrow(TestFile)/nrow(TestLights)
+# 
+# #https://stackoverflow.com/questions/62935872/i-want-to-duplicate-observations-rows-in-a-tibble
+# 
+# TestLightsLength <- tidyr::uncount(tibble(TestLights), nrow(TestFile)/nrow(TestLights)) |>
+#   select(-c(Filename))
+# 
+# TestFile <- cbind(TestFile, TestLightsLength) |>
+#   filter(DataPt != "==========") |>
+#   type_convert()
+#   
+# 
+# head(TestFile)
 
 ```
 
@@ -191,37 +205,57 @@ TestFile |>
   theme_bw()
   
 ```
+```{r read example Solisense Data file onestep}
+DataHeaderRows <- 14
+
+HeaderRowValues <- c("DateTime:", "RFID_EPC:", "RFID_UserData:", "Barcode:", "PIF:", "PARs:", "Light:", "Cycles:", "Lamps:", "Gain:", "SNR_raw:", "Position:", "DataPt", "----")
 
 
+TestFileOneStep <- read_delim_SolLight(flnm = "../Data/RawData/Solisense/PICO_202305310950_JuNa1188_445_25_data.csv", delimiter = Delimiter, headerrows = DataHeaderRows, fileencode = FileEncode)
 
-purrr::map to read all files
+```
+
+
+purrr::map to read all files, two step
 ```{r read Solisense files}
-SolData <- SolisenseDataFiles |>
-  map_df(~read_delim_plus(flnm =., delimiter = Delimiter, headerrows = DataHeaderRows, fileencode = FileEncode)) |>
-   filter(!`DataPt` %in% HeaderRows) |>
-  filter(`Time(us)` != "99") |>
-  select(-c(`...6`)) |>
-  rename(Time_us = `Time(us)` )
+# SolData <- SolisenseDataFiles |>
+#   map_df(~read_delim_plus(flnm =., delimiter = Delimiter, headerrows = DataHeaderRows, fileencode = FileEncode)) |>
+#    filter(!`DataPt` %in% HeaderRows) |>
+#   filter(`Time(us)` != "99") |>
+#   select(-c(`...6`)) |>
+#   rename(Time_us = `Time(us)` )
+# 
+# head(SolData)
+# colnames(SolData)
+# length(unique(SolData$Filename))
+# 
+# SolLights <- SolisenseDataFiles |> 
+#   map_df(~read_delim_plus(flnm = ., delimiter = Delimiter, headerrows = 0, fileencode = FileEncode)) |>
+#   filter(`----` == "Light:") |>
+#   separate(`...2`, c("L1","L2","L3","L4","L5"), sep = ",", remove = TRUE) |>
+#   select(-c("----"))
+# 
+# SolLightsLength <- tidyr::uncount(tibble(SolLights), nrow(SolData)/nrow(SolLights)) |>
+#   select(-c(Filename))
+# 
+# SolData <- cbind(SolData, SolLightsLength) |>
+#   filter(DataPt != "==========") |>
+#   type_convert()
+#   
+# 
+# head(SolData)
+
+
+```
+purrr::map to read all files, onestep read_delim_SolLight function
+```{r read Solisense files}
+SolData2 <- SolisenseDataFiles |>
+  map_df(~ read_delim_SolLight(flnm =., delimiter = Delimiter, headerrows = DataHeaderRows, fileencode = FileEncode))
+
 
 head(SolData)
-colnames(SolData)
-length(unique(SolData$Filename))
-
-SolLights <- SolisenseDataFiles |> 
-  map_df(~read_delim_plus(flnm = ., delimiter = Delimiter, headerrows = 0, fileencode = FileEncode)) |>
-  filter(`----` == "Light:") |>
-  separate(`...2`, c("L1","L2","L3","L4","L5"), sep = ",", remove = TRUE) |>
-  select(-c("----"))
-
-SolLightsLength <- tidyr::uncount(tibble(SolLights), nrow(SolData)/nrow(SolLights)) |>
-  select(-c(Filename))
-
-SolData <- cbind(SolData, SolLightsLength) |>
-  filter(DataPt != "==========") |>
-  type_convert()
-  
-
-head(SolData)
+colnames(SolData2)
+length(unique(SolData2$Filename))
 
 
 ```

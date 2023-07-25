@@ -194,25 +194,27 @@ TestFile2 |>
   
 ```
 
+
 ```{r add light and time from headers during file read}
-read_delim_SolLight <- function(flnm, delimiter, headerrows, fileencode){DataFile <- read_delim(flnm, delim = delimiter,  col_names = TRUE,  skip = headerrows, escape_double = FALSE,  locale = locale(encoding = fileencode), trim_ws = TRUE) |>
-    mutate(Filename = flnm) |> filter(!`DataPt` %in% HeaderRowValues) |>
-  filter(`Time(us)` != "99") |>
-  select(-c(`...6`)) |>
-  rename(Time_us = `Time(us)` )
-  
-  Lights <- read_delim_plus(flnm, delimiter = Delimiter, headerrows = 0, fileencode = FileEncode) |>
-  filter(`----` == "Light:") |>
-  separate(`...2`, c("L1","L2","L3","L4","L5"), sep = ",", remove = TRUE) |>
-  select(-c("----"))
-  
-  LightsLength <- tidyr::uncount(tibble(Lights), nrow(DataFile)/nrow(Lights)) |>
-  select(-c(Filename))
-  
-  SolFile <- cbind(DataFile, LightsLength) |>
-  filter(DataPt != "==========") |>
-  type_convert()
-}
+# read_delim_SolLight <- function(flnm, delimiter, headerrows, fileencode){DataFile <- read_delim(flnm, delim = delimiter,  col_names = TRUE,  skip = headerrows, escape_double = FALSE,  locale = locale(encoding = fileencode), trim_ws = TRUE) |>
+#     mutate(Filename = flnm) |> filter(!`DataPt` %in% HeaderRowValues) |>
+#   filter(`Time(us)` != "99") |>
+#   select(-c(`...6`)) |>
+#   rename(Time_us = `Time(us)` )
+#   
+#   Lights <- read_delim_plus(flnm, delimiter = Delimiter, headerrows = 0, fileencode = FileEncode) |>
+#   filter(`----` == "Light:") |>
+#   separate(`...2`, c("L1","L2","L3","L4","L5"), sep = ",", remove = TRUE) |>
+#   select(-c("----"))
+#   
+#   LightsLength <- tidyr::uncount(tibble(Lights), nrow(DataFile)/nrow(Lights)) |>
+#   select(-c(Filename))
+#   
+#   SolFile <- cbind(DataFile, LightsLength) |>
+#   filter(DataPt != "==========") |>
+#   type_convert()
+# }
+
 
 read_delim_SolLightTime <- function(flnm, delimiter, headerrows, fileencode){DataFile <- read_delim(flnm, delim = delimiter,  col_names = TRUE,  skip = headerrows, escape_double = FALSE,  locale = locale(encoding = fileencode), trim_ws = TRUE) |>
     mutate(Filename = flnm) |> filter(!`DataPt` %in% HeaderRowValues) |>
@@ -233,7 +235,7 @@ read_delim_SolLightTime <- function(flnm, delimiter, headerrows, fileencode){Dat
   separate(`...2`, c("CurveDate","CurveTime","CurveDigitalTime"), sep = ",", remove = TRUE) |>
   select(-c("----"))
   
-  TimesLength <- tidyr::uncount(tibble(Lights), nrow(DataFile)/nrow(Times)) |>
+  TimesLength <- tidyr::uncount(tibble(Times), nrow(DataFile)/nrow(Times)) |>
   select(-c(Filename))
   
   SolFile <- cbind(DataFile, LightsLength, TimesLength) |>
@@ -241,50 +243,16 @@ read_delim_SolLightTime <- function(flnm, delimiter, headerrows, fileencode){Dat
   type_convert()
 }
 
-
-TestFile <- read_delim_plus(flnm = "../Data/RawData/Solisense/PICO_202305310950_JuNa1188_445_25_data.csv", delimiter = Delimiter, headerrows = DataHeaderRows, fileencode = FileEncode) |>
-  filter(!`DataPt` %in% HeaderRowValues) |>
-  filter(`Time(us)` != "99") |>
-  select(-c(`...6`)) |>
-  rename(Time_us = `Time(us)` )
-
-TestLights <- read_delim_plus(flnm = "../Data/RawData/Solisense/PICO_202305310950_JuNa1188_445_25_data.csv", delimiter = Delimiter, headerrows = 0, fileencode = FileEncode) |>
-  filter(`----` == "Light:") |>
-  separate(`...2`, c("L1","L2","L3","L4","L5"), sep = ",", remove = TRUE) |>
-  select(-c("----"))
-
-TestTimes <- read_delim_plus(flnm = "../Data/RawData/Solisense/PICO_202305310950_JuNa1188_445_25_data.csv", delimiter = Delimiter, headerrows = 0, fileencode = FileEncode) |>
-  filter(`----` == "DateTime:") |>
-  separate(`...2`, c("CurveDate","CurveTime","CurveDigitalTime"), sep = ",", remove = TRUE) |>
-  select(-c("----"))
-
-#Now expand TestLights TestTimes to appropriate number of rows for each light...
-
-CurveLength <- nrow(TestFile)/nrow(TestLights)
-
-#https://stackoverflow.com/questions/62935872/i-want-to-duplicate-observations-rows-in-a-tibble
-
-TestLightsLength <- tidyr::uncount(tibble(TestLights), nrow(TestFile)/nrow(TestLights)) |>
-  select(-c(Filename))
-
-TestTimesLength <- tidyr::uncount(tibble(TestTimes), nrow(TestFile)/nrow(TestTimes)) |>
-  select(-c(Filename))
-
-TestFile <- cbind(TestFile, TestLightsLength, TestTimesLength) |>
-  filter(DataPt != "==========") |>
-  type_convert()
-
-head(TestFile)
-  
 ```
+
+
 
 ```{r read example Solisense Data file onestep}
 DataHeaderRows <- 14
 
 HeaderRowValues <- c("DateTime:", "RFID_EPC:", "RFID_UserData:", "Barcode:", "PIF:", "PARs:", "Light:", "Cycles:", "Lamps:", "Gain:", "SNR_raw:", "Position:", "DataPt", "----")
 
-
-TestFileOneStep <- read_delim_SolLight(flnm = "../Data/RawData/Solisense/PICO_202305310950_JuNa1188_445_25_data.csv", delimiter = Delimiter, headerrows = DataHeaderRows, fileencode = FileEncode)
+SolLightTimeOneStep <- read_delim_SolLightTime(flnm = "../Data/RawData/Solisense/PICO_202305310950_JuNa1188_445_25_data.csv", delimiter = Delimiter, headerrows = DataHeaderRows, fileencode = FileEncode)
 
 ```
 
@@ -321,11 +289,11 @@ purrr::map to read all files, two step
 
 ```
 
-purrr::map to read all files, onestep read_delim_SolLight function
+purrr::map to read all files, onestep read_delim_SolLightTime function
 
 ```{r read Solisense files}
 SolData <- SolisenseDataFiles |>
-  map_df(~ read_delim_SolLight(flnm =., delimiter = Delimiter, headerrows = DataHeaderRows, fileencode = FileEncode))
+  map_df(~ read_delim_SolLightTime(flnm =., delimiter = Delimiter, headerrows = DataHeaderRows, fileencode = FileEncode))
 
 
 head(SolData)
@@ -408,17 +376,15 @@ SolData <- SolData %>%
 head(SolData)
 ```
 
+XXXUpdated to here 25 July
+
 ```{r dark1s}
 #generate column with duration of light step in s
 #add a column adding Dark1s based upon any step < 5 s
 
 SolData <- SolData %>%
-  group_by(Filename, Project, CultureID, Ex_WL, TempCont, MeasureO2_uM, ActPARCorr)
-%>%
-  mutate(Step_s = replace_na(as.numeric(Time_us - lag(Time_us)), 20), .after = Time_us)
-
-
-%>%
+  group_by(Filename, Project, CultureID, Ex_WL, TempCont, MeasureO2_uM, ActPARCorr) |>
+  mutate(Step_s = replace_na(as.numeric(Time_us - lag(Time_us)), 20), .after = Time_us) |>
   mutate(LR_s = as.numeric(ObsDateTime - ObsDateTime[1]), .after = Step_s) %>%
   mutate(Dark1s = if_else(Step_s > 5, 0, 1), .after = Step_s) %>%
   relocate(Ex_WL, .after = Dark1s) %>%

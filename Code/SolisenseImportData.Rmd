@@ -177,17 +177,17 @@ TestLightsLength <- tidyr::uncount(tibble(TestLights), nrow(TestFile)/nrow(TestL
 TestTimesLength <- tidyr::uncount(tibble(TestTimes), nrow(TestFile)/nrow(TestTimes)) |>
   select(-c(Filename))
 
-TestFile <- cbind(TestFile, TestLightsLength, TestTimesLength) |>
+TestFile2 <- cbind(TestFile, TestLightsLength, TestTimesLength) |>
   filter(DataPt != "==========") |>
   type_convert()
 
 
-head(TestFile)
+head(TestFile2)
 
 ```
 
 ```{r testplot}
-TestFile |>
+TestFile2 |>
   ggplot() +
   geom_point(aes(x = DataPt, y = EM), colour = "red") +
   #geom_point(aes(x = DataPt, y = Fit), size = 0.1) +

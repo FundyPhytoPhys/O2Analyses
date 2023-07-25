@@ -15,12 +15,9 @@ output:
 csl: plos-one.csl
 ---
 
-This .Rmd imports and tidys underlying data from the Solisense kinetic fluorometer software.
-It does not perform the underlying fits of the induction/relaxation profiles from FRRf protocols.
+This .Rmd imports and tidys underlying data from the Solisense kinetic fluorometer software. It does not perform the underlying fits of the induction/relaxation profiles from FRRf protocols.
 
-  
 # Set Chunk Options
-
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(echo = TRUE, message = FALSE)
@@ -28,6 +25,7 @@ knitr::opts_chunk$set(fig.path='Figs/')
 ```
 
 # Set Project Variables
+
 ```{r set project variables}
 Project <- "PICO"
 DataOut <- file.path("..", "Data", "ProcessedData")
@@ -60,7 +58,6 @@ photons_umol <- 6.022E17
 A2_m2 <- 1E20
 ```
 
-
 ```{r load libraries}
 library(tidyverse)
 library(lubridate)
@@ -74,6 +71,7 @@ library(googlesheets4)
 ```
 
 Load Multiculti catalog and ChlTurner
+
 ```{r load multiculticatalog, message = FALSE, warning = FALSE, echo=FALSE}
 gs4_deauth()
 
@@ -131,7 +129,6 @@ SolisenseDataFiles
 unique(duplicated(SolisenseDataFiles))
 ```
 
-
 ```{r data read adds filename and cdate, warning=FALSE, message=FALSE, echo=FALSE}
 
 #a read function using tidyverse::read_delim that skips a fixed number of header rows, and adds columns to the dataframe containing the filename and the file creation date time.
@@ -142,6 +139,7 @@ read_delim_plus <- function(flnm, delimiter, headerrows, fileencode){read_delim(
 ```
 
 Read Test File
+
 ```{r read example Solisense Data file}
 # #issue with rows with --------;  easy to filter though
 DataHeaderRows <- 14
@@ -195,7 +193,6 @@ TestFile2 |>
   theme_bw()
   
 ```
-
 
 ```{r add light and time from headers during file read}
 read_delim_SolLight <- function(flnm, delimiter, headerrows, fileencode){DataFile <- read_delim(flnm, delim = delimiter,  col_names = TRUE,  skip = headerrows, escape_double = FALSE,  locale = locale(encoding = fileencode), trim_ws = TRUE) |>
@@ -281,8 +278,6 @@ head(TestFile)
   
 ```
 
-
-
 ```{r read example Solisense Data file onestep}
 DataHeaderRows <- 14
 
@@ -293,8 +288,8 @@ TestFileOneStep <- read_delim_SolLight(flnm = "../Data/RawData/Solisense/PICO_20
 
 ```
 
-
 purrr::map to read all files, two step
+
 ```{r read Solisense files}
 # SolData <- SolisenseDataFiles |>
 #   map_df(~read_delim_plus(flnm =., delimiter = Delimiter, headerrows = DataHeaderRows, fileencode = FileEncode)) |>
@@ -327,6 +322,7 @@ purrr::map to read all files, two step
 ```
 
 purrr::map to read all files, onestep read_delim_SolLight function
+
 ```{r read Solisense files}
 SolData <- SolisenseDataFiles |>
   map_df(~ read_delim_SolLight(flnm =., delimiter = Delimiter, headerrows = DataHeaderRows, fileencode = FileEncode))
@@ -349,9 +345,7 @@ SolData |>
   
 ```
 
-
 XXXXUpdated to here for data import, 12 July 2023XXXX
-
 
 ```{r rename lights}
 
@@ -368,10 +362,10 @@ SolData <- SolData |>
   mutate(TempCont = TempCont)
 ```
 
-#Add ActPARcorr with proper correction factors for TC and no TC
-#Intercepts for cross conversions set to 0.
+#Add ActPARcorr with proper correction factors for TC and no TC #Intercepts for cross conversions set to 0.
 
 #Some smarter way to do this with map etc....
+
 ```{r actparrcorr}
 SolData <- SolData |> 
   mutate(nm445Corr = case_when(TempCont == "TC" ~ nm445 * ActPARCrossCal$Slope[ActPARCrossCal$DCLamp == "Pwr1_uE" & ActPARCrossCal$Models == "DCWaterJacketlm_tidy"],
@@ -413,8 +407,6 @@ SolData <- SolData %>%
 
 head(SolData)
 ```
-
-
 
 ```{r dark1s}
 #generate column with duration of light step in s
@@ -475,11 +467,8 @@ SolFitsTrim %>%
 
 ```
 
+Merge SolFitsTrim with MetaData & Turner Chl Data \# Merge OLISSpectra with MetaData and ChlData
 
-
-
-Merge SolFitsTrim with MetaData & Turner Chl Data 
-# Merge OLISSpectra with MetaData and ChlData
 ```{r SolDataTrim with MetaData and ChlData}
 
 SolDataMeta <- SolDataTrim2 %>%
@@ -501,9 +490,6 @@ SolDataMeta |>
 
 ```
 
-
 ```{r save SolDataMeta}
 saveRDS(SolDataMeta, file.path(DataOut, paste(Project, Run, "SolDataMeta.Rds", sep = "_"), fsep = .Platform$file.sep))
 ```
-
-

@@ -383,10 +383,20 @@ XXXUpdated to here 25 July
 #add a column adding Dark1s based upon any step < 5 s
 
 SolData <- SolData %>%
-  group_by(Filename, Project, CultureID, Ex_WL, TempCont, MeasureO2_uM, ActPARCorr) |>
-  mutate(Step_s = replace_na(as.numeric(Time_us - lag(Time_us)), 20), .after = Time_us) |>
-  mutate(LR_s = as.numeric(ObsDateTime - ObsDateTime[1]), .after = Step_s) %>%
-  mutate(Dark1s = if_else(Step_s > 5, 0, 1), .after = Step_s) %>%
+  group_by(Filename, Project,  CultureID, Ex_WL, TempCont, MeasureO2_uM) |>
+  #mutate(Step_s = replace_na(as.numeric(Time_us - lag(Time_us)), 10), .after = Time_us) |>
+  mutate(Time_s = (as.numeric(Time_us - Time_us[1])) / 1000, .after = Time_us) |>
+  mutate(LR_s = (CurveDigitalTime - CurveDigitalTime[1])/1000, .after = CurveDigitalTime) |>
+  mutate(Dark1s = if_else(ActPARCorr == 0 & LR_s != 0,  1, 0), .after = LR_s) 
+
+
+
+SolData %>%
+  filter(Filename == "PICO_202305310950_JuNa1188_445_25") |>
+  ggplot() +
+  geom_point(aes(x = LR_s, y = EM, colour = as.factor(Dark1s)))
+
+%>%
   relocate(Ex_WL, .after = Dark1s) %>%
   relocate(ActPAR, .after = Ex_WL) %>%
   ungroup()
@@ -396,6 +406,8 @@ SolData <- SolData %>%
 # Figure out how to re-match Dark1s to appropriate light steps
 
 ```
+
+XXXUpdated to here 26 July 2023
 
 ```{r prelimplots}
 SolData %>%

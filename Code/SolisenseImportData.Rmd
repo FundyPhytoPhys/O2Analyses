@@ -434,12 +434,12 @@ SolDataMeta <- SolDataMeta |>
   ungroup()
 
 SolDataMeta |>
-  filter(Strain == "MIT9313") |>
+  filter(Strain == "MED4") |>
   filter(ActPARCorr == 0) |>
   filter(Dark1s == 0) |>
   filter(LR_s == 0) |>
   ggplot() +
-  geom_point(aes(x = Curve_us, y = EM/Chl)) +
+  geom_point(aes(x = Curve_us, y = Fit/Chl)) +
   facet_grid(cols = vars(Strain), rows = vars(Par_ue, O2_uM)) +
   theme_bw() 
 ```

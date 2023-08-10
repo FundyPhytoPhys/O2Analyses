@@ -92,6 +92,7 @@ MetaData <- MetaData %>%
    mutate(ExpDate = lubridate::ymd(ExpDate),
           ExpEndDate = lubridate::ymd_hms(`ExpEndDate`))
 # find units for chl
+
 ChlData <- read_sheet(ChlTurner) |>
   mutate(Chl = as.numeric(Reading_rfu) * as.numeric(Chl_slope) + as.numeric(Chl_intercept))
 
@@ -313,7 +314,6 @@ SolData |>
   
 ```
 
-XXXXUpdated to here for data import, 12 July 2023XXXX
 
 ```{r rename lights}
 
@@ -376,7 +376,6 @@ SolData <- SolData %>%
 head(SolData)
 ```
 
-XXXUpdated to here 25 July
 
 ```{r dark1s}
 #generate column with duration of light step in s
@@ -387,8 +386,10 @@ SolData <- SolData %>%
   #mutate(Step_s = replace_na(as.numeric(Time_us - lag(Time_us)), 10), .after = Time_us) |>
   mutate(Time_s = (as.numeric(Time_us - Time_us[1])) / 1000, .after = Time_us) |>
   mutate(LR_s = (CurveDigitalTime - CurveDigitalTime[1])/1000, .after = CurveDigitalTime) |>
-  mutate(Dark1s = if_else(ActPARCorr == 0 & LR_s != 0,  1, 0), .after = LR_s) 
-
+  mutate(Dark1s = if_else(ActPARCorr == 0 & LR_s != 0,  1, 0), .after = LR_s) |>
+  relocate(Ex_WL, .after = Dark1s) %>%
+  relocate(ActPAR, .after = Ex_WL) %>%
+  ungroup()
 
 
 SolData %>%
@@ -396,76 +397,51 @@ SolData %>%
   ggplot() +
   geom_point(aes(x = LR_s, y = EM, colour = as.factor(Dark1s)))
 
-%>%
-  relocate(Ex_WL, .after = Dark1s) %>%
-  relocate(ActPAR, .after = Ex_WL) %>%
-  ungroup()
-
-# Figure out how to cope with final step at 0 PAR, not followed by Dark1s step
-# separate Dark1s rows
-# Figure out how to re-match Dark1s to appropriate light steps
-
 ```
 
 XXXUpdated to here 26 July 2023
 
-```{r prelimplots}
-SolData %>%
-  filter(Dark1s == 0) %>%
-  ggplot() +
-  geom_point(aes(x = ActPARCorr, y = FvFm, colour = MeasureO2_uM)) +
-  #scale_colour_manual(values = Colours_nm) +
-  facet_grid(cols = vars(Ex_WL), rows = vars(CultureID)) +
-  theme_bw()
-
-SolFitsTrim %>%
-  filter(Dark1s == 0) %>%
-  ggplot() +
-  geom_point(aes(x = LR_s, y = FvFm, colour = MeasureO2_uM, size = ActPARCorr)) +
-  #scale_colour_manual(values = Colours_nm) +
-  facet_grid(cols = vars(Ex_WL, MeasureO2_uM), rows = vars(CultureID)) +
-  theme_bw()
-
-SolFitsTrim %>%
-  filter(Dark1s == 0) %>%
-  filter(Tau2QA < 20000) %>%
-  ggplot() +
-  geom_point(aes(x = LR_s, y = Tau2QA, colour = MeasureO2_uM, size = LR_s)) +
-  #scale_colour_manual(values = Colours_nm) +
-  facet_grid(cols = vars(Ex_WL), rows = vars(CultureID)) +
-  theme_bw()
-
-SolFitsTrim %>%
-  #filter(Dark1s != 0) %>%
-  ggplot() +
-  geom_point(aes(x = ActPARCorr, y = Alp2QA, colour = MeasureO2_uM, size = LR_s)) +
-  #scale_colour_manual(values = Colours_nm) +
-  facet_grid(cols = vars(Ex_WL), rows = vars(CultureID)) +
-  theme_bw() 
-
-```
-
-Merge SolFitsTrim with MetaData & Turner Chl Data \# Merge OLISSpectra with MetaData and ChlData
-
-```{r SolDataTrim with MetaData and ChlData}
-
-SolDataMeta <- SolDataTrim2 %>%
-  left_join(., MetaData, join_by(CultureID == ID)) |>
-   mutate(O2_uM = case_when(O2 == 0 ~ 2,
+# Merge with MetaData & Turner Chl Data
+Many to many relation b/t SolDataMeta & ChlData
+Get units for ChlData
+```{r merge with metadata}
+SolDataMeta <- left_join(x = SolData, y = MetaData, join_by("CultureID" == "ID")) |>
+  mutate(O2_uM = case_when(O2 == 0 ~ 2,
                            O2 == 1 ~ 25,
                            O2 == 21 ~ 250)) |>
   select(-c("Description", "Motivation", "doi", "Par_ueAdjusted", "DateOfAdjustment", "ElaspedHoursAtAdjustment", "...44", "...45")) 
 
-    
-SolDataMeta <- SolDataMeta |>
-  left_join(ChlData, join_by(CultureID == CultureID))
-        
+
+SolDataMeta <- left_join(x = SolDataMeta, y = ChlData, join_by("CultureID" == "CultureID"))
+```
+
+
+```{r SolDataMeta testplot}
 SolDataMeta |>
   ggplot() +
-  geom_point(aes(x = ActPARCorr, y = FvFm)) +
+  geom_point(aes(x = ActPARCorr, y = EM/Chl)) +
   facet_grid(cols = vars(Strain), rows = vars(Par_ue, O2_uM)) +
-  theme_bw()            
+  theme_bw()   
 
+```
+Add 'Curve_us' column for each induction curve
+```{r curvetime}
+#head(SolDataMeta)
+
+SolDataMeta <- SolDataMeta |>
+  group_by(Filename, Project,  CultureID, Ex_WL, TempCont, MeasureO2_uM, CurveTime, LR_s, ActPAR, Dark1s) |>
+  mutate(Curve_us = (Time_us - Time_us[1]),  .after = Time_s) |>
+  ungroup()
+
+SolDataMeta |>
+  filter(Strain == "MIT9313") |>
+  filter(ActPARCorr == 0) |>
+  filter(Dark1s == 0) |>
+  filter(LR_s == 0) |>
+  ggplot() +
+  geom_point(aes(x = Curve_us, y = EM/Chl)) +
+  facet_grid(cols = vars(Strain), rows = vars(Par_ue, O2_uM)) +
+  theme_bw() 
 ```
 
 ```{r save SolDataMeta}

@@ -456,27 +456,32 @@ Plots separating MeasureO2_uM
 ```{r MeasureO2_uM plots}
 SolDataMeta |>
   filter(Strain == "MED4") |>
-  filter(ActPARCorr %in% c (40)) |>
+  filter(ActPARCorr %in% c (0, 40)) |>
+  filter(Par_ue == 90) |>
   filter(Dark1s == 0) |>
   filter(LR_s < 70) |>
   ggplot() +
-  geom_point(aes(x = log10(Curve_us), y = EM/Chl, colour = as.factor(ActPARCorr))) +
+  geom_point(aes(x = log10(Curve_us), y = EM/Chl, colour = as.factor(ActPARCorr)), size = 0.2) +
+  geom_line(aes(x = log10(Curve_us), y = Fit/Chl, colour = as.factor(ActPARCorr))) +
   facet_grid(cols = vars(Strain, MeasureO2_uM), rows = vars(Par_ue, O2_uM)) +
   theme_bw() 
 
 SolDataMeta |>
   filter(Strain == "MIT9313") |>
-  filter(ActPARCorr %in% c (40)) |>
+  filter(ActPARCorr %in% c (0, 40)) |>
+  filter(Par_ue == 90) |>
   filter(Dark1s == 0) |>
   filter(LR_s < 70) |>
+  filter(CultureID != "JuNa1198") |>
   ggplot() +
-  geom_point(aes(x = log10(Curve_us), y = EM/Chl, colour = as.factor(ActPARCorr))) +
-  facet_grid(cols = vars(Strain, MeasureO2_uM), rows = vars(Par_ue, O2_uM)) +
+  geom_point(aes(x = log10(Curve_us), y = EM/Chl, colour = as.factor(ActPARCorr)), size = 0.2) +
+  geom_line(aes(x = log10(Curve_us), y = Fit/Chl, colour = as.factor(ActPARCorr))) +
+  facet_grid(cols = vars(Strain, MeasureO2_uM), rows = vars(Par_ue, O2_uM, CultureID)) +
   theme_bw() 
 
 SolDataMeta |>
   filter(Strain == "SS120") |>
-  filter(ActPARCorr %in% c (40)) |>
+  filter(ActPARCorr %in% c (0, 40)) |>
   filter(Dark1s == 0) |>
   filter(LR_s < 70) |>
   ggplot() +

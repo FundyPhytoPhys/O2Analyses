@@ -15,7 +15,7 @@ output:
 csl: plos-one.csl
 ---
 
-This .Rmd imports and tidys underlying data from the Solisense kinetic fluorometer software. It does not perform the underlying fits of the induction/relaxation profiles from FRRf protocols.
+This .Rmd imports and tidys underlying data from the Solisense kinetic fluorometer software, along with culture MetaData and Turner Chlorophyll data. It does not perform the underlying fits of the induction/relaxation profiles from FRRf protocols.
 
 # Set Chunk Options
 
@@ -93,13 +93,19 @@ MetaData <- MetaData %>%
           ExpEndDate = lubridate::ymd_hms(`ExpEndDate`))
 # find units for chl
 
-ChlData <- read_sheet(ChlTurner) |>
+#issue with R guessing coltype of InstrumentTag from first rows, and converting to lgl.  Then actual tags are lost as NA b/c looking for logical values only
+ChlData <- read_sheet(ChlTurner, col_types = c("cccciiiiiiic"))
+
+head(ChlData)
+
+ChlData <- ChlData|>
   mutate(Chl = as.numeric(Reading_rfu) * as.numeric(Chl_slope) + as.numeric(Chl_intercept)) |>
   drop_na(DATE, TIME) |>
   #mutate(StartExDate = unlist(StartExDate),
-  mutate(DATE = unlist(DATE), 
-         TIME = unlist(TIME)) |>
-  mutate(DATE = as.character(DATE))
+  # mutate(DATE = unlist(DATE), 
+  #        TIME = unlist(TIME)) |>
+  mutate(DATE = as.character(DATE)) |>
+  filter(InstrumentTag == "Solisense")
 
 # ,
 #          StartExDate = as.character(StartExDate))
@@ -153,56 +159,56 @@ read_delim_plus <- function(flnm, delimiter, headerrows, fileencode){read_delim(
 Read Test File
 
 ```{r read example Solisense Data file}
-# #issue with rows with --------;  easy to filter though
-DataHeaderRows <- 14
-
-HeaderRowValues <- c("DateTime:", "RFID_EPC:", "RFID_UserData:", "Barcode:", "PIF:", "PARs:", "Light:", "Cycles:", "Lamps:", "Gain:", "SNR_raw:", "Position:", "DataPt", "----")
-
-
-TestFile <- read_delim_plus(flnm = "../Data/RawData/Solisense/PICO_202305310950_JuNa1188_445_25_data.csv", delimiter = Delimiter, headerrows = DataHeaderRows, fileencode = FileEncode) |>
-  filter(!`DataPt` %in% HeaderRowValues) |>
-  filter(`Time(us)` != "99") |>
-  select(-c(`...6`)) |>
-  rename(Time_us = `Time(us)` )
-
-TestLights <- read_delim_plus(flnm = "../Data/RawData/Solisense/PICO_202305310950_JuNa1188_445_25_data.csv", delimiter = Delimiter, headerrows = 0, fileencode = FileEncode) |>
-  filter(`----` == "Light:") |>
-  separate(`...2`, c("L1","L2","L3","L4","L5"), sep = ",", remove = TRUE) |>
-  select(-c("----"))
-
-TestTimes <- read_delim_plus(flnm = "../Data/RawData/Solisense/PICO_202305310950_JuNa1188_445_25_data.csv", delimiter = Delimiter, headerrows = 0, fileencode = FileEncode) |>
-  filter(`----` == "DateTime:") |>
-  separate(`...2`, c("CurveDate","CurveTime","CurveDigitalTime"), sep = ",", remove = TRUE) |>
-  select(-c("----"))
-
-#Now expand TestLights TestTimes to appropriate number of rows for each light...
-
-CurveLength <- nrow(TestFile)/nrow(TestLights)
-
-#https://stackoverflow.com/questions/62935872/i-want-to-duplicate-observations-rows-in-a-tibble
-
-TestLightsLength <- tidyr::uncount(tibble(TestLights), nrow(TestFile)/nrow(TestLights)) |>
-  select(-c(Filename))
-
-TestTimesLength <- tidyr::uncount(tibble(TestTimes), nrow(TestFile)/nrow(TestTimes)) |>
-  select(-c(Filename))
-
-TestFile2 <- cbind(TestFile, TestLightsLength, TestTimesLength) |>
-  filter(DataPt != "==========") |>
-  type_convert()
-
-
-head(TestFile2)
+# # #issue with rows with --------;  easy to filter though
+# DataHeaderRows <- 14
+# 
+# HeaderRowValues <- c("DateTime:", "RFID_EPC:", "RFID_UserData:", "Barcode:", "PIF:", "PARs:", "Light:", "Cycles:", "Lamps:", "Gain:", "SNR_raw:", "Position:", "DataPt", "----")
+# 
+# 
+# TestFile <- read_delim_plus(flnm = "../Data/RawData/Solisense/PICO_202305310950_JuNa1188_445_25_data.csv", delimiter = Delimiter, headerrows = DataHeaderRows, fileencode = FileEncode) |>
+#   filter(!`DataPt` %in% HeaderRowValues) |>
+#   filter(`Time(us)` != "99") |>
+#   select(-c(`...6`)) |>
+#   rename(Time_us = `Time(us)` )
+# 
+# TestLights <- read_delim_plus(flnm = "../Data/RawData/Solisense/PICO_202305310950_JuNa1188_445_25_data.csv", delimiter = Delimiter, headerrows = 0, fileencode = FileEncode) |>
+#   filter(`----` == "Light:") |>
+#   separate(`...2`, c("L1","L2","L3","L4","L5"), sep = ",", remove = TRUE) |>
+#   select(-c("----"))
+# 
+# TestTimes <- read_delim_plus(flnm = "../Data/RawData/Solisense/PICO_202305310950_JuNa1188_445_25_data.csv", delimiter = Delimiter, headerrows = 0, fileencode = FileEncode) |>
+#   filter(`----` == "DateTime:") |>
+#   separate(`...2`, c("CurveDate","CurveTime","CurveDigitalTime"), sep = ",", remove = TRUE) |>
+#   select(-c("----"))
+# 
+# #Now expand TestLights TestTimes to appropriate number of rows for each light...
+# 
+# CurveLength <- nrow(TestFile)/nrow(TestLights)
+# 
+# #https://stackoverflow.com/questions/62935872/i-want-to-duplicate-observations-rows-in-a-tibble
+# 
+# TestLightsLength <- tidyr::uncount(tibble(TestLights), nrow(TestFile)/nrow(TestLights)) |>
+#   select(-c(Filename))
+# 
+# TestTimesLength <- tidyr::uncount(tibble(TestTimes), nrow(TestFile)/nrow(TestTimes)) |>
+#   select(-c(Filename))
+# 
+# TestFile2 <- cbind(TestFile, TestLightsLength, TestTimesLength) |>
+#   filter(DataPt != "==========") |>
+#   type_convert()
+# 
+# 
+# head(TestFile2)
 
 ```
 
 ```{r testplot}
-TestFile2 |>
-  ggplot() +
-  geom_point(aes(x = DataPt, y = EM), colour = "red") +
-  #geom_point(aes(x = DataPt, y = Fit), size = 0.1) +
-  facet_grid(cols = vars(L1)) +
-  theme_bw()
+# TestFile2 |>
+#   ggplot() +
+#   geom_point(aes(x = DataPt, y = EM), colour = "red") +
+#   #geom_point(aes(x = DataPt, y = Fit), size = 0.1) +
+#   facet_grid(cols = vars(L1)) +
+#   theme_bw()
   
 ```
 
@@ -233,23 +239,23 @@ read_delim_SolLightTime <- function(flnm, delimiter, headerrows, fileencode){Dat
   filter(`Time(us)` != "99") |>
   select(-c(`...6`)) |>
   rename(Time_us = `Time(us)` )
-  
+
   Lights <- read_delim_plus(flnm, delimiter = Delimiter, headerrows = 0, fileencode = FileEncode) |>
   filter(`----` == "Light:") |>
   separate(`...2`, c("L1","L2","L3","L4","L5"), sep = ",", remove = TRUE) |>
   select(-c("----"))
-  
+
   LightsLength <- tidyr::uncount(tibble(Lights), nrow(DataFile)/nrow(Lights)) |>
   select(-c(Filename))
-  
+
   Times <- read_delim_plus(flnm, delimiter = Delimiter, headerrows = 0, fileencode = FileEncode) |>
   filter(`----` == "DateTime:") |>
   separate(`...2`, c("CurveDate","CurveTime","CurveDigitalTime"), sep = ",", remove = TRUE) |>
   select(-c("----"))
-  
+
   TimesLength <- tidyr::uncount(tibble(Times), nrow(DataFile)/nrow(Times)) |>
   select(-c(Filename))
-  
+
   SolFile <- cbind(DataFile, LightsLength, TimesLength) |>
   filter(DataPt != "==========") |>
   type_convert()
@@ -260,11 +266,11 @@ read_delim_SolLightTime <- function(flnm, delimiter, headerrows, fileencode){Dat
 
 
 ```{r read example Solisense Data file onestep}
-DataHeaderRows <- 14
-
-HeaderRowValues <- c("DateTime:", "RFID_EPC:", "RFID_UserData:", "Barcode:", "PIF:", "PARs:", "Light:", "Cycles:", "Lamps:", "Gain:", "SNR_raw:", "Position:", "DataPt", "----")
-
-SolLightTimeOneStep <- read_delim_SolLightTime(flnm = "../Data/RawData/Solisense/PICO_202305310950_JuNa1188_445_25_data.csv", delimiter = Delimiter, headerrows = DataHeaderRows, fileencode = FileEncode)
+# DataHeaderRows <- 14
+# 
+# HeaderRowValues <- c("DateTime:", "RFID_EPC:", "RFID_UserData:", "Barcode:", "PIF:", "PARs:", "Light:", "Cycles:", "Lamps:", "Gain:", "SNR_raw:", "Position:", "DataPt", "----")
+# 
+# SolLightTimeOneStep <- read_delim_SolLightTime(flnm = "../Data/RawData/Solisense/PICO_202305310950_JuNa1188_445_25_data.csv", delimiter = Delimiter, headerrows = DataHeaderRows, fileencode = FileEncode)
 
 ```
 
@@ -304,6 +310,10 @@ purrr::map to read all files, two step
 purrr::map to read all files, onestep read_delim_SolLightTime function
 
 ```{r read Solisense files}
+DataHeaderRows <- 14
+
+HeaderRowValues <- c("DateTime:", "RFID_EPC:", "RFID_UserData:", "Barcode:", "PIF:", "PARs:", "Light:", "Cycles:", "Lamps:", "Gain:", "SNR_raw:", "Position:", "DataPt", "----")
+
 SolData <- SolisenseDataFiles |>
   map_df(~ read_delim_SolLightTime(flnm =., delimiter = Delimiter, headerrows = DataHeaderRows, fileencode = FileEncode))
 
@@ -413,7 +423,7 @@ SolData %>%
 XXXUpdated to here 26 July 2023
 
 # Merge with MetaData & Turner Chl Data
-Many to many relation b/t SolDataMeta & ChlData
+Many to many relation b/t SolDataMeta & ChlData; fixed by filtering earlier for "InstrumentTag == "Solisense"""
 Get units for ChlData
 ```{r merge with metadata}
 SolData <- SolData |>
@@ -441,6 +451,7 @@ SolDataMeta |>
   theme_bw()   
 
 ```
+
 Add 'Curve_us' column for each induction curve
 ```{r curvetime}
 #head(SolDataMeta)
@@ -448,6 +459,8 @@ Add 'Curve_us' column for each induction curve
 SolDataMeta <- SolDataMeta |>
   group_by(Filename, Project,  CultureID, Ex_WL, TempCont, MeasureO2_uM, CurveTime, LR_s, ActPAR, Dark1s) |>
   mutate(Curve_us = (Time_us - Time_us[1]),  .after = Time_s) |>
+  mutate(EMNorm = EM/max(EM, na.rm = TRUE)) |>
+  mutate(FitNorm = Fit/max(Fit, na.rm = TRUE)) |>
   ungroup()
 
 ```
@@ -455,37 +468,38 @@ SolDataMeta <- SolDataMeta |>
 Plots separating MeasureO2_uM
 ```{r MeasureO2_uM plots}
 SolDataMeta |>
+  filter(LR_s < 70) |>
   filter(Strain == "MED4") |>
   filter(ActPARCorr %in% c (0, 40)) |>
-  filter(Par_ue == 90) |>
+  #filter(Par_ue == 90) |>
   filter(Dark1s == 0) |>
-  filter(LR_s < 70) |>
   ggplot() +
-  geom_point(aes(x = log10(Curve_us), y = EM/Chl, colour = as.factor(ActPARCorr)), size = 0.2) +
-  geom_line(aes(x = log10(Curve_us), y = Fit/Chl, colour = as.factor(ActPARCorr))) +
+  geom_point(aes(x = log10(Curve_us), y = EMNorm, colour = as.factor(ActPARCorr)), size = 0.2) +
+  geom_line(aes(x = log10(Curve_us), y = FitNorm, colour = as.factor(ActPARCorr))) +
   facet_grid(cols = vars(Strain, MeasureO2_uM), rows = vars(Par_ue, O2_uM)) +
   theme_bw() 
 
 SolDataMeta |>
+    filter(LR_s < 70) |>
   filter(Strain == "MIT9313") |>
   filter(ActPARCorr %in% c (0, 40)) |>
-  filter(Par_ue == 90) |>
+  filter(Par_ue != 180) |>
   filter(Dark1s == 0) |>
-  filter(LR_s < 70) |>
-  filter(CultureID != "JuNa1198") |>
+  filter(!CultureID %in% c("JuNa1198", "JuNa1209")) |>
   ggplot() +
-  geom_point(aes(x = log10(Curve_us), y = EM/Chl, colour = as.factor(ActPARCorr)), size = 0.2) +
-  geom_line(aes(x = log10(Curve_us), y = Fit/Chl, colour = as.factor(ActPARCorr))) +
+  geom_point(aes(x = log10(Curve_us), y = EMNorm, colour = as.factor(ActPARCorr)), size = 0.2) +
+  geom_line(aes(x = log10(Curve_us), y = FitNorm, colour = as.factor(ActPARCorr))) +
   facet_grid(cols = vars(Strain, MeasureO2_uM), rows = vars(Par_ue, O2_uM, CultureID)) +
   theme_bw() 
 
 SolDataMeta |>
+  filter(LR_s < 70) |>
   filter(Strain == "SS120") |>
   filter(ActPARCorr %in% c (0, 40)) |>
   filter(Dark1s == 0) |>
-  filter(LR_s < 70) |>
   ggplot() +
-  geom_point(aes(x = log10(Curve_us), y = EM/Chl, colour = as.factor(ActPARCorr))) +
+  geom_point(aes(x = log10(Curve_us), y = EMNorm, colour = as.factor(ActPARCorr)), size = 0.2) +
+  geom_line(aes(x = log10(Curve_us), y = FitNorm, colour = as.factor(ActPARCorr))) +
   facet_grid(cols = vars(Strain, MeasureO2_uM), rows = vars(Par_ue, O2_uM)) +
   theme_bw()
 ```

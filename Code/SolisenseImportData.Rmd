@@ -99,7 +99,7 @@ ChlData <- read_sheet(ChlTurner, col_types = c("cccciiiiiiic"))
 head(ChlData)
 
 ChlData <- ChlData|>
-  mutate(Chl_ugL = as.numeric(Reading_rfu) * as.numeric(Chl_slope) + as.numeric(Chl_intercept)) |>
+  mutate(Chl_ugL = as.numeric(Reading_rfu) * as.numeric(`Chl_slope_RFU/Chl (ug/L)`) + as.numeric(Chl_intercept_RFU)) |>
   drop_na(DATE, TIME) |>
   #mutate(StartExDate = unlist(StartExDate),
   # mutate(DATE = unlist(DATE), 
@@ -506,17 +506,17 @@ SolDataMeta |>
 
 Plots facetted by MeasureO2_uM
 ```{r}
-SolDataMeta |>
-  filter(LR_s < 70) |>
-  filter(Strain == "MED4") |>
-  filter(ActPARCorr %in% c(0, 40)) |>
-  filter(Par_ue == 90) |>
-  filter(Dark1s == 0) |>
-  ggplot() +
-  geom_point(aes(x = log10(Curve_us), y = EMNorm, colour = as.factor(ActPARCorr)), size = 0.2) +
-  geom_line(aes(x = log10(Curve_us), y = FitNorm, colour = as.factor(ActPARCorr))) +
-  facet_grid(cols = vars(MeasureO2_uM), rows = vars(Par_ue, O2_uM)) +
-  theme_bw() 
+# SolDataMeta |>
+#   filter(LR_s < 70) |>
+#   filter(Strain == "MED4") |>
+#   filter(ActPARCorr %in% c(0, 40)) |>
+#   filter(Par_ue == 90) |>
+#   filter(Dark1s == 0) |>
+#   ggplot() +
+#   geom_point(aes(x = log10(Curve_us), y = EMNorm, colour = as.factor(ActPARCorr)), size = 0.2) +
+#   geom_line(aes(x = log10(Curve_us), y = FitNorm, colour = as.factor(ActPARCorr))) +
+#   facet_grid(cols = vars(MeasureO2_uM), rows = vars(Par_ue, O2_uM)) +
+#   theme_bw() 
 
 SolDataMeta |>
   filter(LR_s < 70) |>
@@ -525,7 +525,7 @@ SolDataMeta |>
   filter(Par_ue != 30) |>
   filter(Dark1s == 0) |>
   ggplot() +
-  geom_point(aes(x = log10(Curve_us), y = EMNorm, colour = as.factor(MeasureO2_uM)), size = 0.2) +
+  #geom_point(aes(x = log10(Curve_us), y = EMNorm, colour = as.factor(MeasureO2_uM)), size = 0.2) +
   geom_line(aes(x = log10(Curve_us), y = FitNorm, colour = as.factor(MeasureO2_uM))) +
   facet_grid(cols = vars(ActPARCorr), rows = vars(Par_ue, O2_uM)) +
   theme_bw() 
@@ -544,7 +544,7 @@ SolDataMeta |>
 
 SolDataMeta |>
   filter(LR_s < 70) |>
-  filter(Strain == "MIT9313") |>
+  filter(Strain == "SS120") |>
   #filter(ActPARCorr %in% c(0, 40)) |>
   #filter(Par_ue != 30) |>
   filter(Dark1s == 0) |>

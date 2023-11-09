@@ -1,0 +1,534 @@
+---
+title: "DualPAMImportData"
+author:
+- Julie A. Nadeau
+- Mireille Savoie
+- Douglas A. Campbell
+date: "`r format(Sys.Date())`"
+output:
+  html_document:
+    df_print: paged
+    code_folding: hide
+    keep_md: yes
+    fig_caption: yes
+    toc: TRUE
+    toc_float: TRUE   
+csl: plos-one.csl
+---
+
+This .Rmd imports and tidys underlying data from the DualPAM kinetic fluorometer/absorbtometer software, along with culture MetaData and Turner Chlorophyll data. 
+
+# Set Chunk Options
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+knitr::opts_chunk$set(fig.path='Figs/')
+```
+
+# Set Project Variables
+
+```{r set project variables}
+Project <- "PICO"
+DataOut <- file.path("..", "Data", "ProcessedData")
+
+Run <- "O2Analyses"
+
+#ExpDate <- "2023-05-27" #date of first MultiCulti growth start
+
+DataIn <- file.path("..", "Data", "RawData", "DualPAM", "Report", fsep = .Platform$file.sep)
+
+FileID <- ".csv"
+
+Catalog <- "https://docs.google.com/spreadsheets/d/1ZXpwR7Gfto-uRzVdXzMpQF4frbrvMLH_IyLqonFZRSw/edit#gid=0"
+
+ChlTurner <- "https://docs.google.com/spreadsheets/d/13mQm0B3siS65UuGjNdzvpHFomfuwn6aAg7dBoq1IqrM/edit#gid=0"
+
+FileEncode <- "UTF-8" 
+Delimiter <- ";"
+
+HeaderRows <- 14
+
+TempCont <- "TC"
+
+```
+
+```{r conversions}
+us_s <- 1000000
+photons_umol <- 6.022E17
+A2_m2 <- 1E20
+```
+
+```{r load libraries}
+library(tidyverse)
+library(lubridate)
+library(photobiologyWavebands) #R colours from nm values
+library(broom) #formatting model outputs
+
+#https://googlesheets4.tidyverse.org/
+library(googledrive)
+library(googlesheets4)
+
+```
+
+Load Multiculti catalog and ChlTurner
+
+```{r load multiculticatalog, message = FALSE, warning = FALSE, echo=FALSE}
+gs4_deauth()
+
+# imagine this is the URL or ID of a Sheet readable by anyone (with a link)
+# MultiCulti metadata
+MetaData <- read_sheet(Catalog)%>%
+  # read_sheet has an annoying "feature" to set the type of columns it can't parse to a list.
+  # ggplot/dplyr doesn't like working with a dataframe of lists.
+  # In this case WL is set to a list since some values are numbers, some are strings, some are blank.
+  # To fix this, first drop all rows missing WL, then unlist.
+  # Must first drop NA rows since unlist will collapse NULL lists, then the unlisted WL is a shorter length than original WL column, which mutate doesn't like.
+  drop_na(WL) %>%
+  mutate(WL = unlist(WL))
+
+as.data.frame(MetaData)
+
+MetaData <- MetaData %>%
+   mutate(ExpDate = lubridate::ymd(ExpDate),
+          ExpEndDate = lubridate::ymd_hms(`ExpEndDate`))
+# find units for chl
+
+#issue with R guessing coltype of InstrumentTag from first rows, and converting to lgl.  Then actual tags are lost as NA b/c looking for logical values only
+#ChlData <- read_sheet(ChlTurner, col_types = c("cccciiiiiiic"))
+
+#head(ChlData)
+
+# ChlData <- ChlData|>
+#   mutate(Chl_ugL = as.numeric(Reading_rfu) * as.numeric(`Chl_slope_RFU/Chl (ug/L)`) + as.numeric(Chl_intercept_RFU)) |>
+#   drop_na(DATE, TIME) |>
+#   #mutate(StartExDate = unlist(StartExDate),
+#   # mutate(DATE = unlist(DATE), 
+#   #        TIME = unlist(TIME)) |>
+#   mutate(DATE = as.character(DATE)) |>
+#   filter(InstrumentTag == "Solisense")
+
+# ,
+#          StartExDate = as.character(StartExDate))
+  # read_sheet has an annoying "feature" to set the type of columns it can't parse to a list.
+  # ggplot/dplyr doesn't like working with a dataframe of lists.
+
+#head(ChlData)
+```
+
+```{r set colours}
+Wavelengths_nm = c(445, 470, 505, 535, 590)
+Colours_nm = c(w_length2rgb(Wavelengths_nm[1]), w_length2rgb(Wavelengths_nm[2]), w_length2rgb(Wavelengths_nm[3]), w_length2rgb(Wavelengths_nm[4]), w_length2rgb(Wavelengths_nm[5]))
+
+names(Colours_nm) <- Wavelengths_nm
+Colours_nm
+
+```
+
+```{r list DualPAM Report files for file import}
+DualPAMFiles <- list.files(path = DataIn, pattern = FileID, full.names = TRUE, recursive = FALSE)
+
+DualPAMFiles
+
+#test for duplicate file names
+unique(duplicated(DualPAMFiles))
+```
+
+```{r data read adds filename and cdate, warning=FALSE, message=FALSE, echo=FALSE}
+
+#a read function using tidyverse::read_delim that skips a fixed number of header rows, and adds columns to the dataframe containing the filename and the file creation date time.
+read_delim_plus <- function(flnm, delimiter, headerrows, fileencode){read_delim(flnm, delim = delimiter,  col_names = TRUE,  skip = headerrows, escape_double = FALSE,  locale = locale(encoding = fileencode), trim_ws = TRUE) %>%
+    mutate(Filename = flnm)
+}
+
+```
+
+Read Test File
+
+```{r read example DualPAM Report file}
+# # #issue with rows with --------;  easy to filter though
+DataHeaderRows <- 0
+# 
+# HeaderRowValues <- c("DateTime:", "RFID_EPC:", "RFID_UserData:", "Barcode:", "PIF:", "PARs:", "Light:", "Cycles:", "Lamps:", "Gain:", "SNR_raw:", "Position:", "DataPt", "----")
+# 
+# 
+TestFile <- read_delim_plus(flnm = "../Data/RawData/DualPAM/Report/202311071209_PICO_JuNa1201_250.csv", delimiter = Delimiter, headerrows = DataHeaderRows, fileencode = FileEncode)
+
+head(TestFile)
+
+
+
+|>
+  filter(!`DataPt` %in% HeaderRowValues) |>
+  filter(`Time(us)` != "99") |>
+  select(-c(`...6`)) |>
+  rename(Time_us = `Time(us)` )
+# 
+# TestLights <- read_delim_plus(flnm = "../Data/RawData/Solisense/PICO_202305310950_JuNa1188_445_25_data.csv", delimiter = Delimiter, headerrows = 0, fileencode = FileEncode) |>
+#   filter(`----` == "Light:") |>
+#   separate(`...2`, c("L1","L2","L3","L4","L5"), sep = ",", remove = TRUE) |>
+#   select(-c("----"))
+# 
+# TestTimes <- read_delim_plus(flnm = "../Data/RawData/Solisense/PICO_202305310950_JuNa1188_445_25_data.csv", delimiter = Delimiter, headerrows = 0, fileencode = FileEncode) |>
+#   filter(`----` == "DateTime:") |>
+#   separate(`...2`, c("CurveDate","CurveTime","CurveDigitalTime"), sep = ",", remove = TRUE) |>
+#   select(-c("----"))
+# 
+# #Now expand TestLights TestTimes to appropriate number of rows for each light...
+# 
+# CurveLength <- nrow(TestFile)/nrow(TestLights)
+# 
+# #https://stackoverflow.com/questions/62935872/i-want-to-duplicate-observations-rows-in-a-tibble
+# 
+# TestLightsLength <- tidyr::uncount(tibble(TestLights), nrow(TestFile)/nrow(TestLights)) |>
+#   select(-c(Filename))
+# 
+# TestTimesLength <- tidyr::uncount(tibble(TestTimes), nrow(TestFile)/nrow(TestTimes)) |>
+#   select(-c(Filename))
+# 
+# TestFile2 <- cbind(TestFile, TestLightsLength, TestTimesLength) |>
+#   filter(DataPt != "==========") |>
+#   type_convert()
+# 
+# 
+# head(TestFile2)
+
+```
+
+```{r testplot}
+# TestFile2 |>
+#   ggplot() +
+#   geom_point(aes(x = DataPt, y = EM), colour = "red") +
+#   #geom_point(aes(x = DataPt, y = Fit), size = 0.1) +
+#   facet_grid(cols = vars(L1)) +
+#   theme_bw()
+  
+```
+
+
+```{r add light and time from headers during file read}
+
+
+read_delim_SolLightTime <- function(flnm, delimiter, headerrows, fileencode){DataFile <- read_delim(flnm, delim = delimiter,  col_names = TRUE,  skip = headerrows, escape_double = FALSE,  locale = locale(encoding = fileencode), trim_ws = TRUE) |>
+    mutate(Filename = flnm) |> filter(!`DataPt` %in% HeaderRowValues) |>
+  filter(`Time(us)` != "99") |>
+  select(-c(`...6`)) |>
+  rename(Time_us = `Time(us)` )
+
+  Lights <- read_delim_plus(flnm, delimiter = Delimiter, headerrows = 0, fileencode = FileEncode) |>
+  filter(`----` == "Light:") |>
+  separate(`...2`, c("L1","L2","L3","L4","L5"), sep = ",", remove = TRUE) |>
+  select(-c("----"))
+
+  LightsLength <- tidyr::uncount(tibble(Lights), nrow(DataFile)/nrow(Lights)) |>
+  select(-c(Filename))
+
+  Times <- read_delim_plus(flnm, delimiter = Delimiter, headerrows = 0, fileencode = FileEncode) |>
+  filter(`----` == "DateTime:") |>
+  separate(`...2`, c("CurveDate","CurveTime","CurveDigitalTime"), sep = ",", remove = TRUE) |>
+  select(-c("----"))
+
+  TimesLength <- tidyr::uncount(tibble(Times), nrow(DataFile)/nrow(Times)) |>
+  select(-c(Filename))
+
+  SolFile <- cbind(DataFile, LightsLength, TimesLength) |>
+  filter(DataPt != "==========") |>
+  type_convert()
+}
+
+```
+
+
+
+```{r read example Solisense Data file onestep}
+# DataHeaderRows <- 14
+# 
+# HeaderRowValues <- c("DateTime:", "RFID_EPC:", "RFID_UserData:", "Barcode:", "PIF:", "PARs:", "Light:", "Cycles:", "Lamps:", "Gain:", "SNR_raw:", "Position:", "DataPt", "----")
+# 
+# SolLightTimeOneStep <- read_delim_SolLightTime(flnm = "../Data/RawData/Solisense/PICO_202305310950_JuNa1188_445_25_data.csv", delimiter = Delimiter, headerrows = DataHeaderRows, fileencode = FileEncode)
+
+```
+
+purrr::map to read all files, two step
+
+```{r read Solisense files}
+# SolData <- SolisenseDataFiles |>
+#   map_df(~read_delim_plus(flnm =., delimiter = Delimiter, headerrows = DataHeaderRows, fileencode = FileEncode)) |>
+#    filter(!`DataPt` %in% HeaderRows) |>
+#   filter(`Time(us)` != "99") |>
+#   select(-c(`...6`)) |>
+#   rename(Time_us = `Time(us)` )
+# 
+# head(SolData)
+# colnames(SolData)
+# length(unique(SolData$Filename))
+# 
+# SolLights <- SolisenseDataFiles |> 
+#   map_df(~read_delim_plus(flnm = ., delimiter = Delimiter, headerrows = 0, fileencode = FileEncode)) |>
+#   filter(`----` == "Light:") |>
+#   separate(`...2`, c("L1","L2","L3","L4","L5"), sep = ",", remove = TRUE) |>
+#   select(-c("----"))
+# 
+# SolLightsLength <- tidyr::uncount(tibble(SolLights), nrow(SolData)/nrow(SolLights)) |>
+#   select(-c(Filename))
+# 
+# SolData <- cbind(SolData, SolLightsLength) |>
+#   filter(DataPt != "==========") |>
+#   type_convert()
+#   
+# 
+# head(SolData)
+
+
+```
+
+purrr::map to read all files, onestep read_delim_SolLightTime function
+
+```{r read Solisense files}
+DataHeaderRows <- 14
+
+HeaderRowValues <- c("DateTime:", "RFID_EPC:", "RFID_UserData:", "Barcode:", "PIF:", "PARs:", "Light:", "Cycles:", "Lamps:", "Gain:", "SNR_raw:", "Position:", "DataPt", "----")
+
+SolData <- SolisenseDataFiles |>
+  map_df(~ read_delim_SolLightTime(flnm =., delimiter = Delimiter, headerrows = DataHeaderRows, fileencode = FileEncode))
+
+
+head(SolData)
+colnames(SolData)
+length(unique(SolData$Filename))
+
+
+```
+
+```{r SolData plot}
+SolData |>
+   ggplot() +
+  geom_point(aes(x = DataPt, y = EM), colour = "red") +
+  #geom_point(aes(x = DataPt, y = Fit), size = 0.1) +
+  facet_grid(cols = vars(L1), rows = vars(Filename)) +
+  theme_bw()
+  
+```
+
+
+```{r rename lights}
+
+SolData <- SolData |>
+  rename(nm445 = L1,
+         nm470 = L2,
+         nm505 = L3,
+         nm535 = L4,
+         nm590 = L5)
+```
+
+```{r tempcont}
+SolData <- SolData |>
+  mutate(TempCont = TempCont)
+```
+
+#Add ActPARcorr with proper correction factors for TC and no TC #Intercepts for cross conversions set to 0.
+
+#Some smarter way to do this with map etc....
+
+```{r actparrcorr}
+SolData <- SolData |> 
+  mutate(nm445Corr = case_when(TempCont == "TC" ~ nm445 * ActPARCrossCal$Slope[ActPARCrossCal$DCLamp == "Pwr1_uE" & ActPARCrossCal$Models == "DCWaterJacketlm_tidy"],
+                                 TempCont == "noTC" ~ nm445 * ActPARCrossCal$Slope[ActPARCrossCal$DCLamp == "Pwr1_uE" & ActPARCrossCal$Models == "DCCuvettelm_tidy"]),
+         nm470Corr = case_when(TempCont == "TC" ~ nm470 * ActPARCrossCal$Slope[ActPARCrossCal$DCLamp == "Pwr2_uE" & ActPARCrossCal$Models == "DCWaterJacketlm_tidy"],
+                                 TempCont == "noTC" ~ nm470 * ActPARCrossCal$Slope[ActPARCrossCal$DCLamp == "Pwr2_uE" & ActPARCrossCal$Models == "DCCuvettelm_tidy"]),
+         nm505Corr = case_when(TempCont == "TC" ~ nm505 * ActPARCrossCal$Slope[ActPARCrossCal$DCLamp == "Pwr3_uE" & ActPARCrossCal$Models == "DCWaterJacketlm_tidy"],
+                                 TempCont == "noTC" ~ nm505 * ActPARCrossCal$Slope[ActPARCrossCal$DCLamp == "Pwr3_uE" & ActPARCrossCal$Models == "DCCuvettelm_tidy"]),
+           nm535Corr = case_when(TempCont == "TC" ~ nm535 * ActPARCrossCal$Slope[ActPARCrossCal$DCLamp == "Pwr4_uE" & ActPARCrossCal$Models == "DCWaterJacketlm_tidy"],
+                                 TempCont == "noTC" ~ nm535 * ActPARCrossCal$Slope[ActPARCrossCal$DCLamp == "Pwr4_uE" & ActPARCrossCal$Models == "DCCuvettelm_tidy"]),
+          nm590Corr = case_when(TempCont == "TC" ~ nm590 * ActPARCrossCal$Slope[ActPARCrossCal$DCLamp == "Pwr5_uE" & ActPARCrossCal$Models == "DCWaterJacketlm_tidy"],
+                                 TempCont == "noTC" ~ nm590 * ActPARCrossCal$Slope[ActPARCrossCal$DCLamp == "Pwr5_uE" & ActPARCrossCal$Models == "DCCuvettelm_tidy"]),
+          # IRCorr = case_when(TempCont == "TC" ~ IR * ActPARCrossCal$Slope[ActPARCrossCal$DCLamp == "PwrIR_uE" & ActPARCrossCal$Models == "DCWaterJacketlm_tidy"],
+          #                        TempCont == "noTC" ~ IR * ActPARCrossCal$Slope[ActPARCrossCal$DCLamp == "PwrIR_uE" & ActPARCrossCal$Models == "DCCuvettelm_tidy"])
+         )
+
+head(SolData)
+
+
+SolData <- SolData %>%
+  mutate(ActPAR = nm445 + nm470 + nm505 + nm535 + nm590) |>
+  mutate(ActPARCorr = round(nm445Corr + nm470Corr + nm505Corr + nm535Corr + nm590Corr), digits = 0) #better ways to do this?
+
+head(SolData)
+
+```
+
+```{r}
+SolData <- SolData %>% 
+  mutate(Filename = str_remove(string = Filename, pattern = "../Data/RawData/Solisense/"),
+         Filename = str_remove(string = Filename, pattern = "_data.csv")
+         ) |>
+  separate(Filename, into = c("Project", "RunDateTime", "CultureID", "Ex_WL", "MeasureO2_uM"), sep = "([\\/\\_])", remove = FALSE) |>
+  mutate(RunDateTime = ymd_hm(RunDateTime)) |> 
+  mutate(Ex_WL = as.factor(as.numeric(Ex_WL)),
+         MeasureO2_uM = as.factor(as.numeric(MeasureO2_uM))) |>
+  rename(StartDateTimeSol = RunDateTime) |>
+  drop_na(StartDateTimeSol)
+
+head(SolData)
+```
+
+
+```{r dark1s}
+#generate column with duration of light step in s
+#add a column adding Dark1s based upon any step < 5 s
+
+SolData <- SolData %>%
+  group_by(Filename, Project,  CultureID, Ex_WL, TempCont, MeasureO2_uM) |>
+  #mutate(Step_s = replace_na(as.numeric(Time_us - lag(Time_us)), 10), .after = Time_us) |>
+  mutate(Time_s = (as.numeric(Time_us - Time_us[1])) / 1000, .after = Time_us) |>
+  mutate(LR_s = (CurveDigitalTime - CurveDigitalTime[1])/1000, .after = CurveDigitalTime) |>
+  mutate(Dark1s = if_else(ActPARCorr == 0 & LR_s != 0,  1, 0), .after = LR_s) |>
+  relocate(Ex_WL, .after = Dark1s) %>%
+  relocate(ActPAR, .after = Ex_WL) %>%
+  ungroup()
+
+
+SolData %>%
+  filter(Filename == "PICO_202305310950_JuNa1188_445_25") |>
+  ggplot() +
+  geom_point(aes(x = LR_s, y = EM, colour = as.factor(Dark1s)))
+
+```
+
+XXXUpdated to here 26 July 2023
+
+# Merge with MetaData & Turner Chl Data
+Many to many relation b/t SolDataMeta & ChlData; fixed by filtering earlier for "InstrumentTag == "Solisense"""
+Get units for ChlData
+```{r merge with metadata}
+SolData <- SolData |>
+  separate(col = StartDateTimeSol, into = c("StartDateSol", "StartTimeSol"), sep = " ", remove = FALSE) |>
+  relocate(.after = StartDateTimeSol)
+
+SolDataMeta <- left_join(x = SolData, y = MetaData, join_by("CultureID" == "ID")) |>
+  mutate(O2_uM = case_when(O2 == 0 ~ 2,
+                           O2 == 1 ~ 25,
+                           O2 == 21 ~ 250)) |>
+  select(-c("Description", "Motivation", "doi", "Par_ueAdjusted", "DateOfAdjustment", "ElaspedHoursAtAdjustment", "...44", "...45")) 
+
+
+SolDataMeta <- left_join(x = SolDataMeta, y = ChlData, join_by("CultureID" == "CultureID"))
+
+#", "StartDateSol" == "DATE""
+```
+
+
+```{r SolDataMeta testplot}
+SolDataMeta |>
+  ggplot() +
+  geom_point(aes(x = ActPARCorr, y = Fit/Chl_ugL)) +
+  facet_grid(cols = vars(Strain), rows = vars(Par_ue, O2_uM)) +
+  theme_bw()   
+
+```
+
+Add 'Curve_us' column for each induction curve
+```{r curvetime}
+#head(SolDataMeta)
+
+SolDataMeta <- SolDataMeta |>
+  group_by(Filename, Project,  CultureID, Ex_WL, TempCont, MeasureO2_uM, CurveTime, LR_s, ActPAR, Dark1s) |>
+  mutate(Curve_us = (Time_us - Time_us[1]),  .after = Time_s) |>
+  mutate(EMNorm = EM/max(EM, na.rm = TRUE)) |>
+  mutate(FitNorm = Fit/max(Fit, na.rm = TRUE)) |>
+  ungroup()
+
+```
+
+Plots separating MeasureO2_uM
+```{r MeasureO2_uM plots}
+SolDataMeta |>
+  filter(LR_s < 70) |>
+  filter(Strain == "MED4") |>
+  filter(ActPARCorr %in% c (0, 40)) |>
+  #filter(Par_ue == 90) |>
+  filter(Dark1s == 0) |>
+  ggplot() +
+  geom_point(aes(x = log10(Curve_us), y = EMNorm, colour = as.factor(ActPARCorr)), size = 0.2) +
+  geom_line(aes(x = log10(Curve_us), y = FitNorm, colour = as.factor(ActPARCorr))) +
+  facet_grid(cols = vars(Strain, MeasureO2_uM), rows = vars(Par_ue, O2_uM)) +
+  theme_bw() 
+
+SolDataMeta |>
+    filter(LR_s < 70) |>
+  filter(Strain == "MIT9313") |>
+  filter(ActPARCorr %in% c (0, 40)) |>
+  filter(Par_ue != 180) |>
+  filter(Dark1s == 0) |>
+  filter(!CultureID %in% c("JuNa1198", "JuNa1209")) |>
+  ggplot() +
+  geom_point(aes(x = log10(Curve_us), y = EMNorm, colour = as.factor(ActPARCorr)), size = 0.2) +
+  geom_line(aes(x = log10(Curve_us), y = FitNorm, colour = as.factor(ActPARCorr))) +
+  facet_grid(cols = vars(Strain, MeasureO2_uM), rows = vars(Par_ue, O2_uM, CultureID)) +
+  theme_bw() 
+
+SolDataMeta |>
+  filter(LR_s < 70) |>
+  filter(Strain == "SS120") |>
+  filter(ActPARCorr %in% c (0, 40)) |>
+  filter(Dark1s == 0) |>
+  ggplot() +
+  geom_point(aes(x = log10(Curve_us), y = EMNorm, colour = as.factor(ActPARCorr)), size = 0.2) +
+  geom_line(aes(x = log10(Curve_us), y = FitNorm, colour = as.factor(ActPARCorr))) +
+  facet_grid(cols = vars(Strain, MeasureO2_uM), rows = vars(Par_ue, O2_uM)) +
+  theme_bw()
+```
+
+Plots facetted by MeasureO2_uM
+```{r}
+# SolDataMeta |>
+#   filter(LR_s < 70) |>
+#   filter(Strain == "MED4") |>
+#   filter(ActPARCorr %in% c(0, 40)) |>
+#   filter(Par_ue == 90) |>
+#   filter(Dark1s == 0) |>
+#   ggplot() +
+#   geom_point(aes(x = log10(Curve_us), y = EMNorm, colour = as.factor(ActPARCorr)), size = 0.2) +
+#   geom_line(aes(x = log10(Curve_us), y = FitNorm, colour = as.factor(ActPARCorr))) +
+#   facet_grid(cols = vars(MeasureO2_uM), rows = vars(Par_ue, O2_uM)) +
+#   theme_bw() 
+
+SolDataMeta |>
+  filter(LR_s < 70) |>
+  filter(Strain == "MED4") |>
+  #filter(ActPARCorr %in% c(0, 40)) |>
+  filter(Par_ue != 30) |>
+  filter(Dark1s == 0) |>
+  ggplot() +
+  #geom_point(aes(x = log10(Curve_us), y = EMNorm, colour = as.factor(MeasureO2_uM)), size = 0.2) +
+  geom_line(aes(x = log10(Curve_us), y = FitNorm, colour = as.factor(MeasureO2_uM))) +
+  facet_grid(cols = vars(ActPARCorr), rows = vars(Par_ue, O2_uM)) +
+  theme_bw() 
+
+SolDataMeta |>
+  filter(LR_s < 70) |>
+  filter(Strain == "MIT9313") |>
+  #filter(ActPARCorr %in% c(0, 40)) |>
+  #filter(Par_ue != 30) |>
+  filter(Dark1s == 0) |>
+  ggplot() +
+  geom_point(aes(x = log10(Curve_us), y = EMNorm, colour = as.factor(MeasureO2_uM)), size = 0.2) +
+  geom_line(aes(x = log10(Curve_us), y = FitNorm, colour = as.factor(MeasureO2_uM))) +
+  facet_grid(cols = vars(ActPARCorr), rows = vars(Par_ue, O2_uM)) +
+  theme_bw() 
+
+SolDataMeta |>
+  filter(LR_s < 70) |>
+  filter(Strain == "SS120") |>
+  #filter(ActPARCorr %in% c(0, 40)) |>
+  #filter(Par_ue != 30) |>
+  filter(Dark1s == 0) |>
+  ggplot() +
+  geom_point(aes(x = log10(Curve_us), y = EMNorm, colour = as.factor(MeasureO2_uM)), size = 0.2) +
+  geom_line(aes(x = log10(Curve_us), y = FitNorm, colour = as.factor(MeasureO2_uM))) +
+  facet_grid(cols = vars(ActPARCorr), rows = vars(Par_ue, O2_uM)) +
+  theme_bw() 
+```
+
+```{r save SolDataMeta}
+saveRDS(SolDataMeta, file.path(DataOut, paste(Project, Run, "SolDataMeta.Rds", sep = "_"), fsep = .Platform$file.sep))
+```

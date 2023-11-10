@@ -88,7 +88,7 @@ as.data.frame(MetaData)
 MetaData <- MetaData %>%
    mutate(ExpDate = lubridate::ymd(ExpDate),
           ExpEndDate = lubridate::ymd_hms(`ExpEndDate`)) |>
-  select(-c("Description", "Motivation", "doi", "Par_ueAdjusted", "DateOfAdjustment", "ElaspedHoursAtAdjustment", `...45`, `...46` )) 
+  select(-c("Description", "Motivation", "doi", "Par_ueAdjusted", "DateOfAdjustment", "ElaspedHoursAtAdjustment" )) 
 
 
 
@@ -244,7 +244,7 @@ DualPAMOneStep <- read_delim_DualPAM(flnm = "../Data/RawData/DualPAM/Report/2023
 
 purrr::map to read all files, onestep read_delim_SolLightTime function
 
-```{r read Solisense files}
+```{r read DualPAM files}
 DataHeaderRows <- 0
 
 DualPAMData <- DualPAMFiles |>
@@ -318,10 +318,10 @@ DualPAMMeta |>
 DualPAMMeta |>
   filter(MeasureO2_uM %in% c(2, 25, 250)) |>
   filter(!(CultureID %in% c("JuNa1201", "JuNa1202", "JuNa1203", "JuNa1204", "JuNa1205"))) |>
-  filter(!(CultureID %in% c("JuNa1206", "JuNa1207", "JuNa1208", "JuNa1209", "JuNa1210"))) |>
+  # filter(!(CultureID %in% c("JuNa1206", "JuNa1207", "JuNa1208", "JuNa1209", #"JuNa1210"))) |>
   filter(CultureID != "JuNa1215") |>
   ggplot() +
-  geom_point(aes(x = ETRI, y = ETRII)) +
+  geom_point(aes(x = YI, y = YII, colour = as.factor(OptodeMeasure))) +
   #geom_smooth(aes(x = YI, y = YII), method = "lm") +
   facet_grid(cols = vars(MeasureO2_uM), rows = vars(Strain, Par_ue)) +
   theme_bw()

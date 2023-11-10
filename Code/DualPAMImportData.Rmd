@@ -310,16 +310,20 @@ DualPAMMeta |>
   filter(!(CultureID %in% c("JuNa1206", "JuNa1207", "JuNa1208", "JuNa1209", "JuNa1210"))) |>
   filter(CultureID != "JuNa1215") |>
   ggplot() +
-  geom_point(aes(x = PAR, y = YI), colour = "blue") +
-  geom_point(aes(x = PAR, y = YII), colour = "red") +
+  geom_point(aes(x = PAR, y = ETRI), colour = "blue") +
+  geom_point(aes(x = PAR, y = ETRII), colour = "red") +
   facet_grid(cols = vars(MeasureO2_uM), rows = vars(Strain, Par_ue)) +
   theme_bw()
 
 DualPAMMeta |>
   filter(MeasureO2_uM %in% c(2, 25, 250)) |>
+  filter(!(CultureID %in% c("JuNa1201", "JuNa1202", "JuNa1203", "JuNa1204", "JuNa1205"))) |>
+  filter(!(CultureID %in% c("JuNa1206", "JuNa1207", "JuNa1208", "JuNa1209", "JuNa1210"))) |>
+  filter(CultureID != "JuNa1215") |>
   ggplot() +
-  geom_point(aes(x = YII, y = YI)) +
-  facet_grid(cols = vars(MeasureO2_uM), rows = vars(CultureID)) +
+  geom_point(aes(x = ETRI, y = ETRII)) +
+  #geom_smooth(aes(x = YI, y = YII), method = "lm") +
+  facet_grid(cols = vars(MeasureO2_uM), rows = vars(Strain, Par_ue)) +
   theme_bw()
 
 ```

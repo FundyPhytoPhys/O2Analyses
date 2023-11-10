@@ -178,6 +178,15 @@ TestFile2 <- type_convert(
 
 head(TestFile2)
 
+TestFile3 <- TestFile2 |>
+  mutate(Filename = str_remove(Filename, pattern = "../Data/RawData/DualPAM/Report/")) |>
+  mutate(Filename = str_remove(Filename, pattern = ".csv")) |>
+ separate_wider_delim(Filename, delim = "_",  names = c("RunDateTime", "Project", "CultureID", "MeasureO2_uM"), cols_remove = FALSE) |>
+  mutate(RunDateTime = ymd_hm(RunDateTime)) 
+
+
+#../Data/RawData/DualPAM/Report/202311071209_PICO_JuNa1201_250.csv
+
 ```
 
 ```{r testplots}
@@ -210,7 +219,11 @@ read_delim_DualPAM <- function(flnm, delimiter, headerrows, fileencode){read_del
          YND = `Y(ND)`,
          YNA = `Y(NA)`,
          ETRI = `ETR(I)`) |>
-  type_convert()
+  type_convert() |>
+    mutate(Filename = str_remove(Filename, pattern = "../Data/RawData/DualPAM/Report/")) |>
+  mutate(Filename = str_remove(Filename, pattern = ".csv")) |>
+ separate_wider_delim(Filename, delim = "_",  names = c("RunDateTime", "Project", "CultureID", "MeasureO2_uM"), cols_remove = FALSE) |>
+  mutate(RunDateTime = ymd_hm(RunDateTime)) 
 }
 ```
 
@@ -241,151 +254,49 @@ length(unique(DualPAMData$Filename))
 
 ```{r DualPAMData plot}
 DualPAMData |>
-   ggplot() +
-  geom_point(aes(x = DataPt, y = EM), colour = "red") +
-  #geom_point(aes(x = DataPt, y = Fit), size = 0.1) +
-  facet_grid(cols = vars(L1), rows = vars(Filename)) +
+  ggplot() +
+  geom_point(aes(x = PAR, y = YI), colour = "blue") +
+  geom_point(aes(x = PAR, y = YII), colour = "red") +
+  facet_grid(cols = vars(MeasureO2_uM), rows = vars(CultureID)) +
   theme_bw()
-  
+
+DualPAMData |>
+  filter(MeasureO2_uM %in% c(2, 25, 250)) |>
+  ggplot() +
+  geom_point(aes(x = PAR, y = YI), colour = "blue") +
+  geom_point(aes(x = PAR, y = YII), colour = "red") +
+  facet_grid(cols = vars(MeasureO2_uM), rows = vars(CultureID)) +
+  theme_bw()
+
+DualPAMData |>
+  filter(MeasureO2_uM %in% c(2, 25, 250)) |>
+  ggplot() +
+  geom_point(aes(x = YII, y = YI)) +
+  facet_grid(cols = vars(MeasureO2_uM), rows = vars(CultureID)) +
+  theme_bw()
+
 ```
 
-
-
-XXXUpdated to here 10 Nov 2023
-
 # Merge with MetaData & Turner Chl Data
-Many to many relation b/t SolDataMeta & ChlData; fixed by filtering earlier for "InstrumentTag == "Solisense"""
-Get units for ChlData
+
 ```{r merge with metadata}
-SolData <- SolData |>
-  separate(col = StartDateTimeSol, into = c("StartDateSol", "StartTimeSol"), sep = " ", remove = FALSE) |>
-  relocate(.after = StartDateTimeSol)
-
-SolDataMeta <- left_join(x = SolData, y = MetaData, join_by("CultureID" == "ID")) |>
-  mutate(O2_uM = case_when(O2 == 0 ~ 2,
-                           O2 == 1 ~ 25,
-                           O2 == 21 ~ 250)) |>
-  select(-c("Description", "Motivation", "doi", "Par_ueAdjusted", "DateOfAdjustment", "ElaspedHoursAtAdjustment", "...44", "...45")) 
-
-
-SolDataMeta <- left_join(x = SolDataMeta, y = ChlData, join_by("CultureID" == "CultureID"))
+# SolData <- SolData |>
+#   separate(col = StartDateTimeSol, into = c("StartDateSol", "StartTimeSol"), sep = " ", remove = FALSE) |>
+#   relocate(.after = StartDateTimeSol)
+# 
+# SolDataMeta <- left_join(x = SolData, y = MetaData, join_by("CultureID" == "ID")) |>
+#   mutate(O2_uM = case_when(O2 == 0 ~ 2,
+#                            O2 == 1 ~ 25,
+#                            O2 == 21 ~ 250)) |>
+#   select(-c("Description", "Motivation", "doi", "Par_ueAdjusted", "DateOfAdjustment", "ElaspedHoursAtAdjustment", "...44", "...45")) 
+# 
+# 
+# SolDataMeta <- left_join(x = SolDataMeta, y = ChlData, join_by("CultureID" == "CultureID"))
 
 #", "StartDateSol" == "DATE""
 ```
 
 
-```{r SolDataMeta testplot}
-SolDataMeta |>
-  ggplot() +
-  geom_point(aes(x = ActPARCorr, y = Fit/Chl_ugL)) +
-  facet_grid(cols = vars(Strain), rows = vars(Par_ue, O2_uM)) +
-  theme_bw()   
-
-```
-
-Add 'Curve_us' column for each induction curve
-```{r curvetime}
-#head(SolDataMeta)
-
-SolDataMeta <- SolDataMeta |>
-  group_by(Filename, Project,  CultureID, Ex_WL, TempCont, MeasureO2_uM, CurveTime, LR_s, ActPAR, Dark1s) |>
-  mutate(Curve_us = (Time_us - Time_us[1]),  .after = Time_s) |>
-  mutate(EMNorm = EM/max(EM, na.rm = TRUE)) |>
-  mutate(FitNorm = Fit/max(Fit, na.rm = TRUE)) |>
-  ungroup()
-
-```
-
-Plots separating MeasureO2_uM
-```{r MeasureO2_uM plots}
-SolDataMeta |>
-  filter(LR_s < 70) |>
-  filter(Strain == "MED4") |>
-  filter(ActPARCorr %in% c (0, 40)) |>
-  #filter(Par_ue == 90) |>
-  filter(Dark1s == 0) |>
-  ggplot() +
-  geom_point(aes(x = log10(Curve_us), y = EMNorm, colour = as.factor(ActPARCorr)), size = 0.2) +
-  geom_line(aes(x = log10(Curve_us), y = FitNorm, colour = as.factor(ActPARCorr))) +
-  facet_grid(cols = vars(Strain, MeasureO2_uM), rows = vars(Par_ue, O2_uM)) +
-  theme_bw() 
-
-SolDataMeta |>
-    filter(LR_s < 70) |>
-  filter(Strain == "MIT9313") |>
-  filter(ActPARCorr %in% c (0, 40)) |>
-  filter(Par_ue != 180) |>
-  filter(Dark1s == 0) |>
-  filter(!CultureID %in% c("JuNa1198", "JuNa1209")) |>
-  ggplot() +
-  geom_point(aes(x = log10(Curve_us), y = EMNorm, colour = as.factor(ActPARCorr)), size = 0.2) +
-  geom_line(aes(x = log10(Curve_us), y = FitNorm, colour = as.factor(ActPARCorr))) +
-  facet_grid(cols = vars(Strain, MeasureO2_uM), rows = vars(Par_ue, O2_uM, CultureID)) +
-  theme_bw() 
-
-SolDataMeta |>
-  filter(LR_s < 70) |>
-  filter(Strain == "SS120") |>
-  filter(ActPARCorr %in% c (0, 40)) |>
-  filter(Dark1s == 0) |>
-  ggplot() +
-  geom_point(aes(x = log10(Curve_us), y = EMNorm, colour = as.factor(ActPARCorr)), size = 0.2) +
-  geom_line(aes(x = log10(Curve_us), y = FitNorm, colour = as.factor(ActPARCorr))) +
-  facet_grid(cols = vars(Strain, MeasureO2_uM), rows = vars(Par_ue, O2_uM)) +
-  theme_bw()
-```
-
-Plots facetted by MeasureO2_uM
-```{r}
-# SolDataMeta |>
-#   filter(LR_s < 70) |>
-#   filter(Strain == "MED4") |>
-#   filter(ActPARCorr %in% c(0, 40)) |>
-#   filter(Par_ue == 90) |>
-#   filter(Dark1s == 0) |>
-#   ggplot() +
-#   geom_point(aes(x = log10(Curve_us), y = EMNorm, colour = as.factor(ActPARCorr)), size = 0.2) +
-#   geom_line(aes(x = log10(Curve_us), y = FitNorm, colour = as.factor(ActPARCorr))) +
-#   facet_grid(cols = vars(MeasureO2_uM), rows = vars(Par_ue, O2_uM)) +
-#   theme_bw() 
-
-SolDataMeta |>
-  filter(LR_s < 70) |>
-  filter(Strain == "MED4") |>
-  #filter(ActPARCorr %in% c(0, 40)) |>
-  filter(Par_ue != 30) |>
-  filter(Dark1s == 0) |>
-  ggplot() +
-  #geom_point(aes(x = log10(Curve_us), y = EMNorm, colour = as.factor(MeasureO2_uM)), size = 0.2) +
-  geom_line(aes(x = log10(Curve_us), y = FitNorm, colour = as.factor(MeasureO2_uM))) +
-  facet_grid(cols = vars(ActPARCorr), rows = vars(Par_ue, O2_uM)) +
-  theme_bw() 
-
-SolDataMeta |>
-  filter(LR_s < 70) |>
-  filter(Strain == "MIT9313") |>
-  #filter(ActPARCorr %in% c(0, 40)) |>
-  #filter(Par_ue != 30) |>
-  filter(Dark1s == 0) |>
-  ggplot() +
-  geom_point(aes(x = log10(Curve_us), y = EMNorm, colour = as.factor(MeasureO2_uM)), size = 0.2) +
-  geom_line(aes(x = log10(Curve_us), y = FitNorm, colour = as.factor(MeasureO2_uM))) +
-  facet_grid(cols = vars(ActPARCorr), rows = vars(Par_ue, O2_uM)) +
-  theme_bw() 
-
-SolDataMeta |>
-  filter(LR_s < 70) |>
-  filter(Strain == "SS120") |>
-  #filter(ActPARCorr %in% c(0, 40)) |>
-  #filter(Par_ue != 30) |>
-  filter(Dark1s == 0) |>
-  ggplot() +
-  geom_point(aes(x = log10(Curve_us), y = EMNorm, colour = as.factor(MeasureO2_uM)), size = 0.2) +
-  geom_line(aes(x = log10(Curve_us), y = FitNorm, colour = as.factor(MeasureO2_uM))) +
-  facet_grid(cols = vars(ActPARCorr), rows = vars(Par_ue, O2_uM)) +
-  theme_bw() 
-```
-
-```{r save SolDataMeta}
-saveRDS(SolDataMeta, file.path(DataOut, paste(Project, Run, "SolDataMeta.Rds", sep = "_"), fsep = .Platform$file.sep))
+```{r save DualPAMMeta}
+# saveRDS(SolDataMeta, file.path(DataOut, paste(Project, Run, "SolDataMeta.Rds", sep = "_"), fsep = .Platform$file.sep))
 ```

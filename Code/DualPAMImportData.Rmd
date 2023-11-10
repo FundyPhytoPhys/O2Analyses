@@ -39,16 +39,16 @@ DataIn <- file.path("..", "Data", "RawData", "DualPAM", "Report", fsep = .Platfo
 
 FileID <- ".csv"
 
-Catalog <- "https://docs.google.com/spreadsheets/d/1ZXpwR7Gfto-uRzVdXzMpQF4frbrvMLH_IyLqonFZRSw/edit#gid=0"
-
-ChlTurner <- "https://docs.google.com/spreadsheets/d/13mQm0B3siS65UuGjNdzvpHFomfuwn6aAg7dBoq1IqrM/edit#gid=0"
+# Catalog <- "https://docs.google.com/spreadsheets/d/1ZXpwR7Gfto-uRzVdXzMpQF4frbrvMLH_IyLqonFZRSw/edit#gid=0"
+# 
+# ChlTurner <- "https://docs.google.com/spreadsheets/d/13mQm0B3siS65UuGjNdzvpHFomfuwn6aAg7dBoq1IqrM/edit#gid=0"
 
 FileEncode <- "UTF-8" 
 Delimiter <- ";"
 
-HeaderRows <- 14
+#HeaderRows <- 14
 
-TempCont <- "TC"
+#TempCont <- "TC"
 
 ```
 
@@ -147,160 +147,100 @@ Read Test File
 ```{r read example DualPAM Report file}
 # # #issue with rows with --------;  easy to filter though
 DataHeaderRows <- 0
-# 
-# HeaderRowValues <- c("DateTime:", "RFID_EPC:", "RFID_UserData:", "Barcode:", "PIF:", "PARs:", "Light:", "Cycles:", "Lamps:", "Gain:", "SNR_raw:", "Position:", "DataPt", "----")
-# 
-# 
-TestFile <- read_delim_plus(flnm = "../Data/RawData/DualPAM/Report/202311071209_PICO_JuNa1201_250.csv", delimiter = Delimiter, headerrows = DataHeaderRows, fileencode = FileEncode)
+
+TestFile <- read_delim_plus(flnm = "../Data/RawData/DualPAM/Report/202311071209_PICO_JuNa1201_250.csv", delimiter = Delimiter, headerrows = DataHeaderRows, fileencode = FileEncode) |>
+  select(-c(`k/ocs`, `F(I)/Fo calc`, `FMTm`, `F/Fm`,`Fm'/Fm`, `Y(4S)`, `...32`)) |>
+  filter(Action != c("LC-Start", "Manual", "LC-Stop")) |>
+  rename(FI = `F(I)`,
+         Fo = `Fo,Fo'`,
+         Fm = `Fm,Fm'`,
+         YII = `Y(II)`,
+         ETRII = `ETR(II)`,
+         YNO = `Y(NO)`,
+         YNPQ = `Y(NPQ)`,
+         P700m = `P700m,P700m'`,
+         YI = `Y(I)`,
+         YND = `Y(ND)`,
+         YNA = `Y(NA)`,
+         ETRI = `ETR(I)`)
+  
 
 head(TestFile)
 
+TestFile2 <- type_convert(
+  TestFile,
+  col_types = NULL,
+  na = c("", "NA"),
+  trim_ws = TRUE,
+  locale = default_locale(),
+  guess_integer = FALSE
+)
 
-
-|>
-  filter(!`DataPt` %in% HeaderRowValues) |>
-  filter(`Time(us)` != "99") |>
-  select(-c(`...6`)) |>
-  rename(Time_us = `Time(us)` )
-# 
-# TestLights <- read_delim_plus(flnm = "../Data/RawData/Solisense/PICO_202305310950_JuNa1188_445_25_data.csv", delimiter = Delimiter, headerrows = 0, fileencode = FileEncode) |>
-#   filter(`----` == "Light:") |>
-#   separate(`...2`, c("L1","L2","L3","L4","L5"), sep = ",", remove = TRUE) |>
-#   select(-c("----"))
-# 
-# TestTimes <- read_delim_plus(flnm = "../Data/RawData/Solisense/PICO_202305310950_JuNa1188_445_25_data.csv", delimiter = Delimiter, headerrows = 0, fileencode = FileEncode) |>
-#   filter(`----` == "DateTime:") |>
-#   separate(`...2`, c("CurveDate","CurveTime","CurveDigitalTime"), sep = ",", remove = TRUE) |>
-#   select(-c("----"))
-# 
-# #Now expand TestLights TestTimes to appropriate number of rows for each light...
-# 
-# CurveLength <- nrow(TestFile)/nrow(TestLights)
-# 
-# #https://stackoverflow.com/questions/62935872/i-want-to-duplicate-observations-rows-in-a-tibble
-# 
-# TestLightsLength <- tidyr::uncount(tibble(TestLights), nrow(TestFile)/nrow(TestLights)) |>
-#   select(-c(Filename))
-# 
-# TestTimesLength <- tidyr::uncount(tibble(TestTimes), nrow(TestFile)/nrow(TestTimes)) |>
-#   select(-c(Filename))
-# 
-# TestFile2 <- cbind(TestFile, TestLightsLength, TestTimesLength) |>
-#   filter(DataPt != "==========") |>
-#   type_convert()
-# 
-# 
-# head(TestFile2)
+head(TestFile2)
 
 ```
 
-```{r testplot}
-# TestFile2 |>
-#   ggplot() +
-#   geom_point(aes(x = DataPt, y = EM), colour = "red") +
-#   #geom_point(aes(x = DataPt, y = Fit), size = 0.1) +
-#   facet_grid(cols = vars(L1)) +
-#   theme_bw()
-  
+```{r testplots}
+TestFile |>
+  ggplot() +
+  geom_point(aes(x = PAR, y = YI), colour = "blue") +
+  geom_point(aes(x = PAR, y = YII), colour = "red") +
+  theme_bw()
+
+TestFile |>
+  ggplot() +
+  geom_point(aes(x = YII, y = YI)) +
+  theme_bw()
+
 ```
 
-
-```{r add light and time from headers during file read}
-
-
-read_delim_SolLightTime <- function(flnm, delimiter, headerrows, fileencode){DataFile <- read_delim(flnm, delim = delimiter,  col_names = TRUE,  skip = headerrows, escape_double = FALSE,  locale = locale(encoding = fileencode), trim_ws = TRUE) |>
-    mutate(Filename = flnm) |> filter(!`DataPt` %in% HeaderRowValues) |>
-  filter(`Time(us)` != "99") |>
-  select(-c(`...6`)) |>
-  rename(Time_us = `Time(us)` )
-
-  Lights <- read_delim_plus(flnm, delimiter = Delimiter, headerrows = 0, fileencode = FileEncode) |>
-  filter(`----` == "Light:") |>
-  separate(`...2`, c("L1","L2","L3","L4","L5"), sep = ",", remove = TRUE) |>
-  select(-c("----"))
-
-  LightsLength <- tidyr::uncount(tibble(Lights), nrow(DataFile)/nrow(Lights)) |>
-  select(-c(Filename))
-
-  Times <- read_delim_plus(flnm, delimiter = Delimiter, headerrows = 0, fileencode = FileEncode) |>
-  filter(`----` == "DateTime:") |>
-  separate(`...2`, c("CurveDate","CurveTime","CurveDigitalTime"), sep = ",", remove = TRUE) |>
-  select(-c("----"))
-
-  TimesLength <- tidyr::uncount(tibble(Times), nrow(DataFile)/nrow(Times)) |>
-  select(-c(Filename))
-
-  SolFile <- cbind(DataFile, LightsLength, TimesLength) |>
-  filter(DataPt != "==========") |>
+```{r read and tidy function}
+read_delim_DualPAM <- function(flnm, delimiter, headerrows, fileencode){read_delim_plus(flnm, delimiter = Delimiter, headerrows = DataHeaderRows, fileencode = FileEncode) |>
+  select(-c(`k/ocs`, `F(I)/Fo calc`, `FMTm`, `F/Fm`,`Fm'/Fm`, `Y(4S)`, `...32`)) |>
+  filter(Action != c("LC-Start", "Manual", "LC-Stop")) |>
+  rename(FI = `F(I)`,
+         Fo = `Fo,Fo'`,
+         Fm = `Fm,Fm'`,
+         YII = `Y(II)`,
+         ETRII = `ETR(II)`,
+         YNO = `Y(NO)`,
+         YNPQ = `Y(NPQ)`,
+         P700m = `P700m,P700m'`,
+         YI = `Y(I)`,
+         YND = `Y(ND)`,
+         YNA = `Y(NA)`,
+         ETRI = `ETR(I)`) |>
   type_convert()
 }
-
 ```
 
 
+```{r read example DualPAMData file onestep}
+DataHeaderRows <- 0
 
-```{r read example Solisense Data file onestep}
-# DataHeaderRows <- 14
-# 
-# HeaderRowValues <- c("DateTime:", "RFID_EPC:", "RFID_UserData:", "Barcode:", "PIF:", "PARs:", "Light:", "Cycles:", "Lamps:", "Gain:", "SNR_raw:", "Position:", "DataPt", "----")
-# 
-# SolLightTimeOneStep <- read_delim_SolLightTime(flnm = "../Data/RawData/Solisense/PICO_202305310950_JuNa1188_445_25_data.csv", delimiter = Delimiter, headerrows = DataHeaderRows, fileencode = FileEncode)
+DualPAMOneStep <- read_delim_DualPAM(flnm = "../Data/RawData/DualPAM/Report/202311071209_PICO_JuNa1201_250.csv", delimiter = Delimiter, headerrows = DataHeaderRows, fileencode = FileEncode)
 
-```
-
-purrr::map to read all files, two step
-
-```{r read Solisense files}
-# SolData <- SolisenseDataFiles |>
-#   map_df(~read_delim_plus(flnm =., delimiter = Delimiter, headerrows = DataHeaderRows, fileencode = FileEncode)) |>
-#    filter(!`DataPt` %in% HeaderRows) |>
-#   filter(`Time(us)` != "99") |>
-#   select(-c(`...6`)) |>
-#   rename(Time_us = `Time(us)` )
-# 
-# head(SolData)
-# colnames(SolData)
-# length(unique(SolData$Filename))
-# 
-# SolLights <- SolisenseDataFiles |> 
-#   map_df(~read_delim_plus(flnm = ., delimiter = Delimiter, headerrows = 0, fileencode = FileEncode)) |>
-#   filter(`----` == "Light:") |>
-#   separate(`...2`, c("L1","L2","L3","L4","L5"), sep = ",", remove = TRUE) |>
-#   select(-c("----"))
-# 
-# SolLightsLength <- tidyr::uncount(tibble(SolLights), nrow(SolData)/nrow(SolLights)) |>
-#   select(-c(Filename))
-# 
-# SolData <- cbind(SolData, SolLightsLength) |>
-#   filter(DataPt != "==========") |>
-#   type_convert()
-#   
-# 
-# head(SolData)
 
 
 ```
+
 
 purrr::map to read all files, onestep read_delim_SolLightTime function
 
 ```{r read Solisense files}
-DataHeaderRows <- 14
+DataHeaderRows <- 0
 
-HeaderRowValues <- c("DateTime:", "RFID_EPC:", "RFID_UserData:", "Barcode:", "PIF:", "PARs:", "Light:", "Cycles:", "Lamps:", "Gain:", "SNR_raw:", "Position:", "DataPt", "----")
-
-SolData <- SolisenseDataFiles |>
-  map_df(~ read_delim_SolLightTime(flnm =., delimiter = Delimiter, headerrows = DataHeaderRows, fileencode = FileEncode))
+DualPAMData <- DualPAMFiles |>
+  map_df(~ read_delim_DualPAM(flnm =., delimiter = Delimiter, headerrows = DataHeaderRows, fileencode = FileEncode))
 
 
-head(SolData)
-colnames(SolData)
-length(unique(SolData$Filename))
-
-
+head(DualPAMData)
+colnames(DualPAMData)
+length(unique(DualPAMData$Filename))
 ```
 
-```{r SolData plot}
-SolData |>
+```{r DualPAMData plot}
+DualPAMData |>
    ggplot() +
   geom_point(aes(x = DataPt, y = EM), colour = "red") +
   #geom_point(aes(x = DataPt, y = Fit), size = 0.1) +
@@ -310,91 +250,8 @@ SolData |>
 ```
 
 
-```{r rename lights}
 
-SolData <- SolData |>
-  rename(nm445 = L1,
-         nm470 = L2,
-         nm505 = L3,
-         nm535 = L4,
-         nm590 = L5)
-```
-
-```{r tempcont}
-SolData <- SolData |>
-  mutate(TempCont = TempCont)
-```
-
-#Add ActPARcorr with proper correction factors for TC and no TC #Intercepts for cross conversions set to 0.
-
-#Some smarter way to do this with map etc....
-
-```{r actparrcorr}
-SolData <- SolData |> 
-  mutate(nm445Corr = case_when(TempCont == "TC" ~ nm445 * ActPARCrossCal$Slope[ActPARCrossCal$DCLamp == "Pwr1_uE" & ActPARCrossCal$Models == "DCWaterJacketlm_tidy"],
-                                 TempCont == "noTC" ~ nm445 * ActPARCrossCal$Slope[ActPARCrossCal$DCLamp == "Pwr1_uE" & ActPARCrossCal$Models == "DCCuvettelm_tidy"]),
-         nm470Corr = case_when(TempCont == "TC" ~ nm470 * ActPARCrossCal$Slope[ActPARCrossCal$DCLamp == "Pwr2_uE" & ActPARCrossCal$Models == "DCWaterJacketlm_tidy"],
-                                 TempCont == "noTC" ~ nm470 * ActPARCrossCal$Slope[ActPARCrossCal$DCLamp == "Pwr2_uE" & ActPARCrossCal$Models == "DCCuvettelm_tidy"]),
-         nm505Corr = case_when(TempCont == "TC" ~ nm505 * ActPARCrossCal$Slope[ActPARCrossCal$DCLamp == "Pwr3_uE" & ActPARCrossCal$Models == "DCWaterJacketlm_tidy"],
-                                 TempCont == "noTC" ~ nm505 * ActPARCrossCal$Slope[ActPARCrossCal$DCLamp == "Pwr3_uE" & ActPARCrossCal$Models == "DCCuvettelm_tidy"]),
-           nm535Corr = case_when(TempCont == "TC" ~ nm535 * ActPARCrossCal$Slope[ActPARCrossCal$DCLamp == "Pwr4_uE" & ActPARCrossCal$Models == "DCWaterJacketlm_tidy"],
-                                 TempCont == "noTC" ~ nm535 * ActPARCrossCal$Slope[ActPARCrossCal$DCLamp == "Pwr4_uE" & ActPARCrossCal$Models == "DCCuvettelm_tidy"]),
-          nm590Corr = case_when(TempCont == "TC" ~ nm590 * ActPARCrossCal$Slope[ActPARCrossCal$DCLamp == "Pwr5_uE" & ActPARCrossCal$Models == "DCWaterJacketlm_tidy"],
-                                 TempCont == "noTC" ~ nm590 * ActPARCrossCal$Slope[ActPARCrossCal$DCLamp == "Pwr5_uE" & ActPARCrossCal$Models == "DCCuvettelm_tidy"]),
-          # IRCorr = case_when(TempCont == "TC" ~ IR * ActPARCrossCal$Slope[ActPARCrossCal$DCLamp == "PwrIR_uE" & ActPARCrossCal$Models == "DCWaterJacketlm_tidy"],
-          #                        TempCont == "noTC" ~ IR * ActPARCrossCal$Slope[ActPARCrossCal$DCLamp == "PwrIR_uE" & ActPARCrossCal$Models == "DCCuvettelm_tidy"])
-         )
-
-head(SolData)
-
-
-SolData <- SolData %>%
-  mutate(ActPAR = nm445 + nm470 + nm505 + nm535 + nm590) |>
-  mutate(ActPARCorr = round(nm445Corr + nm470Corr + nm505Corr + nm535Corr + nm590Corr), digits = 0) #better ways to do this?
-
-head(SolData)
-
-```
-
-```{r}
-SolData <- SolData %>% 
-  mutate(Filename = str_remove(string = Filename, pattern = "../Data/RawData/Solisense/"),
-         Filename = str_remove(string = Filename, pattern = "_data.csv")
-         ) |>
-  separate(Filename, into = c("Project", "RunDateTime", "CultureID", "Ex_WL", "MeasureO2_uM"), sep = "([\\/\\_])", remove = FALSE) |>
-  mutate(RunDateTime = ymd_hm(RunDateTime)) |> 
-  mutate(Ex_WL = as.factor(as.numeric(Ex_WL)),
-         MeasureO2_uM = as.factor(as.numeric(MeasureO2_uM))) |>
-  rename(StartDateTimeSol = RunDateTime) |>
-  drop_na(StartDateTimeSol)
-
-head(SolData)
-```
-
-
-```{r dark1s}
-#generate column with duration of light step in s
-#add a column adding Dark1s based upon any step < 5 s
-
-SolData <- SolData %>%
-  group_by(Filename, Project,  CultureID, Ex_WL, TempCont, MeasureO2_uM) |>
-  #mutate(Step_s = replace_na(as.numeric(Time_us - lag(Time_us)), 10), .after = Time_us) |>
-  mutate(Time_s = (as.numeric(Time_us - Time_us[1])) / 1000, .after = Time_us) |>
-  mutate(LR_s = (CurveDigitalTime - CurveDigitalTime[1])/1000, .after = CurveDigitalTime) |>
-  mutate(Dark1s = if_else(ActPARCorr == 0 & LR_s != 0,  1, 0), .after = LR_s) |>
-  relocate(Ex_WL, .after = Dark1s) %>%
-  relocate(ActPAR, .after = Ex_WL) %>%
-  ungroup()
-
-
-SolData %>%
-  filter(Filename == "PICO_202305310950_JuNa1188_445_25") |>
-  ggplot() +
-  geom_point(aes(x = LR_s, y = EM, colour = as.factor(Dark1s)))
-
-```
-
-XXXUpdated to here 26 July 2023
+XXXUpdated to here 10 Nov 2023
 
 # Merge with MetaData & Turner Chl Data
 Many to many relation b/t SolDataMeta & ChlData; fixed by filtering earlier for "InstrumentTag == "Solisense"""

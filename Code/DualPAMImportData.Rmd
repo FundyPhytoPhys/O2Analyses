@@ -46,6 +46,9 @@ FileID <- ".csv"
 FileEncode <- "UTF-8" 
 Delimiter <- ";"
 
+#number of rows in each individual run, including Fo, Fm & 12 actinic light levels
+LightSteps <- 15
+
 #HeaderRows <- 14
 
 #TempCont <- "TC"
@@ -143,12 +146,14 @@ read_delim_plus <- function(flnm, delimiter, headerrows, fileencode){read_delim(
 ```
 
 Read Test File
+DualPAM data is appending desired RLC data to previously captured data.
+Need to select final XX rows of each file to get the 'last' captured RLC, b/c as runs accumulate, saved files increase in length/rows.
 
 ```{r read example DualPAM Report file}
-# # #issue with rows with --------;  easy to filter though
 DataHeaderRows <- 0
 
-TestFile <- read_delim_plus(flnm = "../Data/RawData/DualPAM/Report/202311071209_PICO_JuNa1201_250.csv", delimiter = Delimiter, headerrows = DataHeaderRows, fileencode = FileEncode) |>
+TestFile <- read_delim_plus(flnm = "../Data/RawData/DualPAM/Report/202311091032_PICO_JuNa1210_2.csv", delimiter = Delimiter, headerrows = DataHeaderRows, fileencode = FileEncode) |>
+  slice_tail(n = LightSteps) |>
   select(-c(`k/ocs`, `F(I)/Fo calc`, `FMTm`, `F/Fm`,`Fm'/Fm`, `Y(4S)`, `...32`)) |>
   filter(Action != c("LC-Start", "Manual", "LC-Stop")) |>
   rename(FI = `F(I)`,
@@ -205,9 +210,10 @@ TestFile |>
 
 ```{r read and tidy function}
 read_delim_DualPAM <- function(flnm, delimiter, headerrows, fileencode){read_delim_plus(flnm, delimiter = Delimiter, headerrows = DataHeaderRows, fileencode = FileEncode) |>
-  select(-c(`k/ocs`, `F(I)/Fo calc`, `FMTm`, `F/Fm`,`Fm'/Fm`, `Y(4S)`, `...32`)) |>
-  filter(Action != c("LC-Start", "Manual", "LC-Stop")) |>
-  rename(FI = `F(I)`,
+    slice_tail(n = LightSteps) |>
+    select(-c(`k/ocs`, `F(I)/Fo calc`, `FMTm`, `F/Fm`,`Fm'/Fm`, `Y(4S)`, `...32`)) |>
+    filter(Action != c("LC-Start", "Manual", "LC-Stop")) |>
+    rename(FI = `F(I)`,
          Fo = `Fo,Fo'`,
          Fm = `Fm,Fm'`,
          YII = `Y(II)`,
@@ -219,11 +225,11 @@ read_delim_DualPAM <- function(flnm, delimiter, headerrows, fileencode){read_del
          YND = `Y(ND)`,
          YNA = `Y(NA)`,
          ETRI = `ETR(I)`) |>
-  type_convert() |>
+    type_convert() |>
     mutate(Filename = str_remove(Filename, pattern = "../Data/RawData/DualPAM/Report/")) |>
-  mutate(Filename = str_remove(Filename, pattern = ".csv")) |>
- separate_wider_delim(Filename, delim = "_",  names = c("RunDateTime", "Project", "CultureID", "MeasureO2_uM"), cols_remove = FALSE) |>
-  mutate(RunDateTime = ymd_hm(RunDateTime)) 
+    mutate(Filename = str_remove(Filename, pattern = ".csv")) |>
+    separate_wider_delim(Filename, delim = "_",  names = c("RunDateTime", "Project", "CultureID", "MeasureO2_uM"), cols_remove = FALSE) |>
+    mutate(RunDateTime = ymd_hm(RunDateTime)) 
 }
 ```
 

@@ -74,14 +74,15 @@ library(googlesheets4)
 ```
 
 Load Multiculti catalog and ChlTurner
-Note: Added 'CultureID' column to googlesheet b/c ID numbers overlap with earlier samples
+Note: Added 'SampleID' column to googlesheet b/c ID numbers overlap with earlier samples
 ```{r load multiculticatalog, message = FALSE, warning = FALSE, echo=FALSE}
 gs4_deauth()
 
-#Increase guess_max to catch character codes in CultureID
+#Increase guess_max to catch character codes in SampleID
 MetaData <- read_sheet(Catalog, guess_max = 2000) |>
   drop_na(WL) |>
-  mutate(WL = unlist(WL))
+  mutate(WL = unlist(WL)) |>
+  filter(!is.na(SampleID))
 
 as.data.frame(MetaData)
 
@@ -184,7 +185,7 @@ head(TestFile2)
 TestFile3 <- TestFile2 |>
   mutate(Filename = str_remove(Filename, pattern = "../Data/RawData/DualPAM/Report/")) |>
   mutate(Filename = str_remove(Filename, pattern = ".csv")) |>
- separate_wider_delim(Filename, delim = "_",  names = c("RunDateTime", "Project", "CultureID", "MeasureO2_uM"), cols_remove = FALSE) |>
+ separate_wider_delim(Filename, delim = "_",  names = c("RunDateTime", "Project", "SampleID", "MeasureO2_uM"), cols_remove = FALSE) |>
   mutate(RunDateTime = ymd_hm(RunDateTime)) 
 
 
@@ -205,7 +206,8 @@ TestFile |>
   theme_bw()
 
 ```
-
+Be Careful Here assumes all DualPAM LRC runs are 15 steps; that is NOT True.
+Think of tags or something to mark 'different' runs, or figure out way to use text in file to ID requisite rows
 ```{r read and tidy function}
 read_delim_DualPAM <- function(flnm, delimiter, headerrows, fileencode){read_delim_plus(flnm, delimiter = Delimiter, headerrows = DataHeaderRows, fileencode = FileEncode) |>
     slice_tail(n = LightSteps) |>
@@ -226,7 +228,7 @@ read_delim_DualPAM <- function(flnm, delimiter, headerrows, fileencode){read_del
     type_convert() |>
     mutate(Filename = str_remove(Filename, pattern = "../Data/RawData/DualPAM/Report/")) |>
     mutate(Filename = str_remove(Filename, pattern = ".csv")) |>
-    separate_wider_delim(Filename, delim = "_",  names = c("RunDateTime", "Project", "CultureID", "MeasureO2_uM"), cols_remove = FALSE) |>
+    separate_wider_delim(Filename, delim = "_",  names = c("RunDateTime", "Project", "SampleID", "MeasureO2_uM"), cols_remove = FALSE) |>
     mutate(RunDateTime = ymd_hm(RunDateTime)) 
 }
 ```
@@ -261,23 +263,24 @@ DualPAMData |>
   ggplot() +
   geom_point(aes(x = PAR, y = YI), colour = "blue") +
   geom_point(aes(x = PAR, y = YII), colour = "red") +
-  facet_grid(cols = vars(MeasureO2_uM), rows = vars(CultureID)) +
+  facet_grid(cols = vars(MeasureO2_uM), rows = vars(SampleID)) +
   theme_bw()
 
-DualPAMData |>
+DualPAMData|>
   filter(MeasureO2_uM %in% c(2, 25, 250)) |>
-  filter(!(CultureID %in% c("JuNa1201", "JuNa1202", "JuNa1203", "JuNa1204", "JuNa1205"))) |>
+  filter(!(SampleID %in% c("JuNa1201", "JuNa1202", "JuNa1203", "JuNa1204", "JuNa1205"))) |>
+  #filter(SampleID %in% c("JuNa1216","JuNa1220","JuNa1221","JuNa1219","JuNa1222","JuNa1217","JuNa1218","JuNa1231","JuNa1230","JuNa1229")) |>
   ggplot() +
   geom_point(aes(x = PAR, y = YI), colour = "blue") +
   geom_point(aes(x = PAR, y = YII), colour = "red") +
-  facet_grid(cols = vars(MeasureO2_uM), rows = vars(CultureID)) +
+  facet_grid(cols = vars(MeasureO2_uM), rows = vars(SampleID)) +
   theme_bw()
 
 DualPAMData |>
   filter(MeasureO2_uM %in% c(2, 25, 250)) |>
   ggplot() +
   geom_point(aes(x = YII, y = YI)) +
-  facet_grid(cols = vars(MeasureO2_uM), rows = vars(CultureID)) +
+  facet_grid(cols = vars(MeasureO2_uM), rows = vars(SampleID)) +
   theme_bw()
 
 ```
@@ -285,10 +288,10 @@ DualPAMData |>
 # Merge with MetaData & Turner Chl Data
 
 ```{r merge with metadata}
-DualPAMMeta <- left_join(x = DualPAMData, y = MetaData, join_by("CultureID" == "CultureID"))
+DualPAMMeta <- left_join(x = DualPAMData, y = MetaData, join_by("SampleID" == "SampleID"))
 
 
-# SolDataMeta <- left_join(x = SolDataMeta, y = ChlData, join_by("CultureID" == "CultureID"))
+# SolDataMeta <- left_join(x = SolDataMeta, y = ChlData, join_by("SampleID" == "SampleID"))
 
 ```
 
@@ -301,32 +304,37 @@ DualPAMMeta |>
   ggplot() +
   geom_point(aes(x = PAR, y = YI), colour = "blue") +
   geom_point(aes(x = PAR, y = YII), colour = "red") +
-  facet_grid(cols = vars(MeasureO2_uM), rows = vars(Strain, CultureID)) +
+  facet_grid(cols = vars(MeasureO2_uM), rows = vars(Strain, SampleID)) +
   theme_bw()
 
 DualPAMMeta |>
   filter(MeasureO2_uM %in% c(2, 25, 250)) |>
-  filter(!(CultureID %in% c("JuNa1201", "JuNa1202", "JuNa1203", "JuNa1204", "JuNa1205"))) |>
-  filter(!(CultureID %in% c("JuNa1206", "JuNa1207", "JuNa1208", "JuNa1209", "JuNa1210"))) |>
-  filter(CultureID != "JuNa1215") |>
+  filter(!(SampleID %in% c("JuNa1201", "JuNa1202", "JuNa1203", "JuNa1204", "JuNa1205"))) |>
+  #filter(!(SampleID %in% c("JuNa1206", "JuNa1207", "JuNa1208", "JuNa1209", "JuNa1210"))) |>
+  filter(OptodeMeasure == 1) |>
+  filter(Strain == "PCC9511") |>
+  filter(SampleID != "JuNa1215") |>
   ggplot() +
-  geom_point(aes(x = PAR, y = ETRI), colour = "blue") +
-  geom_point(aes(x = PAR, y = ETRII), colour = "red") +
-  facet_grid(cols = vars(MeasureO2_uM), rows = vars(Strain, Par_ue)) +
+  geom_point(aes(x = PAR, y = YI), colour = "blue") +
+  geom_point(aes(x = PAR, y = YII), colour = "red") +
+  facet_grid(cols = vars(MeasureO2_uM), rows = vars(Strain, Par_ue, O2_Category)) +
   theme_bw()
 
 DualPAMMeta |>
   filter(MeasureO2_uM %in% c(2, 25, 250)) |>
-  filter(!(CultureID %in% c("JuNa1201", "JuNa1202", "JuNa1203", "JuNa1204", "JuNa1205"))) |>
-  # filter(!(CultureID %in% c("JuNa1206", "JuNa1207", "JuNa1208", "JuNa1209", #"JuNa1210"))) |>
-  filter(CultureID != "JuNa1215") |>
+  filter(!(SampleID %in% c("JuNa1201", "JuNa1202", "JuNa1203", "JuNa1204", "JuNa1205"))) |>
+  # filter(!(SampleID %in% c("JuNa1206", "JuNa1207", "JuNa1208", "JuNa1209", #"JuNa1210"))) |>
+  filter(SampleID != "JuNa1215") |>
+    filter(Strain == "PCC9511") |>
+    filter(OptodeMeasure == 1) |>
+  #filter(O2_Category == "Low") |>
   ggplot() +
   geom_point(aes(x = YI, y = YII, colour = as.factor(OptodeMeasure))) +
   #geom_smooth(aes(x = YI, y = YII), method = "lm") +
-  facet_grid(cols = vars(MeasureO2_uM), rows = vars(Strain, Par_ue)) +
+  facet_grid(cols = vars(MeasureO2_uM), rows = vars(Strain, Par_ue, O2_Category)) +
   theme_bw()
 
 ```
 ```{r save DualPAMMeta}
-# saveRDS(SolDataMeta, file.path(DataOut, paste(Project, Run, "SolDataMeta.Rds", sep = "_"), fsep = .Platform$file.sep))
+ saveRDS(DualPAMMeta, file.path(DataOut, paste(Project, Run, "DualPAMMeta.Rds", sep = "_"), fsep = .Platform$file.sep))
 ```

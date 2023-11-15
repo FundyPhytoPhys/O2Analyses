@@ -232,10 +232,38 @@ TestFile |>
 Be Careful Here assumes all DualPAM LRC runs are 15 steps; that is NOT True.
 Think of tags or something to mark 'different' runs, or figure out way to use text in file to ID requisite rows
 ```{r read and tidy function}
-read_delim_DualPAM <- function(flnm, delimiter, headerrows, fileencode){read_delim_plus(flnm, delimiter = Delimiter, headerrows = DataHeaderRows, fileencode = FileEncode) |>
-    slice_tail(n = LightSteps) |>
+# read_delim_DualPAM <- function(flnm, delimiter, headerrows, fileencode){read_delim_plus(flnm, delimiter = Delimiter, headerrows = DataHeaderRows, fileencode = FileEncode) |>
+#     slice_tail(n = LightSteps) |>
+#     select(-c(`k/ocs`, `F(I)/Fo calc`, `FMTm`, `F/Fm`,`Fm'/Fm`, `Y(4S)`, `...32`)) |>
+#     filter(Action != c("LC-Start", "Manual", "LC-Stop")) |>
+#     rename(FI = `F(I)`,
+#          Fo = `Fo,Fo'`,
+#          Fm = `Fm,Fm'`,
+#          YII = `Y(II)`,
+#          ETRII = `ETR(II)`,
+#          YNO = `Y(NO)`,
+#          YNPQ = `Y(NPQ)`,
+#          P700m = `P700m,P700m'`,
+#          YI = `Y(I)`,
+#          YND = `Y(ND)`,
+#          YNA = `Y(NA)`,
+#          ETRI = `ETR(I)`) |>
+#     type_convert() |>
+#     mutate(Filename = str_remove(Filename, pattern = "../Data/RawData/DualPAM/Report/")) |>
+#     mutate(Filename = str_remove(Filename, pattern = ".csv")) |>
+#     separate_wider_delim(Filename, delim = "_",  names = c("RunDateTime", "Project", "SampleID", "MeasureO2_uM"), cols_remove = FALSE) |>
+#     mutate(RunDateTime = ymd_hm(RunDateTime)) 
+# }
+
+read_delim_DualPAM <- function(flnm, delimiter, headerrows, fileencode)
+  {DataFile <- read_delim_plus(flnm, delimiter = Delimiter, headerrows = DataHeaderRows, fileencode = FileEncode)
+  
+  LRCMaxRow <-  (max(which(DataFile$Action == "LC-Start")) - 1)
+  
+  DataFile <- DataFile |>
+    slice_tail(n = LRCMaxRow) |>
     select(-c(`k/ocs`, `F(I)/Fo calc`, `FMTm`, `F/Fm`,`Fm'/Fm`, `Y(4S)`, `...32`)) |>
-    filter(Action != c("LC-Start", "Manual", "LC-Stop")) |>
+    filter(Action %in% c("LC-Start", "Manual", "LC-Stop")) |>
     rename(FI = `F(I)`,
          Fo = `Fo,Fo'`,
          Fm = `Fm,Fm'`,
@@ -253,61 +281,10 @@ read_delim_DualPAM <- function(flnm, delimiter, headerrows, fileencode){read_del
     mutate(Filename = str_remove(Filename, pattern = ".csv")) |>
     separate_wider_delim(Filename, delim = "_",  names = c("RunDateTime", "Project", "SampleID", "MeasureO2_uM"), cols_remove = FALSE) |>
     mutate(RunDateTime = ymd_hm(RunDateTime)) 
+  DataFile
 }
 
-read_delim_DualPAM2 <- function(flnm, delimiter, headerrows, fileencode){read_delim_plus(flnm, delimiter = Delimiter, headerrows = DataHeaderRows, fileencode = FileEncode)
-  
-TestFile2 <- TestFile |>
-    slice_tail(n = -(max(which(TestFile$Action == "LC-Start")) - 1)) 
-  
-  |>
-    slice_tail(n = LightSteps) |>
-    select(-c(`k/ocs`, `F(I)/Fo calc`, `FMTm`, `F/Fm`,`Fm'/Fm`, `Y(4S)`, `...32`)) |>
-    filter(Action != c("LC-Start", "Manual", "LC-Stop")) |>
-    rename(FI = `F(I)`,
-         Fo = `Fo,Fo'`,
-         Fm = `Fm,Fm'`,
-         YII = `Y(II)`,
-         ETRII = `ETR(II)`,
-         YNO = `Y(NO)`,
-         YNPQ = `Y(NPQ)`,
-         P700m = `P700m,P700m'`,
-         YI = `Y(I)`,
-         YND = `Y(ND)`,
-         YNA = `Y(NA)`,
-         ETRI = `ETR(I)`) |>
-    type_convert() |>
-    mutate(Filename = str_remove(Filename, pattern = "../Data/RawData/DualPAM/Report/")) |>
-    mutate(Filename = str_remove(Filename, pattern = ".csv")) |>
-    separate_wider_delim(Filename, delim = "_",  names = c("RunDateTime", "Project", "SampleID", "MeasureO2_uM"), cols_remove = FALSE) |>
-    mutate(RunDateTime = ymd_hm(RunDateTime)) 
-}
-read_delim_SolLightTime <- function(flnm, delimiter, headerrows, fileencode){DataFile <- read_delim(flnm, delim = delimiter,  col_names = TRUE,  skip = headerrows, escape_double = FALSE,  locale = locale(encoding = fileencode), trim_ws = TRUE) |>
-    mutate(Filename = flnm) |> filter(!`DataPt` %in% HeaderRowValues) |>
-  filter(`Time(us)` != "99") |>
-  select(-c(`...6`)) |>
-  rename(Time_us = `Time(us)` )
 
-  Lights <- read_delim_plus(flnm, delimiter = Delimiter, headerrows = 0, fileencode = FileEncode) |>
-  filter(`----` == "Light:") |>
-  separate(`...2`, c("L1","L2","L3","L4","L5"), sep = ",", remove = TRUE) |>
-  select(-c("----"))
-
-  LightsLength <- tidyr::uncount(tibble(Lights), nrow(DataFile)/nrow(Lights)) |>
-  select(-c(Filename))
-
-  Times <- read_delim_plus(flnm, delimiter = Delimiter, headerrows = 0, fileencode = FileEncode) |>
-  filter(`----` == "DateTime:") |>
-  separate(`...2`, c("CurveDate","CurveTime","CurveDigitalTime"), sep = ",", remove = TRUE) |>
-  select(-c("----"))
-
-  TimesLength <- tidyr::uncount(tibble(Times), nrow(DataFile)/nrow(Times)) |>
-  select(-c(Filename))
-
-  SolFile <- cbind(DataFile, LightsLength, TimesLength) |>
-  filter(DataPt != "==========") |>
-  type_convert()
-}
 ```
 
 

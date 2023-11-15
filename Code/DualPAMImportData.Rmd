@@ -151,7 +151,10 @@ Need to select final XX rows of each file to get the 'last' captured RLC, b/c as
 ```{r read example DualPAM Report file}
 DataHeaderRows <- 0
 
-TestFile <- read_delim_plus(flnm = "../Data/RawData/DualPAM/Report/202311091032_PICO_JuNa1210_2.csv", delimiter = Delimiter, headerrows = DataHeaderRows, fileencode = FileEncode) |>
+TestFile <- read_delim_plus(flnm = "../Data/RawData/DualPAM/Report/202311141453_PICO_JuNa1246_250.csv", delimiter = Delimiter, headerrows = DataHeaderRows, fileencode = FileEncode)
+
+
+|>
   slice_tail(n = LightSteps) |>
   select(-c(`k/ocs`, `F(I)/Fo calc`, `FMTm`, `F/Fm`,`Fm'/Fm`, `Y(4S)`, `...32`)) |>
   filter(Action != c("LC-Start", "Manual", "LC-Stop")) |>

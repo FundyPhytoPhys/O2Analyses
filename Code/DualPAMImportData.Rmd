@@ -47,9 +47,8 @@ FileEncode <- "UTF-8"
 Delimiter <- ";"
 
 #number of rows in each individual run, including Fo, Fm & 12 actinic light levels
-LightSteps <- 15
-
-#HeaderRows <- 14
+#no longer necessary
+#LightSteps <- 15
 
 #TempCont <- "TC"
 

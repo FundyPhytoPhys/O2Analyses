@@ -253,7 +253,8 @@ DualPAMData |>
 
 ```
 
-# Merge with MetaData & Turner Chl Data
+# Merge with MetaData 
+& Turner Chl Data
 
 ```{r merge with metadata}
 DualPAMMeta <- left_join(x = DualPAMData, y = MetaData, join_by("SampleID" == "SampleID"))
@@ -294,6 +295,20 @@ DualPAMMeta |>
   # filter(!(SampleID %in% c("JuNa1206", "JuNa1207", "JuNa1208", "JuNa1209", #"JuNa1210"))) |>
   filter(SampleID != "JuNa1215") |>
     filter(Strain == "PCC9511") |>
+    filter(OptodeMeasure == 1) |>
+  #filter(O2_Category == "Low") |>
+  ggplot() +
+  geom_point(aes(x = YI, y = YII, colour = as.factor(OptodeMeasure))) +
+  #geom_smooth(aes(x = YI, y = YII), method = "lm") +
+  facet_grid(cols = vars(MeasureO2_uM), rows = vars(Strain, Par_ue, O2_Category)) +
+  theme_bw()
+
+DualPAMMeta |>
+  filter(MeasureO2_uM %in% c(2, 25, 250)) |>
+  filter(!(SampleID %in% c("JuNa1201", "JuNa1202", "JuNa1203", "JuNa1204", "JuNa1205"))) |>
+  # filter(!(SampleID %in% c("JuNa1206", "JuNa1207", "JuNa1208", "JuNa1209", #"JuNa1210"))) |>
+  filter(SampleID != "JuNa1215") |>
+    filter(Strain == "MIT9313") |>
     filter(OptodeMeasure == 1) |>
   #filter(O2_Category == "Low") |>
   ggplot() +

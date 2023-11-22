@@ -163,7 +163,8 @@ YIFitValues <- YFits |>
   select(Strain, O2_Category, MeasureO2_uM, Par_ue, term, estimate, std.error) |> 
   pivot_wider(names_from = c(term), values_from = c(estimate, std.error)) |>
   mutate(alpha = exp(estimate_log_alpha),
-         alpha_se = exp(std.error_log_alpha)) |>
+         alpha_se = exp(std.error_log_alpha),
+         YIPARHalf = log(2)/alpha) |>
   select(-c(estimate_log_alpha, std.error_log_alpha))
 
 YIIFitValues <- YFits |>
@@ -171,7 +172,8 @@ YIIFitValues <- YFits |>
   select(Strain, O2_Category, MeasureO2_uM, Par_ue, term, estimate, std.error) |> 
   pivot_wider(names_from = c(term), values_from = c(estimate, std.error)) |>
   mutate(alpha = exp(estimate_log_alpha),
-         alpha_se = exp(std.error_log_alpha)) |>
+         alpha_se = exp(std.error_log_alpha), 
+         YIIPARHalf = log(2)/alpha) |>
   select(-c(estimate_log_alpha, std.error_log_alpha))
 
 
@@ -183,7 +185,7 @@ rm(YIFitValues, YIIFitValues)
 
 ```
 
-```{r exponential decay fits}
+```{r exponential decay fit plots}
 YFits |>
   unnest(YIaugmented) |>
   ggplot() + 
@@ -212,6 +214,45 @@ Y_PAR_PredictValues |>
   geom_line(aes(x = `.fitted.x`, y = `.fitted.y`), colour = "green") +
   facet_grid(cols = vars(MeasureO2_uM), rows = vars(Strain, Par_ue, O2_Category)) +
   #labs(x = "YI", y = "YII") +
+  theme_bw()
+
+```
+```{r exponential decay parameter plots}
+Y_PAR_FitValues |>
+  ggplot() +
+  geom_point(aes(x = alphaYI, y = alphaYII, colour = as.factor(MeasureO2_uM))) +
+  facet_grid(cols = vars(Strain), rows = vars(Par_ue, O2_Category)) +
+  theme_bw()
+
+Y_PAR_FitValues |>
+  ggplot() +
+  geom_point(aes(x = YIPARHalf, y = YIIPARHalf, colour = as.factor(MeasureO2_uM))) +
+  facet_grid(cols = vars(Strain), rows = vars(Par_ue, O2_Category)) +
+  theme_bw()
+
+
+Y_PAR_FitValues |>
+  ggplot() +
+  geom_point(aes(x = MeasureO2_uM, y = alphaYI, colour = as.factor(Par_ue))) +
+  facet_grid(cols = vars(Strain), rows = vars(Par_ue, O2_Category)) +
+  theme_bw()
+
+Y_PAR_FitValues |>
+  ggplot() +
+  geom_point(aes(x = MeasureO2_uM, y = alphaYII, colour = as.factor(Par_ue))) +
+  facet_grid(cols = vars(Strain), rows = vars(Par_ue, O2_Category)) +
+  theme_bw()
+
+Y_PAR_FitValues |>
+  ggplot() +
+  geom_point(aes(x = MeasureO2_uM, y = YIPARHalf, colour = as.factor(Par_ue))) +
+  facet_grid(cols = vars(Strain), rows = vars(O2_Category)) +
+  theme_bw()
+
+Y_PAR_FitValues |>
+  ggplot() +
+  geom_point(aes(x = MeasureO2_uM, y = YIIPARHalf, colour = as.factor(Par_ue))) +
+  facet_grid(cols = vars(Strain), rows = vars(O2_Category)) +
   theme_bw()
 
 ```

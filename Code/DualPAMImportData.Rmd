@@ -52,6 +52,11 @@ Delimiter <- ";"
 
 #TempCont <- "TC"
 
+NoO2Runs <- c("JuNa1201", "JuNa1202", "JuNa1203", "JuNa1204", "JuNa1205")
+BadRuns <- c("JuNa1215")
+DubiousRuns <- c("JuNa1206", "JuNa1207", "JuNa1208", "JuNa1209", "JuNa1210")
+
+
 ```
 
 ```{r conversions}
@@ -72,8 +77,9 @@ library(googlesheets4)
 
 ```
 
-Load Multiculti catalog and ChlTurner
+Load Multiculti catalog
 Note: Added 'SampleID' column to googlesheet b/c ID numbers overlap with earlier samples
+Note: Add Chl data to MultiCulti Catalog; Julie
 ```{r load multiculticatalog, message = FALSE, warning = FALSE, echo=FALSE}
 gs4_deauth()
 
@@ -92,28 +98,6 @@ MetaData <- MetaData %>%
 
 
 
-# find units for chl
-
-#issue with R guessing coltype of InstrumentTag from first rows, and converting to lgl.  Then actual tags are lost as NA b/c looking for logical values only
-#ChlData <- read_sheet(ChlTurner, col_types = c("cccciiiiiiic"))
-
-#head(ChlData)
-
-# ChlData <- ChlData|>
-#   mutate(Chl_ugL = as.numeric(Reading_rfu) * as.numeric(`Chl_slope_RFU/Chl (ug/L)`) + as.numeric(Chl_intercept_RFU)) |>
-#   drop_na(DATE, TIME) |>
-#   #mutate(StartExDate = unlist(StartExDate),
-#   # mutate(DATE = unlist(DATE), 
-#   #        TIME = unlist(TIME)) |>
-#   mutate(DATE = as.character(DATE)) |>
-#   filter(InstrumentTag == "Solisense")
-
-# ,
-#          StartExDate = as.character(StartExDate))
-  # read_sheet has an annoying "feature" to set the type of columns it can't parse to a list.
-  # ggplot/dplyr doesn't like working with a dataframe of lists.
-
-#head(ChlData)
 ```
 
 ```{r set colours}
@@ -204,9 +188,9 @@ read_delim_DualPAM <- function(flnm, delimiter, headerrows, fileencode){DataFile
 
 
 ```{r read example DualPAMData file onestep}
-DataHeaderRows <- 0
-
-DualPAMOneStep <- read_delim_DualPAM(flnm = "../Data/RawData/DualPAM/Report/202311151130_PICO_JuNa1249_250.csv", delimiter = Delimiter, headerrows = DataHeaderRows, fileencode = FileEncode)
+# DataHeaderRows <- 0
+# 
+# DualPAMOneStep <- read_delim_DualPAM(flnm = "../Data/RawData/DualPAM/Report/202311151130_PICO_JuNa1249_250.csv", delimiter = Delimiter, headerrows = DataHeaderRows, fileencode = FileEncode)
 
 
 
@@ -253,8 +237,7 @@ DualPAMData |>
 
 ```
 
-# Merge with MetaData 
-& Turner Chl Data
+# Merge with MetaData & Chl Data
 
 ```{r merge with metadata}
 DualPAMMeta <- left_join(x = DualPAMData, y = MetaData, join_by("SampleID" == "SampleID"))
@@ -266,6 +249,8 @@ DualPAMMeta <- left_join(x = DualPAMData, y = MetaData, join_by("SampleID" == "S
 
 
 ```{r DualPAMData plot}
+
+
 DualPAMMeta |>
   #filter(Strain == "PCC9511") |>
   # filter(Par_ue == 30) |>
@@ -278,11 +263,10 @@ DualPAMMeta |>
 
 DualPAMMeta |>
   filter(MeasureO2_uM %in% c(2, 25, 250)) |>
-  filter(!(SampleID %in% c("JuNa1201", "JuNa1202", "JuNa1203", "JuNa1204", "JuNa1205"))) |>
-  #filter(!(SampleID %in% c("JuNa1206", "JuNa1207", "JuNa1208", "JuNa1209", "JuNa1210"))) |>
+  filter(!(SampleID %in% NoO2Runs)) |>
+  filter(!SampleID %in% BadRuns) |>
   filter(OptodeMeasure == 1) |>
   filter(Strain == "PCC9511") |>
-  filter(SampleID != "JuNa1215") |>
   ggplot() +
   geom_point(aes(x = PAR, y = YI), colour = "blue") +
   geom_point(aes(x = PAR, y = YII), colour = "red") +
@@ -291,12 +275,22 @@ DualPAMMeta |>
 
 DualPAMMeta |>
   filter(MeasureO2_uM %in% c(2, 25, 250)) |>
-  filter(!(SampleID %in% c("JuNa1201", "JuNa1202", "JuNa1203", "JuNa1204", "JuNa1205"))) |>
-  # filter(!(SampleID %in% c("JuNa1206", "JuNa1207", "JuNa1208", "JuNa1209", #"JuNa1210"))) |>
-  filter(SampleID != "JuNa1215") |>
+  filter(!(SampleID %in% NoO2Runs)) |>
+  filter(!SampleID %in% BadRuns) |>
+  filter(OptodeMeasure == 1) |>
+  filter(Strain == "MIT9313") |>
+  ggplot() +
+  geom_point(aes(x = PAR, y = YI), colour = "blue") +
+  geom_point(aes(x = PAR, y = YII), colour = "red") +
+  facet_grid(cols = vars(MeasureO2_uM), rows = vars(Strain, Par_ue, O2_Category)) +
+  theme_bw()
+
+DualPAMMeta |>
+  filter(MeasureO2_uM %in% c(2, 25, 250)) |>
+  filter(!(SampleID %in% NoO2Runs)) |>
+  filter(!SampleID %in% BadRuns) |>
     filter(Strain == "PCC9511") |>
     filter(OptodeMeasure == 1) |>
-  #filter(O2_Category == "Low") |>
   ggplot() +
   geom_point(aes(x = YI, y = YII, colour = as.factor(OptodeMeasure))) +
   #geom_smooth(aes(x = YI, y = YII), method = "lm") +
@@ -305,12 +299,10 @@ DualPAMMeta |>
 
 DualPAMMeta |>
   filter(MeasureO2_uM %in% c(2, 25, 250)) |>
-  filter(!(SampleID %in% c("JuNa1201", "JuNa1202", "JuNa1203", "JuNa1204", "JuNa1205"))) |>
-  # filter(!(SampleID %in% c("JuNa1206", "JuNa1207", "JuNa1208", "JuNa1209", #"JuNa1210"))) |>
-  filter(SampleID != "JuNa1215") |>
+  filter(!(SampleID %in% NoO2Runs)) |>
+  filter(!SampleID %in% BadRuns) |>
     filter(Strain == "MIT9313") |>
     filter(OptodeMeasure == 1) |>
-  #filter(O2_Category == "Low") |>
   ggplot() +
   geom_point(aes(x = YI, y = YII, colour = as.factor(OptodeMeasure))) +
   #geom_smooth(aes(x = YI, y = YII), method = "lm") +

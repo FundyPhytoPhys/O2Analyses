@@ -1,0 +1,223 @@
+---
+title: "DualPAMImportData"
+author:
+- Julie A. Nadeau
+- Mireille Savoie
+- Douglas A. Campbell
+date: "`r format(Sys.Date())`"
+output:
+  html_document:
+    df_print: paged
+    code_folding: hide
+    keep_md: yes
+    fig_caption: yes
+    toc: TRUE
+    toc_float: TRUE   
+csl: plos-one.csl
+---
+
+This .Rmd imports and tidys underlying data from the DualPAM kinetic fluorometer/absorbtometer software, along with culture MetaData and Turner Chlorophyll data. 
+
+# Set Chunk Options
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+knitr::opts_chunk$set(fig.path='Figs/')
+```
+
+# Set Project Variables
+
+```{r set project variables}
+Project <- "PICO"
+DataOut <- file.path("..", "Data", "ProcessedData")
+
+
+NoO2Runs <- c("JuNa1201", "JuNa1202", "JuNa1203", "JuNa1204", "JuNa1205")
+BadRuns <- c("JuNa1215")
+DubiousRuns <- c("JuNa1206", "JuNa1207", "JuNa1208", "JuNa1209", "JuNa1210")
+
+DualPAMMeta <- readRDS(file = file.path("..", "Data", "ProcessedData", "PICO_O2Analyses_DualPAMMeta.Rds"))
+
+```
+
+```{r conversions}
+us_s <- 1000000
+photons_umol <- 6.022E17
+A2_m2 <- 1E20
+```
+
+```{r load libraries}
+library(tidyverse)
+library(lubridate)
+library(photobiologyWavebands) #R colours from nm values
+library(broom) #formatting model outputs
+
+#https://googlesheets4.tidyverse.org/
+library(googledrive)
+library(googlesheets4)
+
+```
+
+
+```{r set colours}
+Wavelengths_nm = c(445, 470, 505, 535, 590)
+Colours_nm = c(w_length2rgb(Wavelengths_nm[1]), w_length2rgb(Wavelengths_nm[2]), w_length2rgb(Wavelengths_nm[3]), w_length2rgb(Wavelengths_nm[4]), w_length2rgb(Wavelengths_nm[5]))
+
+names(Colours_nm) <- Wavelengths_nm
+Colours_nm
+
+```
+
+
+
+
+
+
+```{r DualPAMData plot}
+
+
+DualPAMMeta |>
+  ggplot() +
+  geom_point(aes(x = PAR, y = YI), colour = "blue") +
+  geom_point(aes(x = PAR, y = YII), colour = "red") +
+  facet_grid(cols = vars(MeasureO2_uM), rows = vars(Strain, SampleID)) +
+  theme_bw()
+
+DualPAMMeta |>
+  filter(MeasureO2_uM %in% c(2, 25, 250)) |>
+  filter(!(SampleID %in% NoO2Runs)) |>
+  filter(!SampleID %in% BadRuns) |>
+  filter(OptodeMeasure == 1) |>
+  filter(Strain == "PCC9511") |>
+  ggplot() +
+  geom_point(aes(x = PAR, y = YI), colour = "blue") +
+  geom_point(aes(x = PAR, y = YII), colour = "red") +
+  facet_grid(cols = vars(MeasureO2_uM), rows = vars(Strain, Par_ue, O2_Category)) +
+  theme_bw()
+
+DualPAMMeta |>
+  filter(MeasureO2_uM %in% c(2, 25, 250)) |>
+  filter(!(SampleID %in% NoO2Runs)) |>
+  filter(!SampleID %in% BadRuns) |>
+  filter(OptodeMeasure == 1) |>
+  filter(Strain == "MIT9313") |>
+  ggplot() +
+  geom_point(aes(x = PAR, y = YI), colour = "blue") +
+  geom_point(aes(x = PAR, y = YII), colour = "red") +
+  facet_grid(cols = vars(MeasureO2_uM), rows = vars(Strain, Par_ue, O2_Category)) +
+  theme_bw()
+
+DualPAMMeta |>
+  filter(MeasureO2_uM %in% c(2, 25, 250)) |>
+  filter(!(SampleID %in% NoO2Runs)) |>
+  filter(!SampleID %in% BadRuns) |>
+    filter(Strain == "PCC9511") |>
+    filter(OptodeMeasure == 1) |>
+  ggplot() +
+  geom_point(aes(x = YI, y = YII, colour = as.factor(OptodeMeasure))) +
+  #geom_smooth(aes(x = YI, y = YII), method = "lm") +
+  facet_grid(cols = vars(MeasureO2_uM), rows = vars(Strain, Par_ue, O2_Category)) +
+  theme_bw()
+
+DualPAMMeta |>
+  filter(MeasureO2_uM %in% c(2, 25, 250)) |>
+  filter(!(SampleID %in% NoO2Runs)) |>
+  filter(!SampleID %in% BadRuns) |>
+    filter(Strain == "MIT9313") |>
+    filter(OptodeMeasure == 1) |>
+  ggplot() +
+  geom_point(aes(x = YI, y = YII, colour = as.factor(OptodeMeasure))) +
+  #geom_smooth(aes(x = YI, y = YII), method = "lm") +
+  facet_grid(cols = vars(MeasureO2_uM), rows = vars(Strain, Par_ue, O2_Category)) +
+  theme_bw()
+
+```
+
+Self Starting Exponential Decay Function
+https://douglas-watson.github.io/post/2018-09_exponential_curve_fitting/
+
+Possible issue with std.error_log_alpha converted back through exp(td.error_log_alpha)
+```{r fit self starting exponential decay}
+YFits <-   DualPAMMeta |>
+  filter(PAR < 600) |>  #possible issue with row labelling of PAR in data files?
+  filter(MeasureO2_uM %in% c(2, 25, 250)) |>
+  filter(!(SampleID %in% NoO2Runs)) |>
+  filter(!SampleID %in% BadRuns) |>
+  filter(OptodeMeasure == 1) |>
+  nest(data = -c(Strain, O2_Category, MeasureO2_uM, Par_ue)) %>%
+  mutate(
+    YIfit = map(data, possibly(~nls(YI ~ SSasymp(PAR, YIf, YI0, log_alpha), data = .), NULL)),
+    YItidied = map(YIfit, tidy),
+    YIaugmented = map(YIfit, augment),
+  ) |>
+mutate(
+    YIIfit = map(data, possibly(~nls(YII ~ SSasymp(PAR, YIIf, YII0, log_alpha), data = .), NULL)),
+    YIItidied = map(YIIfit, tidy),
+    YIIaugmented = map(YIIfit, augment),
+  )  
+
+YFits
+
+YIFitValues <- YFits |>
+  unnest(YItidied) |>
+  select(Strain, O2_Category, MeasureO2_uM, Par_ue, term, estimate, std.error) |> 
+  pivot_wider(names_from = c(term), values_from = c(estimate, std.error)) |>
+  mutate(alpha = exp(estimate_log_alpha),
+         alpha_se = exp(std.error_log_alpha)) |>
+  select(-c(estimate_log_alpha, std.error_log_alpha))
+
+YIIFitValues <- YFits |>
+  unnest(YIItidied) |>
+  select(Strain, O2_Category, MeasureO2_uM, Par_ue, term, estimate, std.error) |> 
+  pivot_wider(names_from = c(term), values_from = c(estimate, std.error)) |>
+  mutate(alpha = exp(estimate_log_alpha),
+         alpha_se = exp(std.error_log_alpha)) |>
+  select(-c(estimate_log_alpha, std.error_log_alpha))
+
+
+Y_PAR_FitValues <- left_join(YIFitValues, YIIFitValues,  by = join_by(Strain, O2_Category, MeasureO2_uM, Par_ue), suffix = c("YI", "YII"))
+
+head(Y_PAR_FitValues)
+
+rm(YIFitValues, YIIFitValues)
+
+```
+
+```{r exponential decay fits}
+YFits |>
+  unnest(YIaugmented) |>
+  ggplot() + 
+  geom_line(aes(x = PAR, y = .fitted), colour = "blue") +
+  geom_point(aes(x = PAR, y = YI)) +
+  facet_grid(cols = vars(MeasureO2_uM), rows = vars(Strain, Par_ue, O2_Category)) +
+  labs(title = "YI") +
+  theme_bw()
+  
+  YFits |>
+  unnest(YIIaugmented) |>
+  ggplot() + 
+  geom_line(aes(x = PAR, y = .fitted), colour = "red") +
+  geom_point(aes(x = PAR, y = YII)) +
+  facet_grid(cols = vars(MeasureO2_uM), rows = vars(Strain, Par_ue, O2_Category)) +
+  labs(title = "YII") +
+  theme_bw()
+  
+Y_PAR_PredictValues <- left_join(x = YFits |> unnest(YIaugmented), y = YFits |> unnest(YIIaugmented), by = join_by(Strain, O2_Category, MeasureO2_uM, Par_ue, PAR)) |>
+  select(-c("data.x","YIfit.x","YItidied.x", "YIIfit.x", "YIItidied.x", "YIIaugmented", "data.y", "YIfit.y","YItidied.y","YIaugmented","YIIfit.y","YIItidied.y"))
+  
+  
+Y_PAR_PredictValues |>
+  ggplot() + 
+  geom_point(aes(x = YI, y = YII)) +
+  geom_line(aes(x = `.fitted.x`, y = `.fitted.y`), colour = "green") +
+  facet_grid(cols = vars(MeasureO2_uM), rows = vars(Strain, Par_ue, O2_Category)) +
+  #labs(x = "YI", y = "YII") +
+  theme_bw()
+
+```
+
+```{r save DualPAMMeta}
+ saveRDS(Y_PAR_FitValues, file.path(DataOut, paste(Project, Run, "Y_PAR_FitValues.Rds", sep = "_"), fsep = .Platform$file.sep))
+
+ saveRDS(Y_PAR_PredictValues, file.path(DataOut, paste(Project, Run, "Y_PAR_PredictValues.Rds", sep = "_"), fsep = .Platform$file.sep))
+```

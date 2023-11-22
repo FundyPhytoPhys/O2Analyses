@@ -242,11 +242,13 @@ DualPAMData |>
 # Merge with MetaData & Chl Data
 
 ```{r merge with metadata}
-DualPAMMeta <- left_join(x = DualPAMData, y = MetaData, join_by("SampleID" == "SampleID"))
+DualPAMMeta <- left_join(x = DualPAMData, y = MetaData, join_by("SampleID" == "SampleID")) |>
+  mutate(MeasureO2_uM = as.numeric(MeasureO2_uM))
 
 
 # SolDataMeta <- left_join(x = SolDataMeta, y = ChlData, join_by("SampleID" == "SampleID"))
 
+head(DualPAMMeta)
 ```
 
 
@@ -319,20 +321,22 @@ DualPAMMeta |>
 Self Starting Exponential Decay Function
 https://douglas-watson.github.io/post/2018-09_exponential_curve_fitting/
 
+Possible issue with std.error_log_alpha converted back through exp(td.error_log_alpha)
 ```{r fit self starting exponential decay}
 YFits <-   DualPAMMeta |>
+  filter(PAR < 600) |>  #possible issue with row labelling of PAR in data files?
   filter(MeasureO2_uM %in% c(2, 25, 250)) |>
   filter(!(SampleID %in% NoO2Runs)) |>
   filter(!SampleID %in% BadRuns) |>
   filter(OptodeMeasure == 1) |>
-  nest(data = -c(Strain, O2_Category, MeasureO2_uM)) %>%
+  nest(data = -c(Strain, O2_Category, MeasureO2_uM, Par_ue)) %>%
   mutate(
-    YIfit = map(data, ~nls(YI ~ SSasymp(PAR, YIf, YI0, log_alpha), data = .)),
+    YIfit = map(data, possibly(~nls(YI ~ SSasymp(PAR, YIf, YI0, log_alpha), data = .), NULL)),
     YItidied = map(YIfit, tidy),
     YIaugmented = map(YIfit, augment),
   ) |>
 mutate(
-    YIIfit = map(data, ~nls(YII ~ SSasymp(PAR, YIIf, YII0, log_alpha), data = .)),
+    YIIfit = map(data, possibly(~nls(YII ~ SSasymp(PAR, YIIf, YII0, log_alpha), data = .), NULL)),
     YIItidied = map(YIIfit, tidy),
     YIIaugmented = map(YIIfit, augment),
   )  
@@ -341,16 +345,59 @@ YFits
 
 YIFitValues <- YFits |>
   unnest(YItidied) |>
-  select(Strain, O2_Category, MeasureO2_uM, term, estimate, std.error) |> 
+  select(Strain, O2_Category, MeasureO2_uM, Par_ue, term, estimate, std.error) |> 
   pivot_wider(names_from = c(term), values_from = c(estimate, std.error)) |>
   mutate(alpha = exp(estimate_log_alpha),
-         alpha_se = exp(std.error_log_alpha))
+         alpha_se = exp(std.error_log_alpha)) |>
+  select(-c(estimate_log_alpha, std.error_log_alpha))
 
-YIFitValues <- YFits |>
-  unnest_cross(YItidied) |>
-  select(Strain, O2_Category, MeasureO2_uM, term, estimate, std.error) |> 
+YIIFitValues <- YFits |>
+  unnest(YIItidied) |>
+  select(Strain, O2_Category, MeasureO2_uM, Par_ue, term, estimate, std.error) |> 
   pivot_wider(names_from = c(term), values_from = c(estimate, std.error)) |>
   mutate(alpha = exp(estimate_log_alpha),
-         alpha_se = exp(std.error_log_alpha))
+         alpha_se = exp(std.error_log_alpha)) |>
+  select(-c(estimate_log_alpha, std.error_log_alpha))
+
+
+YFitValues <- left_join(YIFitValues, YIIFitValues,  by = join_by(Strain, O2_Category, MeasureO2_uM, Par_ue), suffix = c("YI", "YII"))
+
+head(YFitValues)
+
+rm(YIFitValues, YIIFitValues)
+
+```
+
+```{r exponential decay fits}
+YFits |>
+  unnest(YIaugmented) |>
+  ggplot() + 
+  geom_line(aes(x = PAR, y = .fitted), colour = "blue") +
+  geom_point(aes(x = PAR, y = YI)) +
+  facet_grid(cols = vars(MeasureO2_uM), rows = vars(Strain, Par_ue, O2_Category)) +
+  labs(title = "YI") +
+  theme_bw()
+  
+  YFits |>
+  unnest(YIIaugmented) |>
+  ggplot() + 
+  geom_line(aes(x = PAR, y = .fitted), colour = "red") +
+  geom_point(aes(x = PAR, y = YII)) +
+  facet_grid(cols = vars(MeasureO2_uM), rows = vars(Strain, Par_ue, O2_Category)) +
+  labs(title = "YII") +
+  theme_bw()
+  
+YIYIIPredictValues <- left_join(x = YFits |> unnest(YIaugmented), y = YFits |> unnest(YIIaugmented), by = join_by(Strain, O2_Category, MeasureO2_uM, Par_ue, PAR)) |>
+  select(-c("data.x","YIfit.x","YItidied.x", "YIIfit.x", "YIItidied.x", "YIIaugmented", "data.y", "YIfit.y","YItidied.y","YIaugmented","YIIfit.y","YIItidied.y"))
+  
+  
+  YIYIIPredictValues|>
+  ggplot() + 
+  geom_point(aes(x = YI, y = YII)) +
+  geom_line(aes(x = `.fitted.x`, y = `.fitted.y`), colour = "green") +
+  facet_grid(cols = vars(MeasureO2_uM), rows = vars(Strain, Par_ue, O2_Category)) +
+  #labs(x = "YI", y = "YII") +
+  theme_bw()
+
 ```
 

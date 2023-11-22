@@ -204,6 +204,8 @@ DataHeaderRows <- 0
 DualPAMData <- DualPAMFiles |>
   map_df(~ read_delim_DualPAM(flnm =., delimiter = Delimiter, headerrows = DataHeaderRows, fileencode = FileEncode))
 
+DualPAMData |>
+  mutate(MeasureO2_uM = as.numeric(MeasureO2_uM))
 
 head(DualPAMData)
 colnames(DualPAMData)
@@ -313,3 +315,42 @@ DualPAMMeta |>
 ```{r save DualPAMMeta}
  saveRDS(DualPAMMeta, file.path(DataOut, paste(Project, Run, "DualPAMMeta.Rds", sep = "_"), fsep = .Platform$file.sep))
 ```
+
+Self Starting Exponential Decay Function
+https://douglas-watson.github.io/post/2018-09_exponential_curve_fitting/
+
+```{r fit self starting exponential decay}
+YFits <-   DualPAMMeta |>
+  filter(MeasureO2_uM %in% c(2, 25, 250)) |>
+  filter(!(SampleID %in% NoO2Runs)) |>
+  filter(!SampleID %in% BadRuns) |>
+  filter(OptodeMeasure == 1) |>
+  nest(data = -c(Strain, O2_Category, MeasureO2_uM)) %>%
+  mutate(
+    YIfit = map(data, ~nls(YI ~ SSasymp(PAR, YIf, YI0, log_alpha), data = .)),
+    YItidied = map(YIfit, tidy),
+    YIaugmented = map(YIfit, augment),
+  ) |>
+mutate(
+    YIIfit = map(data, ~nls(YII ~ SSasymp(PAR, YIIf, YII0, log_alpha), data = .)),
+    YIItidied = map(YIIfit, tidy),
+    YIIaugmented = map(YIIfit, augment),
+  )  
+
+YFits
+
+YIFitValues <- YFits |>
+  unnest(YItidied) |>
+  select(Strain, O2_Category, MeasureO2_uM, term, estimate, std.error) |> 
+  pivot_wider(names_from = c(term), values_from = c(estimate, std.error)) |>
+  mutate(alpha = exp(estimate_log_alpha),
+         alpha_se = exp(std.error_log_alpha))
+
+YIFitValues <- YFits |>
+  unnest_cross(YItidied) |>
+  select(Strain, O2_Category, MeasureO2_uM, term, estimate, std.error) |> 
+  pivot_wider(names_from = c(term), values_from = c(estimate, std.error)) |>
+  mutate(alpha = exp(estimate_log_alpha),
+         alpha_se = exp(std.error_log_alpha))
+```
+

@@ -35,9 +35,9 @@ Run <- "O2Analyses"
 
 #ExpDate <- "2023-05-27" #date of first MultiCulti growth start
 
-DataIn <- file.path("..", "Data", "RawData", "DualPAM", "Report", fsep = .Platform$file.sep)
+DataIn <- file.path("..", "Data", "RawData", "DualPAM", "SP_Kinetics", fsep = .Platform$file.sep)
 
-FileID <- ".csv"
+FileID <- ".CSV"
 
 Catalog <- "https://docs.google.com/spreadsheets/d/1ZXpwR7Gfto-uRzVdXzMpQF4frbrvMLH_IyLqonFZRSw/edit#gid=0"
 # 
@@ -110,12 +110,12 @@ Colours_nm
 ```
 
 ```{r list DualPAM Report files for file import}
-DualPAMFiles <- list.files(path = DataIn, pattern = FileID, full.names = TRUE, recursive = FALSE)
+DualPAMSPFiles <- list.files(path = DataIn, pattern = FileID, full.names = TRUE, recursive = TRUE)
 
-DualPAMFiles
+DualPAMSPFiles[1:20]
 
 #test for duplicate file names
-unique(duplicated(DualPAMFiles))
+unique(duplicated(DualPAMSPFiles))
 ```
 
 ```{r data read adds filename and cdate, warning=FALSE, message=FALSE, echo=FALSE}
@@ -132,84 +132,58 @@ DualPAM data is appending desired RLC data to previously captured data.
 Need to select final XX rows of each file to get the 'last' captured RLC, b/c as runs accumulate, saved files increase in length/rows.
 
 ```{r read and tidy function}
-# read_delim_DualPAM <- function(flnm, delimiter, headerrows, fileencode){read_delim_plus(flnm, delimiter = Delimiter, headerrows = DataHeaderRows, fileencode = FileEncode) |>
-#     slice_tail(n = LightSteps) |>
-#     select(-c(`k/ocs`, `F(I)/Fo calc`, `FMTm`, `F/Fm`,`Fm'/Fm`, `Y(4S)`, `...32`)) |>
-#     filter(Action != c("LC-Start", "Manual", "LC-Stop")) |>
-#     rename(FI = `F(I)`,
-#          Fo = `Fo,Fo'`,
-#          Fm = `Fm,Fm'`,
-#          YII = `Y(II)`,
-#          ETRII = `ETR(II)`,
-#          YNO = `Y(NO)`,
-#          YNPQ = `Y(NPQ)`,
-#          P700m = `P700m,P700m'`,
-#          YI = `Y(I)`,
-#          YND = `Y(ND)`,
-#          YNA = `Y(NA)`,
-#          ETRI = `ETR(I)`) |>
-#     type_convert() |>
-#     mutate(Filename = str_remove(Filename, pattern = "../Data/RawData/DualPAM/Report/")) |>
-#     mutate(Filename = str_remove(Filename, pattern = ".csv")) |>
-#     separate_wider_delim(Filename, delim = "_",  names = c("RunDateTime", "Project", "SampleID", "MeasureO2_uM"), cols_remove = FALSE) |>
-#     mutate(RunDateTime = ymd_hm(RunDateTime)) 
-# }
 
-read_delim_DualPAM <- function(flnm, delimiter, headerrows, fileencode){DataFile <- read_delim_plus(flnm, delimiter = Delimiter, headerrows = DataHeaderRows, fileencode = FileEncode)
-  
- LRCMaxRow <-  (max(which(DataFile$Action == "LC-Start")) - 1)
-  
-  DataFile <- DataFile |>
-    slice_tail(n = -LRCMaxRow) |>
-    select(-c(`k/ocs`, `F(I)/Fo calc`, `FMTm`, `F/Fm`,`Fm'/Fm`, `Y(4S)`, `...32`)) |>
-    filter(!(Action %in% c("LC-Start", "Manual", "LC-Stop"))) |>
-    rename(FI = `F(I)`,
-         Fo = `Fo,Fo'`,
-         Fm = `Fm,Fm'`,
-         YII = `Y(II)`,
-         ETRII = `ETR(II)`,
-         YNO = `Y(NO)`,
-         YNPQ = `Y(NPQ)`,
-         P700m = `P700m,P700m'`,
-         YI = `Y(I)`,
-         YND = `Y(ND)`,
-         YNA = `Y(NA)`,
-         ETRI = `ETR(I)`) |>
-    type_convert() |>
-    mutate(Filename = str_remove(Filename, pattern = "../Data/RawData/DualPAM/Report/")) |>
-    mutate(Filename = str_remove(Filename, pattern = ".csv")) |>
-    separate_wider_delim(Filename, delim = "_",  names = c("RunDateTime", "Project", "SampleID", "MeasureO2_uM"), cols_remove = FALSE) |>
-    mutate(RunDateTime = ymd_hm(RunDateTime)) 
-  DataFile
+DataHeaderRows <- 0
+
+SPOneStep <- read_delim(file =
+"../Data/RawData/DualPAM/SP_Kinetics/202311081023_PICO_JuNa1202_250/F_231108_101158_0.CSV", delim = Delimiter,  col_names = TRUE,  skip = DataHeaderRows,  locale=locale(encoding="latin1"))
+
+#a read function using tidyverse::read_delim that skips a fixed number of header rows, and adds columns to the dataframe containing the filename and the file creation date time.
+read_delim_plus_SP <- function(flnm, delimiter, headerrows){read_delim(flnm, delim = delimiter,  col_names = TRUE,  show_col_types = FALSE, skip = headerrows, locale=locale(encoding="latin1")) |>
+    mutate(Filename = flnm) |>
+    select(-c('...4')) |>
+    rename(Time_ms = `time/ms`,
+           Fluo_V = `Fluo/V`,
+           P700delta = `P700 deltaI/I x10³`) 
 }
 
 
-```
+
+SPOneStep <- read_delim_plus_SP(flnm = "../Data/RawData/DualPAM/SP_Kinetics/202311081023_PICO_JuNa1202_250/F_231108_101158_0.CSV", delimiter = Delimiter, headerrows = DataHeaderRows)
 
 
-```{r read example DualPAMData file onestep}
-# DataHeaderRows <- 0
-# 
-# DualPAMOneStep <- read_delim_DualPAM(flnm = "../Data/RawData/DualPAM/Report/202311151130_PICO_JuNa1249_250.csv", delimiter = Delimiter, headerrows = DataHeaderRows, fileencode = FileEncode)
 
+|>
+  filter(!(SampleID %in% NoO2Runs)) |>
+  filter(!SampleID %in% BadRuns)
 
+  str_remove(string = .$Filename, pattern = "../Data/RawData/DualPAM/SP_Kinetics/") |>
 
 ```
 
 purrr::map to read all files, onestep read and tidy read_delim_DualPAM function
 
-```{r read DualPAM files}
+```{r read DualPAMSP files}
 DataHeaderRows <- 0
 
-DualPAMData <- DualPAMFiles |>
-  map_df(~ read_delim_DualPAM(flnm =., delimiter = Delimiter, headerrows = DataHeaderRows, fileencode = FileEncode))
+DualPAMSPData <- DualPAMSPFiles |>
+  map_df(~ read_delim_plus_SP(flnm =., delimiter = Delimiter, headerrows = DataHeaderRows))
 
-DualPAMData |>
-  mutate(MeasureO2_uM = as.numeric(MeasureO2_uM))
+head(DualPAMSPData)
+colnames(DualPAMSPData)
+length(unique(DualPAMSPData$Filename))
 
-head(DualPAMData)
-colnames(DualPAMData)
-length(unique(DualPAMData$Filename))
+saveRDS(DualPAMSPData, file.path(DataOut, paste(Project, Run, "DualPAMSPData.Rds", sep = "_"), fsep = .Platform$file.sep))
+
+# DualPAMSPData <- DualPAMSPData |>
+#   str_remove(string = Filename, pattern = ".CSV")
+# 
+# 
+# 
+# |>
+#   str_remove(string = Filename, pattern = "_PICO") |>
+#   separate_wider_delim(cols = Filename, delim = "/", names = c("DateTime", "SampleID", "Flash"))
+  
 ```
 
 ```{r DualPAMData plot}
@@ -318,4 +292,86 @@ DualPAMMeta |>
  saveRDS(DualPAMMeta, file.path(DataOut, paste(Project, Run, "DualPAMMeta.Rds", sep = "_"), fsep = .Platform$file.sep))
 ```
 
+Self Starting Exponential Decay Function
+https://douglas-watson.github.io/post/2018-09_exponential_curve_fitting/
+
+Possible issue with std.error_log_alpha converted back through exp(td.error_log_alpha)
+```{r fit self starting exponential decay}
+YFits <-   DualPAMMeta |>
+  filter(PAR < 600) |>  #possible issue with row labelling of PAR in data files?
+  filter(MeasureO2_uM %in% c(2, 25, 250)) |>
+  filter(!(SampleID %in% NoO2Runs)) |>
+  filter(!SampleID %in% BadRuns) |>
+  filter(OptodeMeasure == 1) |>
+  nest(data = -c(Strain, O2_Category, MeasureO2_uM, Par_ue)) %>%
+  mutate(
+    YIfit = map(data, possibly(~nls(YI ~ SSasymp(PAR, YIf, YI0, log_alpha), data = .), NULL)),
+    YItidied = map(YIfit, tidy),
+    YIaugmented = map(YIfit, augment),
+  ) |>
+mutate(
+    YIIfit = map(data, possibly(~nls(YII ~ SSasymp(PAR, YIIf, YII0, log_alpha), data = .), NULL)),
+    YIItidied = map(YIIfit, tidy),
+    YIIaugmented = map(YIIfit, augment),
+  )  
+
+YFits
+
+YIFitValues <- YFits |>
+  unnest(YItidied) |>
+  select(Strain, O2_Category, MeasureO2_uM, Par_ue, term, estimate, std.error) |> 
+  pivot_wider(names_from = c(term), values_from = c(estimate, std.error)) |>
+  mutate(alpha = exp(estimate_log_alpha),
+         alpha_se = exp(std.error_log_alpha)) |>
+  select(-c(estimate_log_alpha, std.error_log_alpha))
+
+YIIFitValues <- YFits |>
+  unnest(YIItidied) |>
+  select(Strain, O2_Category, MeasureO2_uM, Par_ue, term, estimate, std.error) |> 
+  pivot_wider(names_from = c(term), values_from = c(estimate, std.error)) |>
+  mutate(alpha = exp(estimate_log_alpha),
+         alpha_se = exp(std.error_log_alpha)) |>
+  select(-c(estimate_log_alpha, std.error_log_alpha))
+
+
+YFitValues <- left_join(YIFitValues, YIIFitValues,  by = join_by(Strain, O2_Category, MeasureO2_uM, Par_ue), suffix = c("YI", "YII"))
+
+head(YFitValues)
+
+rm(YIFitValues, YIIFitValues)
+
+```
+
+```{r exponential decay fits}
+YFits |>
+  unnest(YIaugmented) |>
+  ggplot() + 
+  geom_line(aes(x = PAR, y = .fitted), colour = "blue") +
+  geom_point(aes(x = PAR, y = YI)) +
+  facet_grid(cols = vars(MeasureO2_uM), rows = vars(Strain, Par_ue, O2_Category)) +
+  labs(title = "YI") +
+  theme_bw()
+  
+  YFits |>
+  unnest(YIIaugmented) |>
+  ggplot() + 
+  geom_line(aes(x = PAR, y = .fitted), colour = "red") +
+  geom_point(aes(x = PAR, y = YII)) +
+  facet_grid(cols = vars(MeasureO2_uM), rows = vars(Strain, Par_ue, O2_Category)) +
+  labs(title = "YII") +
+  theme_bw()
+  
+YIYIIPredictValues <- left_join(x = YFits |> unnest(YIaugmented), y = YFits |> unnest(YIIaugmented), by = join_by(Strain, O2_Category, MeasureO2_uM, Par_ue, PAR)) |>
+  select(-c("data.x","YIfit.x","YItidied.x", "YIIfit.x", "YIItidied.x", "YIIaugmented", "data.y", "YIfit.y","YItidied.y","YIaugmented","YIIfit.y","YIItidied.y"))
+  
+  
+  YIYIIPredictValues|>
+  ggplot() + 
+  geom_point(aes(x = YI, y = YII)) +
+  geom_line(aes(x = `.fitted.x`, y = `.fitted.y`), colour = "green") +
+  facet_grid(cols = vars(MeasureO2_uM), rows = vars(Strain, Par_ue, O2_Category)) +
+  #labs(x = "YI", y = "YII") +
+  theme_bw()
+
+```
 

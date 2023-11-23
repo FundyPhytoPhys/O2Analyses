@@ -38,6 +38,11 @@ DubiousRuns <- c("JuNa1206", "JuNa1207", "JuNa1208", "JuNa1209", "JuNa1210")
 
 DualPAMMeta <- readRDS(file = file.path("..", "Data", "ProcessedData", "PICO_O2Analyses_DualPAMMeta.Rds"))
 
+colnames(DualPAMMeta)
+
+DualPAMMEta <- DualPAMMeta |>
+  select(-c(`...46`, `...47`))
+
 ```
 
 ```{r conversions}
@@ -148,15 +153,27 @@ YFits <-   DualPAMMeta |>
   mutate(
     YIfit = map(data, possibly(~nls(YI ~ SSasymp(PAR, YIf, YI0, log_alpha), data = .), NULL)),
     YItidied = map(YIfit, tidy),
-    YIaugmented = map(YIfit, augment),
+    YIaugmented = map(YIfit, augment)
   ) |>
-mutate(
+  mutate(
     YIIfit = map(data, possibly(~nls(YII ~ SSasymp(PAR, YIIf, YII0, log_alpha), data = .), NULL)),
     YIItidied = map(YIIfit, tidy),
-    YIIaugmented = map(YIIfit, augment),
+    YIIaugmented = map(YIIfit, augment)
+    ) |>
+  mutate(
+    qPfit = map(data, possibly(~nls(qP ~ SSasymp(PAR, qPf, qP0, log_alpha), data = .), NULL)),
+    qPtidied = map(qPfit, tidy),
+    qPaugmented = map(qPfit, augment)
   )  
 
 YFits
+
+#Filter for any row where fit failed for any combination; temporary hack, MIT9313 Intermediate O2, Par_ue 90, YI fit failed
+#smarter way to do this by selecting multiple columns
+YFitsFilter <- YFits |>
+  drop_na(YIfit, YIIfit, qPfit)
+  #be careful if both NULL and NA present       
+ 
 
 YIFitValues <- YFits |>
   unnest(YItidied) |>
@@ -176,16 +193,28 @@ YIIFitValues <- YFits |>
          YIIPARHalf = log(2)/alpha) |>
   select(-c(estimate_log_alpha, std.error_log_alpha))
 
+qPFitValues <- YFits |>
+  unnest(qPtidied) |>
+  select(Strain, O2_Category, MeasureO2_uM, Par_ue, term, estimate, std.error) |> 
+  pivot_wider(names_from = c(term), values_from = c(estimate, std.error)) |>
+  mutate(alpha = exp(estimate_log_alpha),
+         alpha_se = exp(std.error_log_alpha), 
+         qPPARHalf = log(2)/alpha) |>
+  select(-c(estimate_log_alpha, std.error_log_alpha))
 
-Y_PAR_FitValues <- left_join(YIFitValues, YIIFitValues,  by = join_by(Strain, O2_Category, MeasureO2_uM, Par_ue), suffix = c("YI", "YII"))
+
+Y_PAR_FitValues <- left_join(YIFitValues, YIIFitValues, by = join_by(Strain, O2_Category, MeasureO2_uM, Par_ue), suffix = c("YI", "YII")) |>
+  left_join(qPFitValues, by = join_by(Strain, O2_Category, MeasureO2_uM, Par_ue), suffix = c("Y", "qP"))
 
 head(Y_PAR_FitValues)
 
-rm(YIFitValues, YIIFitValues)
+#rm(YIFitValues, YIIFitValues, qPFitValues)
 
 ```
 
 ```{r exponential decay fit plots}
+#YFits Filtered for any failure
+
 YFits |>
   unnest(YIaugmented) |>
   ggplot() + 
@@ -204,9 +233,46 @@ YFits |>
   labs(title = "YII") +
   theme_bw()
   
-Y_PAR_PredictValues <- left_join(x = YFits |> unnest(YIaugmented), y = YFits |> unnest(YIIaugmented), by = join_by(Strain, O2_Category, MeasureO2_uM, Par_ue, PAR)) |>
-  select(-c("data.x","YIfit.x","YItidied.x", "YIIfit.x", "YIItidied.x", "YIIaugmented", "data.y", "YIfit.y","YItidied.y","YIaugmented","YIIfit.y","YIItidied.y"))
+  YFits |>
+  unnest(qPaugmented) |>
+  ggplot() + 
+  geom_line(aes(x = PAR, y = .fitted), colour = "black") +
+  geom_point(aes(x = PAR, y = qP)) +
+  facet_grid(cols = vars(MeasureO2_uM), rows = vars(Strain, Par_ue, O2_Category)) +
+  labs(title = "qP") +
+  theme_bw()
+ 
+  #left_join creating new rows b/c YIIaugmented and qPaugmented have more successful fits than YI augmented so multiple row matching.
+  #filter out fits where any fit YI, YII, qP failed
+  #still issue with many to many relation; duplicating rows???
   
+Y_PAR_PredictValues <- left_join(x = YFitsFilter |> unnest(YIaugmented), y = YFitsFilter |> unnest(YIIaugmented), by = join_by(Strain, O2_Category,Par_ue,  MeasureO2_uM, PAR), suffix = c(".YI", "YII")) |>
+  select(c("Strain", "O2_Category", "Par_ue", "MeasureO2_uM", "PAR", "YI",".fitted.YI",".resid.YI","YII",".fittedYII",      ".residYII"))
+
+Y_PAR_PredictValues2 <- left_join(x = Y_PAR_PredictValues, y = YFitsFilter |> unnest(qPaugmented), by = join_by("Strain", "O2_Category", "Par_ue", "MeasureO2_uM", "PAR"))
+
+|>
+  select(c("MeasureO2_uM","Strain","Par_ue","O2_Category","YI","PAR",".fitted.YI",".resid.YI","YII",".fittedY2",      ".residY2"))
+
+
+|>
+  cbind(y = YFits |> unnest(qPaugmented) |> select("qP",".fitted",".resid"))
+
+
+
+
+        "YIfitY2"        "YItidiedY2"     "YIaugmented.x" 
+[22] "YIIfitY2"       "YIItidiedY2"    "YII"            ".fittedY2"      ".residY2"       "qPfitY2"        "qPtidiedY2"    
+[29] "qPaugmentedY2"  "data"           "YIfit"          "YItidied"       "YIaugmented.y"  "YIIfit"         "YIItidied"     
+[36] "YIIaugmented.y" "qPfit"          "qPtidied"       "qP"             ".fitted"        ".resid" )) |>
+ 
+   [1] "MeasureO2_uM"   "Strain"         "Par_ue"         "O2_Category"    "data.YI"        "YIfit.YI"       "YItidied.YI"   
+ [8] "YI"             "PAR"            ".fitted.YI"     ".resid.YI"      "YIIfit.YI"      "YIItidied.YI"   "YIIaugmented.x"
+[15] "qPfit.YI"       "qPtidied.YI"    "qPaugmented.YI" "dataY2"         "YIfitY2"        "YItidiedY2"     "YIaugmented.x" 
+[22] "YIIfitY2"       "YIItidiedY2"    "YII"            ".fittedY2"      ".residY2"       "qPfitY2"        "qPtidiedY2"    
+[29] "qPaugmentedY2"  "data"           "YIfit"          "YItidied"       "YIaugmented.y"  "YIIfit"         "YIItidied"     
+[36] "YIIaugmented.y" "qPfit"          "qPtidied"       "qP"             ".fitted"        ".resid" 
+   
   
 Y_PAR_PredictValues |>
   ggplot() + 
@@ -256,6 +322,134 @@ Y_PAR_FitValues |>
   theme_bw()
 
 ```
+
+```{r ynd yna plots}
+DualPAMMeta |>
+  filter(MeasureO2_uM %in% c(2, 25, 250)) |>
+  filter(!(SampleID %in% NoO2Runs)) |>
+  filter(!SampleID %in% BadRuns) |>
+  filter(OptodeMeasure == 1) |>
+  ggplot() +
+  geom_point(aes(x = PAR, y = YND), colour = "red") +
+  geom_point(aes(x = PAR, y = YNA), colour = "black") +
+  facet_grid(cols = vars(MeasureO2_uM), rows = vars(Strain, Par_ue, O2_Category)) +
+  theme_bw()
+
+DualPAMMeta |>
+  filter(MeasureO2_uM %in% c(2, 25, 250)) |>
+  filter(!(SampleID %in% NoO2Runs)) |>
+  filter(!SampleID %in% BadRuns) |>
+  filter(OptodeMeasure == 1) |>
+  ggplot() +
+  geom_point(aes(x = YND, y = YNA)) +
+  facet_grid(cols = vars(MeasureO2_uM), rows = vars(Strain, Par_ue, O2_Category)) +
+  theme_bw()
+
+DualPAMMeta |>
+  filter(MeasureO2_uM %in% c(2, 25, 250)) |>
+  filter(!(SampleID %in% NoO2Runs)) |>
+  filter(!SampleID %in% BadRuns) |>
+  filter(OptodeMeasure == 1) |>
+  filter(O2_Category != "Low") |>
+  filter(Par_ue == 30) |>
+  ggplot() +
+  geom_point(aes(x = YND, y = YNA)) +
+  facet_grid(cols = vars(MeasureO2_uM), rows = vars(Strain, Par_ue, O2_Category)) +
+  theme_bw()
+
+DualPAMMeta |>
+  filter(MeasureO2_uM %in% c(2, 25, 250)) |>
+  filter(!(SampleID %in% NoO2Runs)) |>
+  filter(!SampleID %in% BadRuns) |>
+  filter(OptodeMeasure == 1) |>
+  filter(O2_Category != "Low") |>
+  filter(Par_ue == 30) |>
+  ggplot() +
+  geom_point(aes(x = YI, y = YND)) +
+  facet_grid(cols = vars(MeasureO2_uM), rows = vars(Strain, Par_ue, O2_Category)) +
+  theme_bw()
+
+DualPAMMeta |>
+  filter(MeasureO2_uM %in% c(2, 25, 250)) |>
+  filter(!(SampleID %in% NoO2Runs)) |>
+  filter(!SampleID %in% BadRuns) |>
+  filter(OptodeMeasure == 1) |>
+  #filter(O2_Category != "Low") |>
+  filter(Par_ue == 30) |>
+  ggplot() +
+  geom_point(aes(x = YII, y = (1-YND))) +
+  geom_smooth(aes(x = YII, y = (1-YND)), method = "lm") +
+  facet_grid(cols = vars(MeasureO2_uM), rows = vars(Strain, Par_ue, O2_Category)) +
+  theme_bw()
+
+DualPAMMeta |>
+  filter(MeasureO2_uM %in% c(2, 25, 250)) |>
+  filter(!(SampleID %in% NoO2Runs)) |>
+  filter(!SampleID %in% BadRuns) |>
+  filter(OptodeMeasure == 1) |>
+  #filter(O2_Category != "Low") |>
+  filter(Par_ue == 30) |>
+  ggplot() +
+  geom_point(aes(x = YII, y = (1-YNA))) +
+  geom_smooth(aes(x = YII, y = (1-YNA)), method = "lm") +
+  facet_grid(cols = vars(MeasureO2_uM), rows = vars(Strain, Par_ue, O2_Category)) +
+  theme_bw()
+
+DualPAMMeta |>
+  filter(MeasureO2_uM %in% c(2, 25, 250)) |>
+  filter(!(SampleID %in% NoO2Runs)) |>
+  filter(!SampleID %in% BadRuns) |>
+  filter(OptodeMeasure == 1) |>
+  #filter(O2_Category != "Low") |>
+  filter(Par_ue == 30) |>
+  ggplot() +
+  geom_point(aes(x = qP, y = (1-YNA))) +
+  geom_smooth(aes(x = qP, y = (1-YNA)), method = "lm") +
+  facet_grid(cols = vars(MeasureO2_uM), rows = vars(Strain, Par_ue, O2_Category)) +
+  theme_bw()
+  
+DualPAMMeta |>
+  filter(MeasureO2_uM %in% c(2, 25, 250)) |>
+  filter(!(SampleID %in% NoO2Runs)) |>
+  filter(!SampleID %in% BadRuns) |>
+  filter(OptodeMeasure == 1) |>
+  #filter(O2_Category != "Low") |>
+  filter(Par_ue == 30) |>
+  ggplot() +
+  geom_point(aes(x = qP, y = (1-YND))) +
+  geom_smooth(aes(x = qP, y = (1-YND)), method = "lm") +
+  facet_grid(cols = vars(MeasureO2_uM), rows = vars(Strain, Par_ue, O2_Category)) +
+  theme_bw()
+
+DualPAMMeta |>
+  filter(MeasureO2_uM %in% c(2, 25, 250)) |>
+  filter(!(SampleID %in% NoO2Runs)) |>
+  filter(!SampleID %in% BadRuns) |>
+  filter(OptodeMeasure == 1) |>
+  #filter(O2_Category != "Low") |>
+  filter(Par_ue == 30) |>
+  ggplot() +
+  geom_point(aes(x = qP, y = (YI))) +
+  geom_smooth(aes(x = qP, y = (YI)), method = "lm") +
+  facet_grid(cols = vars(MeasureO2_uM), rows = vars(Strain, Par_ue, O2_Category)) +
+  theme_bw()
+
+DualPAMMeta |>
+  filter(MeasureO2_uM %in% c(2, 25, 250)) |>
+  #filter(!(SampleID %in% NoO2Runs)) |>
+  filter(!SampleID %in% BadRuns) |>
+  filter(OptodeMeasure == 1) |>
+  #filter(O2_Category != "Low") |>
+  filter(Par_ue == 30) |>
+  ggplot() +
+  geom_point(aes(x = PAR, y = YI), colour = "blue") +
+  geom_point(aes(x = PAR, y = qP), colour = "red") +
+  #geom_smooth(aes(x = PAR, y = qP), method = "lm") +
+  facet_grid(cols = vars(MeasureO2_uM), rows = vars(Strain, Par_ue, O2_Category)) +
+  theme_bw()
+  
+```
+
 
 ```{r save DualPAMMeta}
  saveRDS(Y_PAR_FitValues, file.path(DataOut, paste(Project, Run, "Y_PAR_FitValues.Rds", sep = "_"), fsep = .Platform$file.sep))

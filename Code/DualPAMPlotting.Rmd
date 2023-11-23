@@ -245,18 +245,19 @@ YFits |>
   #left_join creating new rows b/c YIIaugmented and qPaugmented have more successful fits than YI augmented so multiple row matching.
   #filter out fits where any fit YI, YII, qP failed
   #still issue with many to many relation; duplicating rows???
+  #partially issue with PAR values; different for different parameters YI, YII, qP?
   
-Y_PAR_PredictValues <- left_join(x = YFitsFilter |> unnest(YIaugmented), y = YFitsFilter |> unnest(YIIaugmented), by = join_by(Strain, O2_Category,Par_ue,  MeasureO2_uM, PAR), suffix = c(".YI", "YII")) |>
+# Y_PAR_PredictValues <- left_join(x = YFitsFilter |> unnest(YIaugmented) |> filter(PAR != 0), y = YFitsFilter |> unnest(YIIaugmented) |> filter(PAR != 0), by = join_by(Strain, O2_Category,Par_ue,  MeasureO2_uM, PAR), suffix = c(".YI", "YII")) |>
   select(c("Strain", "O2_Category", "Par_ue", "MeasureO2_uM", "PAR", "YI",".fitted.YI",".resid.YI","YII",".fittedYII",      ".residYII"))
-
-Y_PAR_PredictValues2 <- left_join(x = Y_PAR_PredictValues, y = YFitsFilter |> unnest(qPaugmented), by = join_by("Strain", "O2_Category", "Par_ue", "MeasureO2_uM", "PAR"))
-
-|>
-  select(c("MeasureO2_uM","Strain","Par_ue","O2_Category","YI","PAR",".fitted.YI",".resid.YI","YII",".fittedY2",      ".residY2"))
-
-
-|>
-  cbind(y = YFits |> unnest(qPaugmented) |> select("qP",".fitted",".resid"))
+# 
+# Y_PAR_PredictValues2 <- left_join(x = Y_PAR_PredictValues, y = YFitsFilter |> unnest(qPaugmented) |> filter(PAR != O), by = join_by("Strain", "O2_Category", "Par_ue", "MeasureO2_uM", "PAR"))
+# 
+# |>
+#   select(c("MeasureO2_uM","Strain","Par_ue","O2_Category","YI","PAR",".fitted.YI",".resid.YI","YII",".fittedY2",      ".residY2"))
+# 
+# 
+# |>
+#   cbind(y = YFits |> unnest(qPaugmented) |> select("qP",".fitted",".resid"))
 
 
 

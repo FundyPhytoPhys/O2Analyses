@@ -110,12 +110,16 @@ Colours_nm
 ```
 
 ```{r list DualPAM Report files for file import}
-DualPAMSPFiles <- list.files(path = DataIn, pattern = FileID, full.names = TRUE, recursive = TRUE)
+DualPAMSPFiles <- list.files(path = DataIn, pattern = FileID, full.names = TRUE, recursive = TRUE, include.dirs = TRUE)
 
 DualPAMSPFiles[1:20]
 
 #test for duplicate file names
 unique(duplicated(DualPAMSPFiles))
+
+
+#Shrink by removing NoO2Runs and BadRuns
+DualPAMSPFilterFiles <-DualPAMSPFiles[!DualPAMSPFiles %in% grep(paste0(c(NoO2Runs, BadRuns), collapse = "|"), DualPAMSPFiles, value = T)]
 ```
 
 ```{r data read adds filename and cdate, warning=FALSE, message=FALSE, echo=FALSE}
@@ -149,15 +153,15 @@ read_delim_plus_SP <- function(flnm, delimiter, headerrows){read_delim(flnm, del
 
 
 
-SPOneStep <- read_delim_plus_SP(flnm = "../Data/RawData/DualPAM/SP_Kinetics/202311081023_PICO_JuNa1202_250/F_231108_101158_0.CSV", delimiter = Delimiter, headerrows = DataHeaderRows)
-
-
-
-|>
-  filter(!(SampleID %in% NoO2Runs)) |>
-  filter(!SampleID %in% BadRuns)
-
-  str_remove(string = .$Filename, pattern = "../Data/RawData/DualPAM/SP_Kinetics/") |>
+# SPOneStep <- read_delim_plus_SP(flnm = "../Data/RawData/DualPAM/SP_Kinetics/202311081023_PICO_JuNa1202_250/F_231108_101158_0.CSV", delimiter = Delimiter, headerrows = DataHeaderRows)
+# 
+# 
+# 
+# |>
+#   filter(!(SampleID %in% NoO2Runs)) |>
+#   filter(!SampleID %in% BadRuns)
+# 
+#   str_remove(string = .$Filename, pattern = "../Data/RawData/DualPAM/SP_Kinetics/") |>
 
 ```
 
@@ -166,52 +170,56 @@ purrr::map to read all files, onestep read and tidy read_delim_DualPAM function
 ```{r read DualPAMSP files}
 DataHeaderRows <- 0
 
-DualPAMSPData <- DualPAMSPFiles |>
+DualPAMSPData <- DualPAMSPFilterFiles[1:50] |>
   map_df(~ read_delim_plus_SP(flnm =., delimiter = Delimiter, headerrows = DataHeaderRows))
 
 head(DualPAMSPData)
 colnames(DualPAMSPData)
 length(unique(DualPAMSPData$Filename))
 
-saveRDS(DualPAMSPData, file.path(DataOut, paste(Project, Run, "DualPAMSPData.Rds", sep = "_"), fsep = .Platform$file.sep))
+#	../Data/RawData/DualPAM/SP_Kinetics/202311081615_PICO_JuNa1206_2/F_231108_163212_0.CSV
 
-# DualPAMSPData <- DualPAMSPData |>
-#   str_remove(string = Filename, pattern = ".CSV")
-# 
-# 
-# 
-# |>
-#   str_remove(string = Filename, pattern = "_PICO") |>
-#   separate_wider_delim(cols = Filename, delim = "/", names = c("DateTime", "SampleID", "Flash"))
-  
+DualPAMSPData <- DualPAMSPData |>
+  mutate(Filename = str_remove(string = Filename, pattern = ".CSV")) |>
+  mutate(Filename = str_remove(string = Filename, pattern = "../Data/RawData/DualPAM/SP_Kinetics/")) |>
+  separate_wider_delim(cols = Filename, delim = "/", names = c("Sample", "Flash")) |>
+  separate_wider_delim(cols = Sample, delim = "_", names = c("DateTime", "Project", "SampleID", "MeasureO2_uM")) |>
+  separate_wider_delim(cols = Flash, delim = "_", names = c("F", "Date", "MeasureTime", "Numeral")) |>
+  mutate(DateTime = lubridate::ymd_hm(DateTime)) |>
+  mutate(MeasureO2_uM = as.numeric(MeasureO2_uM)) |>
+  mutate(MeasureTime = as.numeric(MeasureTime)) |>
+  select(-c(F, Numeral))
+
+head(DualPAMSPData, 20)
+
+DualPAMSPData <- DualPAMSPData |>
+  filter(SampleID == "JuNa1206") |>
+  group_by(DateTime, Project, SampleID, MeasureO2_uM, Date) |>
+  mutate(Flash = rank(MeasureTime, ties.method = "min")) |>
+  ungroup()
+
+head(DualPAMSPData)
+
+unique(DualPAMSPData$Flash)
+
+#Not quite what I seek...want to number Flashes  as sequential integers
+
+#saveRDS(DualPAMSPData, file.path(DataOut, paste(Project, Run, "DualPAMSPData.Rds", sep = "_"), fsep = .Platform$file.sep))
+
 ```
 
 ```{r DualPAMData plot}
-DualPAMData |>
+DualPAMSPData |>
+  filter(SampleID == "JuNa1206") |>
   ggplot() +
-  geom_point(aes(x = PAR, y = YI), colour = "blue") +
-  geom_point(aes(x = PAR, y = YII), colour = "red") +
-  facet_grid(cols = vars(MeasureO2_uM), rows = vars(SampleID)) +
+  geom_point(aes(x = Time_ms, y = P700delta), colour = "blue") +
+  geom_point(aes(x = Time_ms, y = Fluo_V), colour = "red") +
+  facet_grid(rows = vars(MeasureO2_uM), cols = vars(Flash)) +
   theme_bw()
 
-DualPAMData|>
-  filter(MeasureO2_uM %in% c(2, 25, 250)) |>
-  filter(!(SampleID %in% c("JuNa1201", "JuNa1202", "JuNa1203", "JuNa1204", "JuNa1205"))) |>
-  #filter(SampleID %in% c("JuNa1216","JuNa1220","JuNa1221","JuNa1219","JuNa1222","JuNa1217","JuNa1218","JuNa1231","JuNa1230","JuNa1229")) |>
-  ggplot() +
-  geom_point(aes(x = PAR, y = YI), colour = "blue") +
-  geom_point(aes(x = PAR, y = YII), colour = "red") +
-  facet_grid(cols = vars(MeasureO2_uM), rows = vars(SampleID)) +
-  theme_bw()
-
-DualPAMData |>
-  filter(MeasureO2_uM %in% c(2, 25, 250)) |>
-  ggplot() +
-  geom_point(aes(x = YII, y = YI)) +
-  facet_grid(cols = vars(MeasureO2_uM), rows = vars(SampleID)) +
-  theme_bw()
 
 ```
+XXX To Here 27 Nov 2023 XXX
 
 # Merge with MetaData & Chl Data
 

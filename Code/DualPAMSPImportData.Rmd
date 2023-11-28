@@ -171,7 +171,7 @@ purrr::map to read all files, onestep read and tidy read_delim_DualPAM function
 DataHeaderRows <- 0
 
 #	../Data/RawData/DualPAM/SP_Kinetics/202311081615_PICO_JuNa1206_2/F_231108_163212_0.CSV
-DualPAMSPData <- DualPAMSPFilterFiles[1:100] |>
+DualPAMSPData <- DualPAMSPFilterFiles[1:200] |>
   map_df(~ read_delim_plus_SP(flnm =., delimiter = Delimiter, headerrows = DataHeaderRows)) |>
    mutate(Filename = str_remove(string = Filename, pattern = ".CSV")) |>
   mutate(Filename = str_remove(string = Filename, pattern = "../Data/RawData/DualPAM/SP_Kinetics/")) |>

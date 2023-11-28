@@ -68,7 +68,7 @@ A2_m2 <- 1E20
 ```{r load libraries}
 library(tidyverse)
 library(lubridate)
-library(photobiologyWavebands) #R colours from nm values
+#library(photobiologyWavebands) #R colours from nm values
 library(broom) #formatting model outputs
 
 #https://googlesheets4.tidyverse.org/
@@ -101,11 +101,11 @@ MetaData <- MetaData %>%
 ```
 
 ```{r set colours}
-Wavelengths_nm = c(445, 470, 505, 535, 590)
-Colours_nm = c(w_length2rgb(Wavelengths_nm[1]), w_length2rgb(Wavelengths_nm[2]), w_length2rgb(Wavelengths_nm[3]), w_length2rgb(Wavelengths_nm[4]), w_length2rgb(Wavelengths_nm[5]))
-
-names(Colours_nm) <- Wavelengths_nm
-Colours_nm
+# Wavelengths_nm = c(445, 470, 505, 535, 590)
+# Colours_nm = c(w_length2rgb(Wavelengths_nm[1]), w_length2rgb(Wavelengths_nm[2]), w_length2rgb(Wavelengths_nm[3]), w_length2rgb(Wavelengths_nm[4]), w_length2rgb(Wavelengths_nm[5]))
+# 
+# names(Colours_nm) <- Wavelengths_nm
+# Colours_nm
 
 ```
 
@@ -125,9 +125,9 @@ DualPAMSPFilterFiles <-DualPAMSPFiles[!DualPAMSPFiles %in% grep(paste0(c(NoO2Run
 ```{r data read adds filename and cdate, warning=FALSE, message=FALSE, echo=FALSE}
 
 #a read function using tidyverse::read_delim that skips a fixed number of header rows, and adds columns to the dataframe containing the filename and the file creation date time.
-read_delim_plus <- function(flnm, delimiter, headerrows, fileencode){read_delim(flnm, delim = delimiter,  col_names = TRUE,  skip = headerrows, escape_double = FALSE,  locale = locale(encoding = fileencode), trim_ws = TRUE) %>%
-    mutate(Filename = flnm)
-}
+# read_delim_plus <- function(flnm, delimiter, headerrows, fileencode){read_delim(flnm, delim = delimiter,  col_names = TRUE,  skip = headerrows, escape_double = FALSE,  locale = locale(encoding = fileencode), trim_ws = TRUE) %>%
+#     mutate(Filename = flnm)
+# }
 
 ```
 
@@ -139,8 +139,8 @@ Need to select final XX rows of each file to get the 'last' captured RLC, b/c as
 
 DataHeaderRows <- 0
 
-SPOneStep <- read_delim(file =
-"../Data/RawData/DualPAM/SP_Kinetics/202311081023_PICO_JuNa1202_250/F_231108_101158_0.CSV", delim = Delimiter,  col_names = TRUE,  skip = DataHeaderRows,  locale=locale(encoding="latin1"))
+# SPOneStep <- read_delim(file =
+# "../Data/RawData/DualPAM/SP_Kinetics/202311081023_PICO_JuNa1202_250/F_231108_101158_0.CSV", delim = Delimiter,  col_names = TRUE,  skip = DataHeaderRows,  locale=locale(encoding="latin1"))
 
 #a read function using tidyverse::read_delim that skips a fixed number of header rows, and adds columns to the dataframe containing the filename and the file creation date time.
 read_delim_plus_SP <- function(flnm, delimiter, headerrows){read_delim(flnm, delim = delimiter,  col_names = TRUE,  show_col_types = FALSE, skip = headerrows, locale=locale(encoding="latin1")) |>
@@ -170,19 +170,12 @@ purrr::map to read all files, onestep read and tidy read_delim_DualPAM function
 ```{r read DualPAMSP files}
 DataHeaderRows <- 0
 
-DualPAMSPData <- DualPAMSPFilterFiles[1:50] |>
-  map_df(~ read_delim_plus_SP(flnm =., delimiter = Delimiter, headerrows = DataHeaderRows))
-
-head(DualPAMSPData)
-colnames(DualPAMSPData)
-length(unique(DualPAMSPData$Filename))
-
 #	../Data/RawData/DualPAM/SP_Kinetics/202311081615_PICO_JuNa1206_2/F_231108_163212_0.CSV
-
-DualPAMSPData <- DualPAMSPData |>
-  mutate(Filename = str_remove(string = Filename, pattern = ".CSV")) |>
+DualPAMSPData <- DualPAMSPFilterFiles[1:100] |>
+  map_df(~ read_delim_plus_SP(flnm =., delimiter = Delimiter, headerrows = DataHeaderRows)) |>
+   mutate(Filename = str_remove(string = Filename, pattern = ".CSV")) |>
   mutate(Filename = str_remove(string = Filename, pattern = "../Data/RawData/DualPAM/SP_Kinetics/")) |>
-  separate_wider_delim(cols = Filename, delim = "/", names = c("Sample", "Flash")) |>
+  separate_wider_delim(cols = Filename, delim = "/", names = c("Sample", "Flash"), cols_remove = FALSE) |>
   separate_wider_delim(cols = Sample, delim = "_", names = c("DateTime", "Project", "SampleID", "MeasureO2_uM")) |>
   separate_wider_delim(cols = Flash, delim = "_", names = c("F", "Date", "MeasureTime", "Numeral")) |>
   mutate(DateTime = lubridate::ymd_hm(DateTime)) |>
@@ -191,10 +184,13 @@ DualPAMSPData <- DualPAMSPData |>
   select(-c(F, Numeral))
 
 head(DualPAMSPData, 20)
+colnames(DualPAMSPData)
+length(unique(DualPAMSPData$Filename))
+
 
 #https://stackoverflow.com/questions/72991474/how-to-get-relative-rankings-of-numeric-elements-in-a-list-or-vector-in-r
 DualPAMSPData <- DualPAMSPData |>
-  filter(SampleID == "JuNa1206") |>
+  #filter(SampleID == "JuNa1206") |>
   group_by(DateTime, Project, SampleID, MeasureO2_uM, Date) |>
   mutate(FlashTime = rank(MeasureTime, ties.method = "min")) |>
   mutate(FlashNum = dplyr::dense_rank(MeasureTime)) |>
@@ -204,6 +200,7 @@ head(DualPAMSPData)
 
 unique(DualPAMSPData$FlashTime)
 unique(DualPAMSPData$FlashNum)
+unique(DualPAMSPData$SampleID)
 
 #saveRDS(DualPAMSPData, file.path(DataOut, paste(Project, Run, "DualPAMSPData.Rds", sep = "_"), fsep = .Platform$file.sep))
 
@@ -228,7 +225,7 @@ DualPAMSPData |>
   theme_bw()
 
 DualPAMSPData |>
-  filter(SampleID == "JuNa1206") |>
+  filter(SampleID == "JuNa1208") |>
   filter(FlashNum %in% c(2, 4, 6)) |>
   ggplot() +
   geom_point(aes(x = Fluo_V, y = P700delta, colour = Time_ms)) +

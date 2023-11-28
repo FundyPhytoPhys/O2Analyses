@@ -192,17 +192,18 @@ DualPAMSPData <- DualPAMSPData |>
 
 head(DualPAMSPData, 20)
 
+#https://stackoverflow.com/questions/72991474/how-to-get-relative-rankings-of-numeric-elements-in-a-list-or-vector-in-r
 DualPAMSPData <- DualPAMSPData |>
   filter(SampleID == "JuNa1206") |>
   group_by(DateTime, Project, SampleID, MeasureO2_uM, Date) |>
-  mutate(Flash = rank(MeasureTime, ties.method = "min")) |>
+  mutate(FlashTime = rank(MeasureTime, ties.method = "min")) |>
+  mutate(FlashNum = dplyr::dense_rank(MeasureTime)) |>
   ungroup()
 
 head(DualPAMSPData)
 
-unique(DualPAMSPData$Flash)
-
-#Not quite what I seek...want to number Flashes  as sequential integers
+unique(DualPAMSPData$FlashTime)
+unique(DualPAMSPData$FlashNum)
 
 #saveRDS(DualPAMSPData, file.path(DataOut, paste(Project, Run, "DualPAMSPData.Rds", sep = "_"), fsep = .Platform$file.sep))
 

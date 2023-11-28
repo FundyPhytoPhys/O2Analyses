@@ -248,7 +248,7 @@ YFits |>
   #partially issue with PAR values; different for different parameters YI, YII, qP?
   
 # Y_PAR_PredictValues <- left_join(x = YFitsFilter |> unnest(YIaugmented) |> filter(PAR != 0), y = YFitsFilter |> unnest(YIIaugmented) |> filter(PAR != 0), by = join_by(Strain, O2_Category,Par_ue,  MeasureO2_uM, PAR), suffix = c(".YI", "YII")) |>
-  select(c("Strain", "O2_Category", "Par_ue", "MeasureO2_uM", "PAR", "YI",".fitted.YI",".resid.YI","YII",".fittedYII",      ".residYII"))
+#  select(c("Strain", "O2_Category", "Par_ue", "MeasureO2_uM", "PAR", "YI",".fitted.YI",".resid.YI","YII",".fittedYII",      ".residYII"))
 # 
 # Y_PAR_PredictValues2 <- left_join(x = Y_PAR_PredictValues, y = YFitsFilter |> unnest(qPaugmented) |> filter(PAR != O), by = join_by("Strain", "O2_Category", "Par_ue", "MeasureO2_uM", "PAR"))
 # 
@@ -262,26 +262,26 @@ YFits |>
 
 
 
-        "YIfitY2"        "YItidiedY2"     "YIaugmented.x" 
-[22] "YIIfitY2"       "YIItidiedY2"    "YII"            ".fittedY2"      ".residY2"       "qPfitY2"        "qPtidiedY2"    
-[29] "qPaugmentedY2"  "data"           "YIfit"          "YItidied"       "YIaugmented.y"  "YIIfit"         "YIItidied"     
-[36] "YIIaugmented.y" "qPfit"          "qPtidied"       "qP"             ".fitted"        ".resid" )) |>
+#        "YIfitY2"        "YItidiedY2"     "YIaugmented.x" 
+#[22] "YIIfitY2"       "YIItidiedY2"    "YII"            ".fittedY2"      ".residY2"       "qPfitY2"        "qPtidiedY2"    
+#[29] "qPaugmentedY2"  "data"           "YIfit"          "YItidied"       "YIaugmented.y"  "YIIfit"         "YIItidied"     
+#[36] "YIIaugmented.y" "qPfit"          "qPtidied"       "qP"             ".fitted"        ".resid" )) |>
  
-   [1] "MeasureO2_uM"   "Strain"         "Par_ue"         "O2_Category"    "data.YI"        "YIfit.YI"       "YItidied.YI"   
- [8] "YI"             "PAR"            ".fitted.YI"     ".resid.YI"      "YIIfit.YI"      "YIItidied.YI"   "YIIaugmented.x"
-[15] "qPfit.YI"       "qPtidied.YI"    "qPaugmented.YI" "dataY2"         "YIfitY2"        "YItidiedY2"     "YIaugmented.x" 
-[22] "YIIfitY2"       "YIItidiedY2"    "YII"            ".fittedY2"      ".residY2"       "qPfitY2"        "qPtidiedY2"    
-[29] "qPaugmentedY2"  "data"           "YIfit"          "YItidied"       "YIaugmented.y"  "YIIfit"         "YIItidied"     
-[36] "YIIaugmented.y" "qPfit"          "qPtidied"       "qP"             ".fitted"        ".resid" 
+  # [1] "MeasureO2_uM"   "Strain"         "Par_ue"         "O2_Category"    "data.YI"        "YIfit.YI"       "YItidied.YI"   
+ #[8] "YI"             "PAR"            ".fitted.YI"     ".resid.YI"      "YIIfit.YI"      "YIItidied.YI"   "YIIaugmented.x"
+#[15] "qPfit.YI"       "qPtidied.YI"    "qPaugmented.YI" "dataY2"         "YIfitY2"        "YItidiedY2"     "YIaugmented.x" 
+#[22] "YIIfitY2"       "YIItidiedY2"    "YII"            ".fittedY2"      ".residY2"       "qPfitY2"        "qPtidiedY2"    
+#[29] "qPaugmentedY2"  "data"           "YIfit"          "YItidied"       "YIaugmented.y"  "YIIfit"         "YIItidied"     
+#[36] "YIIaugmented.y" "qPfit"          "qPtidied"       "qP"             ".fitted"        ".resid" 
    
   
-Y_PAR_PredictValues |>
-  ggplot() + 
-  geom_point(aes(x = YI, y = YII)) +
-  geom_line(aes(x = `.fitted.x`, y = `.fitted.y`), colour = "green") +
-  facet_grid(cols = vars(MeasureO2_uM), rows = vars(Strain, Par_ue, O2_Category)) +
-  #labs(x = "YI", y = "YII") +
-  theme_bw()
+# Y_PAR_PredictValues |>
+#   ggplot() + 
+#   geom_point(aes(x = YI, y = YII)) +
+#   geom_line(aes(x = `.fitted.x`, y = `.fitted.y`), colour = "green") +
+#   facet_grid(cols = vars(MeasureO2_uM), rows = vars(Strain, Par_ue, O2_Category)) +
+#   #labs(x = "YI", y = "YII") +
+#   theme_bw()
 
 ```
 ```{r exponential decay parameter plots}

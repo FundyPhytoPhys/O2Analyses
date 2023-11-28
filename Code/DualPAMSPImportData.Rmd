@@ -215,90 +215,43 @@ DualPAMSPData |>
   ggplot() +
   geom_point(aes(x = Time_ms, y = P700delta), colour = "blue") +
   geom_point(aes(x = Time_ms, y = Fluo_V), colour = "red") +
-  facet_grid(rows = vars(MeasureO2_uM), cols = vars(Flash)) +
+  facet_grid(rows = vars(MeasureO2_uM), cols = vars(FlashTime)) +
   theme_bw()
 
+DualPAMSPData |>
+  filter(SampleID == "JuNa1206") |>
+  filter(FlashNum %in% c(2, 4, 6)) |>
+  ggplot() +
+  geom_point(aes(x = Time_ms, y = P700delta), colour = "blue") +
+  geom_point(aes(x = Time_ms, y = Fluo_V), colour = "red") +
+  facet_grid(rows = vars(MeasureO2_uM), cols = vars(FlashNum)) +
+  theme_bw()
 
+DualPAMSPData |>
+  filter(SampleID == "JuNa1206") |>
+  filter(FlashNum %in% c(2, 4, 6)) |>
+  ggplot() +
+  geom_point(aes(x = Fluo_V, y = P700delta, colour = Time_ms)) +
+  facet_grid(rows = vars(MeasureO2_uM), cols = vars(FlashNum)) +
+  theme_bw()
 ```
-XXX To Here 27 Nov 2023 XXX
 
 # Merge with MetaData & Chl Data
-
+Files too big to handle; may need to subset
 ```{r merge with metadata}
-DualPAMMeta <- left_join(x = DualPAMData, y = MetaData, join_by("SampleID" == "SampleID")) |>
-  mutate(MeasureO2_uM = as.numeric(MeasureO2_uM))
+DualPAMSPMeta <- left_join(x = DualPAMSPData, y = MetaData, join_by("SampleID" == "SampleID")) |>
+  mutate(MeasureO2_uM = as.numeric(MeasureO2_uM)) |>
+  select(-c(ID, Date, InnocDate, ExpDate, Inoc_mL, Media_mL, MediaDate, Plate, Well, EndDate, Salinity, Source, SourceSalinity, Optode, OptodeCh, InocpH, FinalpH, ExpEndDate, `...46`, `...47` ))
 
 
 # SolDataMeta <- left_join(x = SolDataMeta, y = ChlData, join_by("SampleID" == "SampleID"))
 
-head(DualPAMMeta)
+head(DualPAMSPMeta)
 ```
 
 
-```{r DualPAMData plot}
-
-
-DualPAMMeta |>
-  #filter(Strain == "PCC9511") |>
-  # filter(Par_ue == 30) |>
-  # filter(O2 == 21) |>
-  ggplot() +
-  geom_point(aes(x = PAR, y = YI), colour = "blue") +
-  geom_point(aes(x = PAR, y = YII), colour = "red") +
-  facet_grid(cols = vars(MeasureO2_uM), rows = vars(Strain, SampleID)) +
-  theme_bw()
-
-DualPAMMeta |>
-  filter(MeasureO2_uM %in% c(2, 25, 250)) |>
-  filter(!(SampleID %in% NoO2Runs)) |>
-  filter(!SampleID %in% BadRuns) |>
-  filter(OptodeMeasure == 1) |>
-  filter(Strain == "PCC9511") |>
-  ggplot() +
-  geom_point(aes(x = PAR, y = YI), colour = "blue") +
-  geom_point(aes(x = PAR, y = YII), colour = "red") +
-  facet_grid(cols = vars(MeasureO2_uM), rows = vars(Strain, Par_ue, O2_Category)) +
-  theme_bw()
-
-DualPAMMeta |>
-  filter(MeasureO2_uM %in% c(2, 25, 250)) |>
-  filter(!(SampleID %in% NoO2Runs)) |>
-  filter(!SampleID %in% BadRuns) |>
-  filter(OptodeMeasure == 1) |>
-  filter(Strain == "MIT9313") |>
-  ggplot() +
-  geom_point(aes(x = PAR, y = YI), colour = "blue") +
-  geom_point(aes(x = PAR, y = YII), colour = "red") +
-  facet_grid(cols = vars(MeasureO2_uM), rows = vars(Strain, Par_ue, O2_Category)) +
-  theme_bw()
-
-DualPAMMeta |>
-  filter(MeasureO2_uM %in% c(2, 25, 250)) |>
-  filter(!(SampleID %in% NoO2Runs)) |>
-  filter(!SampleID %in% BadRuns) |>
-    filter(Strain == "PCC9511") |>
-    filter(OptodeMeasure == 1) |>
-  ggplot() +
-  geom_point(aes(x = YI, y = YII, colour = as.factor(OptodeMeasure))) +
-  #geom_smooth(aes(x = YI, y = YII), method = "lm") +
-  facet_grid(cols = vars(MeasureO2_uM), rows = vars(Strain, Par_ue, O2_Category)) +
-  theme_bw()
-
-DualPAMMeta |>
-  filter(MeasureO2_uM %in% c(2, 25, 250)) |>
-  filter(!(SampleID %in% NoO2Runs)) |>
-  filter(!SampleID %in% BadRuns) |>
-    filter(Strain == "MIT9313") |>
-    filter(OptodeMeasure == 1) |>
-  ggplot() +
-  geom_point(aes(x = YI, y = YII, colour = as.factor(OptodeMeasure))) +
-  #geom_smooth(aes(x = YI, y = YII), method = "lm") +
-  facet_grid(cols = vars(MeasureO2_uM), rows = vars(Strain, Par_ue, O2_Category)) +
-  theme_bw()
-
-```
-```{r save DualPAMMeta}
- saveRDS(DualPAMMeta, file.path(DataOut, paste(Project, Run, "DualPAMMeta.Rds", sep = "_"), fsep = .Platform$file.sep))
+```{r save DualPAMPSMeta}
+ # saveRDS(DualPAMPSMeta, file.path(DataOut, paste(Project, Run, "DualPAMPSMeta.Rds", sep = "_"), fsep = .Platform$file.sep))
 ```
 
 Self Starting Exponential Decay Function

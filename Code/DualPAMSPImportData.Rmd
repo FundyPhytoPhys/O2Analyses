@@ -119,7 +119,7 @@ unique(duplicated(DualPAMSPFiles))
 
 
 #Shrink by removing NoO2Runs and BadRuns
-DualPAMSPFilterFiles <-DualPAMSPFiles[!DualPAMSPFiles %in% grep(paste0(c(NoO2Runs, BadRuns), collapse = "|"), DualPAMSPFiles, value = T)]
+DualPAMSPFilterFiles <-DualPAMSPFiles[!DualPAMSPFiles %in% grep(paste0(c(NoO2Runs, BadRuns, DubiousRuns), collapse = "|"), DualPAMSPFiles, value = T)]
 ```
 
 ```{r data read adds filename and cdate, warning=FALSE, message=FALSE, echo=FALSE}
@@ -171,7 +171,7 @@ purrr::map to read all files, onestep read and tidy read_delim_DualPAM function
 DataHeaderRows <- 0
 
 #	../Data/RawData/DualPAM/SP_Kinetics/202311081615_PICO_JuNa1206_2/F_231108_163212_0.CSV
-DualPAMSPData <- DualPAMSPFilterFiles[1:200] |>
+DualPAMSPData <- DualPAMSPFilterFiles |>
   map_df(~ read_delim_plus_SP(flnm =., delimiter = Delimiter, headerrows = DataHeaderRows)) |>
    mutate(Filename = str_remove(string = Filename, pattern = ".CSV")) |>
   mutate(Filename = str_remove(string = Filename, pattern = "../Data/RawData/DualPAM/SP_Kinetics/")) |>
@@ -189,12 +189,28 @@ length(unique(DualPAMSPData$Filename))
 
 
 #https://stackoverflow.com/questions/72991474/how-to-get-relative-rankings-of-numeric-elements-in-a-list-or-vector-in-r
+
+#https://stackoverflow.com/questions/17619782/how-to-find-the-largest-n-elements-in-a-list-in-r
+
+maxn <- function(x, n) {
+  partial <- length(x) - n + 1
+  x[x >= sort(x, partial = partial)[partial]]
+}
+
+# maxn <- function(x, n) {
+#   partial <- length(x) - n + 1
+#   x[x >= sort(x, partial = partial)[partial]]
+# }
+
 DualPAMSPData <- DualPAMSPData |>
   #filter(SampleID == "JuNa1206") |>
   group_by(DateTime, Project, SampleID, MeasureO2_uM, Date) |>
   mutate(FlashTime = rank(MeasureTime, ties.method = "min")) |>
   mutate(FlashNum = dplyr::dense_rank(MeasureTime)) |>
+  mutate(P700Norm = P700delta/mean(maxn(P700delta, 10))) |>
+  mutate(FluoNorm = Fluo_V/mean(maxn(Fluo_V, 10)))
   ungroup()
+
 
 head(DualPAMSPData)
 
@@ -208,29 +224,33 @@ unique(DualPAMSPData$SampleID)
 
 ```{r DualPAMData plot}
 DualPAMSPData |>
-  filter(SampleID == "JuNa1206") |>
+  filter(SampleID == "JuNa1211") |>
   ggplot() +
-  geom_point(aes(x = Time_ms, y = P700delta), colour = "blue") +
-  geom_point(aes(x = Time_ms, y = Fluo_V), colour = "red") +
-  facet_grid(rows = vars(MeasureO2_uM), cols = vars(FlashTime)) +
+  geom_point(aes(x = Time_ms, y = P700Norm), colour = "blue") +
+  geom_point(aes(x = Time_ms, y = FluoNorm), colour = "red") +
+  #facet_grid(rows = vars(MeasureO2_uM), cols = vars(FlashTime)) +
   theme_bw()
 
 DualPAMSPData |>
-  filter(SampleID == "JuNa1206") |>
+  filter(SampleID == "JuNa1211") |>
   filter(FlashNum %in% c(2, 4, 6)) |>
   ggplot() +
-  geom_point(aes(x = Time_ms, y = P700delta), colour = "blue") +
-  geom_point(aes(x = Time_ms, y = Fluo_V), colour = "red") +
+  geom_point(aes(x = Time_ms, y = P700Norm), colour = "blue") +
+  geom_point(aes(x = Time_ms, y = FluoNorm), colour = "red") +
   facet_grid(rows = vars(MeasureO2_uM), cols = vars(FlashNum)) +
   theme_bw()
 
 DualPAMSPData |>
-  filter(SampleID == "JuNa1208") |>
+  filter(SampleID == "JuNa1211") |>
   filter(FlashNum %in% c(2, 4, 6)) |>
   ggplot() +
-  geom_point(aes(x = Fluo_V, y = P700delta, colour = Time_ms)) +
+  geom_point(aes(x = FluoNorm, y = P700Norm, colour = Time_ms)) +
   facet_grid(rows = vars(MeasureO2_uM), cols = vars(FlashNum)) +
   theme_bw()
+```
+```{r signal norm}
+DualPAMSPNorm <- DualPAMSPData |>
+  group_by()
 ```
 
 # Merge with MetaData & Chl Data
@@ -246,9 +266,34 @@ DualPAMSPMeta <- left_join(x = DualPAMSPData, y = MetaData, join_by("SampleID" =
 head(DualPAMSPMeta)
 ```
 
+```{r}
+DualPAMSPMeta |>
+  filter(Strain == "PCC9511") |>
+  filter(O2_Category == "High") |>
+  filter(Par_ue == "90") |>
+  filter(FlashNum %in% c(2, 4, 6)) |>
+  ggplot() +
+  geom_point(aes(x = Fluo_V, y = P700delta, colour = Time_ms)) +
+  facet_grid(rows = vars(MeasureO2_uM), cols = vars(FlashNum)) +
+  theme_bw()
+
+DualPAMSPMeta |>
+  filter(Strain == "MIT9313") |>
+  filter(O2_Category == "High") |>
+  filter(Par_ue == "30") |>
+  filter(FlashNum %in% c(2, 4, 6)) |>
+  ggplot() +
+  geom_point(aes(x = Fluo_V, y = P700delta, colour = Time_ms)) +
+  facet_grid(rows = vars(MeasureO2_uM), cols = vars(FlashNum)) +
+  theme_bw()
+```
+```{r signal norm}
+
+```
+
 
 ```{r save DualPAMPSMeta}
- # saveRDS(DualPAMPSMeta, file.path(DataOut, paste(Project, Run, "DualPAMPSMeta.Rds", sep = "_"), fsep = .Platform$file.sep))
+saveRDS(DualPAMSPMeta, file.path(DataOut, paste(Project, Run, "DualPAMSPMeta.Rds", sep = "_"), fsep = .Platform$file.sep))
 ```
 
 Self Starting Exponential Decay Function

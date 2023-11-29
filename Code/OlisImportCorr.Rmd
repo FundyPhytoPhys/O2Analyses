@@ -255,10 +255,10 @@ SpectraWide <- Spectra |>
 SpectraWide |>
   ggplot() +
   geom_point(aes(x = nm, y = ABase_2)) +
-  geom_point(aes(x = nm, y = ABase_250), colour = "red") +
-  facet_grid(rows = vars(ID)) +
+  #geom_point(aes(x = nm, y = ABase_250), colour = "red") +
+  #facet_grid(rows = vars(ID)) +
   theme_bw()
-  
+ head(SpectraWide)
 SpectraWide |>
   ggplot() +
   geom_point(aes(x = nm, y = SecondDeriv_2)) +

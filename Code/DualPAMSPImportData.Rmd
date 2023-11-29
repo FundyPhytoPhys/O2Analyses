@@ -187,31 +187,33 @@ head(DualPAMSPData, 20)
 colnames(DualPAMSPData)
 length(unique(DualPAMSPData$Filename))
 
-
+```
+Think about whether to include DateTime in grouping variable for normalization
+```{r transforms}
 #https://stackoverflow.com/questions/72991474/how-to-get-relative-rankings-of-numeric-elements-in-a-list-or-vector-in-r
-
-#https://stackoverflow.com/questions/17619782/how-to-find-the-largest-n-elements-in-a-list-in-r
-
-maxn <- function(x, n) {
-  partial <- length(x) - n + 1
-  x[x >= sort(x, partial = partial)[partial]]
-}
-
-# maxn <- function(x, n) {
-#   partial <- length(x) - n + 1
-#   x[x >= sort(x, partial = partial)[partial]]
-# }
 
 DualPAMSPData <- DualPAMSPData |>
   #filter(SampleID == "JuNa1206") |>
   group_by(DateTime, Project, SampleID, MeasureO2_uM, Date) |>
   mutate(FlashTime = rank(MeasureTime, ties.method = "min")) |>
   mutate(FlashNum = dplyr::dense_rank(MeasureTime)) |>
-  mutate(P700Norm = P700delta/mean(maxn(P700delta, 10))) |>
-  mutate(FluoNorm = Fluo_V/mean(maxn(Fluo_V, 10)))
   ungroup()
 
+  
+ #https://stackoverflow.com/questions/17619782/how-to-find-the-largest-n-elements-in-a-list-in-r
+maxn <- function(x, n) {
+  partial <- length(x) - n + 1
+  x[x >= sort(x, partial = partial)[partial]]
+}
 
+  #Normalize signal to maximum for given filter
+DualPAMSPData <- DualPAMSPData |>
+  group_by(DateTime, Project, SampleID, Date) |>
+  mutate(P700Norm = P700delta/mean(maxn(P700delta, 10))) |>
+  mutate(FluoNorm = Fluo_V/mean(maxn(Fluo_V, 10))) |>
+  ungroup()
+
+  
 head(DualPAMSPData)
 
 unique(DualPAMSPData$FlashTime)
@@ -248,10 +250,7 @@ DualPAMSPData |>
   facet_grid(rows = vars(MeasureO2_uM), cols = vars(FlashNum)) +
   theme_bw()
 ```
-```{r signal norm}
-DualPAMSPNorm <- DualPAMSPData |>
-  group_by()
-```
+
 
 # Merge with MetaData & Chl Data
 Files too big to handle; may need to subset
@@ -273,7 +272,7 @@ DualPAMSPMeta |>
   filter(Par_ue == "90") |>
   filter(FlashNum %in% c(2, 4, 6)) |>
   ggplot() +
-  geom_point(aes(x = Fluo_V, y = P700delta, colour = Time_ms)) +
+  geom_point(aes(x = FluoNorm, y = P700Norm, colour = Time_ms)) +
   facet_grid(rows = vars(MeasureO2_uM), cols = vars(FlashNum)) +
   theme_bw()
 
@@ -281,101 +280,14 @@ DualPAMSPMeta |>
   filter(Strain == "MIT9313") |>
   filter(O2_Category == "High") |>
   filter(Par_ue == "30") |>
-  filter(FlashNum %in% c(2, 4, 6)) |>
+  filter(FlashNum %in% c(2, 4, 6,8,10)) |>
   ggplot() +
-  geom_point(aes(x = Fluo_V, y = P700delta, colour = Time_ms)) +
+  geom_point(aes(x = FluoNorm, y = P700Norm, colour = Time_ms)) +
   facet_grid(rows = vars(MeasureO2_uM), cols = vars(FlashNum)) +
   theme_bw()
 ```
-```{r signal norm}
-
-```
-
 
 ```{r save DualPAMPSMeta}
 saveRDS(DualPAMSPMeta, file.path(DataOut, paste(Project, Run, "DualPAMSPMeta.Rds", sep = "_"), fsep = .Platform$file.sep))
-```
-
-Self Starting Exponential Decay Function
-https://douglas-watson.github.io/post/2018-09_exponential_curve_fitting/
-
-Possible issue with std.error_log_alpha converted back through exp(td.error_log_alpha)
-```{r fit self starting exponential decay}
-YFits <-   DualPAMMeta |>
-  filter(PAR < 600) |>  #possible issue with row labelling of PAR in data files?
-  filter(MeasureO2_uM %in% c(2, 25, 250)) |>
-  filter(!(SampleID %in% NoO2Runs)) |>
-  filter(!SampleID %in% BadRuns) |>
-  filter(OptodeMeasure == 1) |>
-  nest(data = -c(Strain, O2_Category, MeasureO2_uM, Par_ue)) %>%
-  mutate(
-    YIfit = map(data, possibly(~nls(YI ~ SSasymp(PAR, YIf, YI0, log_alpha), data = .), NULL)),
-    YItidied = map(YIfit, tidy),
-    YIaugmented = map(YIfit, augment),
-  ) |>
-mutate(
-    YIIfit = map(data, possibly(~nls(YII ~ SSasymp(PAR, YIIf, YII0, log_alpha), data = .), NULL)),
-    YIItidied = map(YIIfit, tidy),
-    YIIaugmented = map(YIIfit, augment),
-  )  
-
-YFits
-
-YIFitValues <- YFits |>
-  unnest(YItidied) |>
-  select(Strain, O2_Category, MeasureO2_uM, Par_ue, term, estimate, std.error) |> 
-  pivot_wider(names_from = c(term), values_from = c(estimate, std.error)) |>
-  mutate(alpha = exp(estimate_log_alpha),
-         alpha_se = exp(std.error_log_alpha)) |>
-  select(-c(estimate_log_alpha, std.error_log_alpha))
-
-YIIFitValues <- YFits |>
-  unnest(YIItidied) |>
-  select(Strain, O2_Category, MeasureO2_uM, Par_ue, term, estimate, std.error) |> 
-  pivot_wider(names_from = c(term), values_from = c(estimate, std.error)) |>
-  mutate(alpha = exp(estimate_log_alpha),
-         alpha_se = exp(std.error_log_alpha)) |>
-  select(-c(estimate_log_alpha, std.error_log_alpha))
-
-
-YFitValues <- left_join(YIFitValues, YIIFitValues,  by = join_by(Strain, O2_Category, MeasureO2_uM, Par_ue), suffix = c("YI", "YII"))
-
-head(YFitValues)
-
-rm(YIFitValues, YIIFitValues)
-
-```
-
-```{r exponential decay fits}
-YFits |>
-  unnest(YIaugmented) |>
-  ggplot() + 
-  geom_line(aes(x = PAR, y = .fitted), colour = "blue") +
-  geom_point(aes(x = PAR, y = YI)) +
-  facet_grid(cols = vars(MeasureO2_uM), rows = vars(Strain, Par_ue, O2_Category)) +
-  labs(title = "YI") +
-  theme_bw()
-  
-  YFits |>
-  unnest(YIIaugmented) |>
-  ggplot() + 
-  geom_line(aes(x = PAR, y = .fitted), colour = "red") +
-  geom_point(aes(x = PAR, y = YII)) +
-  facet_grid(cols = vars(MeasureO2_uM), rows = vars(Strain, Par_ue, O2_Category)) +
-  labs(title = "YII") +
-  theme_bw()
-  
-YIYIIPredictValues <- left_join(x = YFits |> unnest(YIaugmented), y = YFits |> unnest(YIIaugmented), by = join_by(Strain, O2_Category, MeasureO2_uM, Par_ue, PAR)) |>
-  select(-c("data.x","YIfit.x","YItidied.x", "YIIfit.x", "YIItidied.x", "YIIaugmented", "data.y", "YIfit.y","YItidied.y","YIaugmented","YIIfit.y","YIItidied.y"))
-  
-  
-  YIYIIPredictValues|>
-  ggplot() + 
-  geom_point(aes(x = YI, y = YII)) +
-  geom_line(aes(x = `.fitted.x`, y = `.fitted.y`), colour = "green") +
-  facet_grid(cols = vars(MeasureO2_uM), rows = vars(Strain, Par_ue, O2_Category)) +
-  #labs(x = "YI", y = "YII") +
-  theme_bw()
-
 ```
 

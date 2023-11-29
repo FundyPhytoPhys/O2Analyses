@@ -25,25 +25,6 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE)
 knitr::opts_chunk$set(fig.path='Figs/')
 ```
 
-# Set Project Variables
-
-```{r set project variables}
-Project <- "PICO"
-DataOut <- file.path("..", "Data", "ProcessedData")
-
-
-NoO2Runs <- c("JuNa1201", "JuNa1202", "JuNa1203", "JuNa1204", "JuNa1205")
-BadRuns <- c("JuNa1215")
-DubiousRuns <- c("JuNa1206", "JuNa1207", "JuNa1208", "JuNa1209", "JuNa1210")
-
-DualPAMMeta <- readRDS(file = file.path("..", "Data", "ProcessedData", "PICO_O2Analyses_DualPAMMeta.Rds"))
-
-colnames(DualPAMMeta)
-
-DualPAMMEta <- DualPAMMeta |>
-  select(-c(`...46`, `...47`))
-
-```
 
 ```{r conversions}
 us_s <- 1000000
@@ -60,6 +41,29 @@ library(broom) #formatting model outputs
 #https://googlesheets4.tidyverse.org/
 library(googledrive)
 library(googlesheets4)
+
+```
+
+
+# Set Project Variables
+
+```{r set project variables}
+Project <- "PICO"
+DataOut <- file.path("..", "Data", "ProcessedData")
+
+
+NoO2Runs <- c("JuNa1201", "JuNa1202", "JuNa1203", "JuNa1204", "JuNa1205")
+BadRuns <- c("JuNa1215")
+DubiousRuns <- c("JuNa1206", "JuNa1207", "JuNa1208", "JuNa1209", "JuNa1210")
+
+DualPAMMeta <- readRDS(file = file.path("..", "Data", "ProcessedData", "PICO_O2Analyses_DualPAMMeta.Rds"))
+
+colnames(DualPAMMeta)
+
+DualPAMMEta <- DualPAMMeta |>
+  select(-c(`...46`, `...47`)) |>
+  select(-c("ID.y", "MediaDate","Source","SourceSalinity","Optode","OptodeCh","InocpH","FinalpH","ExpEndDate" )) |>
+  rename(ID = ID.x)
 
 ```
 
@@ -453,7 +457,6 @@ DualPAMMeta |>
 
 
 ```{r save DualPAMMeta}
- saveRDS(Y_PAR_FitValues, file.path(DataOut, paste(Project, Run, "Y_PAR_FitValues.Rds", sep = "_"), fsep = .Platform$file.sep))
+ saveRDS(Y_PAR_FitValues, file.path(DataOut, paste(Project, "Y_PAR_FitValues.Rds", sep = "_"), fsep = .Platform$file.sep))
 
- saveRDS(Y_PAR_PredictValues, file.path(DataOut, paste(Project, Run, "Y_PAR_PredictValues.Rds", sep = "_"), fsep = .Platform$file.sep))
 ```

@@ -100,8 +100,10 @@ DualPAMMeta |>
   filter(Strain == "PCC9511") |>
   ggplot() +
   geom_point(aes(x = PAR, y = YI), colour = "blue") +
-  geom_point(aes(x = PAR, y = YII), colour = "red") +
+  #geom_point(aes(x = PAR, y = YII), colour = "red") +
   facet_grid(cols = vars(MeasureO2_uM), rows = vars(Strain, Par_ue, O2_Category)) +
+  scale_y_continuous(sec.axis = sec_axis(~ . , name = "Strain, Growthlight_uE, O2_Category", breaks = NULL, labels = NULL)) +
+  scale_x_continuous(sec.axis = sec_axis(~ . , name = "MeasureO2_uM", breaks = NULL, labels = NULL)) +
   theme_bw()
 
 DualPAMMeta |>
@@ -141,7 +143,8 @@ DualPAMMeta |>
   theme_bw()
 
 ```
-
+PAR <- umol photons m^-2 s^-1 applied during the measurement
+YI <- photochemical yield of PSI
 Self Starting Exponential Decay Function
 https://douglas-watson.github.io/post/2018-09_exponential_curve_fitting/
 

@@ -112,8 +112,10 @@ SolFitsMeta %>%
   filter(LR_s < 65) |>
   ggplot() +
   geom_point(aes(x = ActPARCorr, y = qpOxbo, colour = MeasureO2_uM)) +
-  geom_line(aes(x = ActPARCorr, y = qpOxbo, colour = MeasureO2_uM)) +
+  #geom_smooth(aes(x = ActPARCorr, y = qpOxbo, colour = MeasureO2_uM)) +
   facet_grid(cols = vars(Strain, Par_ue), rows = vars(O2_uM)) +
+   scale_y_continuous(sec.axis = sec_axis(~ . , name = "GrowthO2_uM", breaks = NULL, labels = NULL)) +
+  scale_x_continuous(sec.axis = sec_axis(~ . , name = "Strain, Growthlight_uE", breaks = NULL, labels = NULL)) +
   theme_bw()
 
 SolFitsMeta %>%
@@ -217,7 +219,9 @@ SolFitsMeta %>%
   facet_grid(rows = vars(MeasureO2_uM), cols = vars(Strain, O2_uM, Par_ue)) +
   theme_bw()
 ```
-
+data exploration 
+actPARcorr <- umol photons m^-2 s^-1 of actinic light applied to the sample.
+qpOxbo <- fraction of PSII open for photosynthesis
 ```{r read chl}
 # Chl <- readRDS(file.path(ChlDataIn, "PICO_ChlTurnerAll.Rds" ))
 # 

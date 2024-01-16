@@ -175,19 +175,12 @@ Baseline <- Spectra |>
   filter(ID == "Pro99")
 
 Spectra <- Spectra |>
+  filter(ID != "Pro99" ) |>
+  filter(ID != "Baseline") |>
   mutate(ABase = A - Baseline$A)  |>
   group_by(ID, O2_uM) |>
   mutate(ANorm = ABase/max(ABase)) |>
   ungroup()
-
-Spectra |>
-  ggplot() +
-  geom_point(aes(x = nm, y = ABase)) +
-  facet_grid(rows = vars(ID), cols = vars(O2_uM)) +
-  theme_bw()
-
-Spectra <- Spectra |>
-  filter(ID != "Pro99")
 
 Spectra |>
   ggplot() +
@@ -258,7 +251,9 @@ SpectraWide |>
   #geom_point(aes(x = nm, y = ABase_250), colour = "red") +
   #facet_grid(rows = vars(ID)) +
   theme_bw()
+
  head(SpectraWide)
+ 
 SpectraWide |>
   ggplot() +
   geom_point(aes(x = nm, y = SecondDeriv_2)) +
@@ -268,8 +263,8 @@ SpectraWide |>
 
 SpectraWide |>
   ggplot() +
-  geom_line(aes(x = nm, y = SecondDeriv_2), size = 0.5) +
-  geom_line(aes(x = nm, y = SecondDeriv_250), size = 0.1, colour = "red") +
+  geom_line(aes(x = nm, y = SecondDeriv_2), linewidth = 0.5) +
+  geom_line(aes(x = nm, y = SecondDeriv_250), linewidth = 0.1, colour = "red") +
   facet_grid(cols = vars(ID)) +
   coord_cartesian(xlim = c(500, 600)) + 
   theme_bw()
@@ -293,17 +288,21 @@ SpectraWide |>
 
 
 # Merge OLISSpectra with MetaData and ChlData
+
+> SpectraMeta <- SpectraWide %>%
++   left_join(., MetaData, by = c("ID" = "SampleID"))
+Warning: Detected an unexpected many-to-many relationship between `x` and `y`.
 ```{r SpectraWide with MetaData}
 
 
 SpectraMeta <- SpectraWide %>%
-  left_join(., MetaData, by = c("ID"))
+  left_join(., MetaData, by = c("ID" = "SampleID"))
 
 SpectraMeta <- SpectraMeta |>
   mutate(O2_uM = case_when(O2 == 0 ~ 2,
                            O2 == 1 ~ 25,
                            O2 == 21 ~ 250)) |>
-    select(-c("Description", "Motivation", "doi", "Par_ueAdjusted", "DateOfAdjustment", "ElaspedHoursAtAdjustment", "...44", "...45")) 
+    select(-c("Description", "Motivation", "doi", "Par_ueAdjusted", "DateOfAdjustment", "ElaspedHoursAtAdjustment", "...44", "...45", "...46")) 
     
 SpectraMeta <- SpectraMeta |>
   left_join(ChlData, join_by(ID == CultureID))

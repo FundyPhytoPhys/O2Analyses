@@ -319,6 +319,17 @@ SpectraMeta |>
   facet_grid(rows = vars(Strain), cols = vars(Par_ue, O2_uM)) +
   coord_cartesian(xlim = c(500, 600)) + 
   theme_bw()   
+
+SpectraMeta |>
+  filter(Strain == "MED4") |>
+  #filter(Par_ue != 180) |>
+  filter(ID != "JuNa1200") |>
+  ggplot() +
+  geom_line(aes(x = nm, y = SecondDeriv_2), linewidth  = 0.5) +
+  geom_line(aes(x = nm, y = SecondDeriv_250), linewidth = 0.1, colour = "red") +
+  facet_grid(rows = vars(O2_uM), cols = vars(Par_ue)) +
+  coord_cartesian(xlim = c(500, 600)) + 
+  theme_bw() 
   
   SpectraMeta |>
   filter(Par_ue == 30) |>
@@ -396,6 +407,28 @@ SpectraMeta |>
   facet_grid(rows = vars(Strain), cols = vars(Par_ue, O2_uM)) + 
   coord_cartesian(xlim = c(500, 600)) + 
   theme_bw()  
+
+SpectraMeta |>
+  filter(Strain == "MED4") |>
+  # filter(Par_ue == 90) |>
+  # filter(O2_uM == 250) |>
+  ggplot() +
+  geom_line(aes(x = nm, y = ANorm_2 - ANorm_250, colour = ID), size = 0.5) +
+  facet_grid(rows = vars(Strain), cols = vars(Par_ue, O2_uM)) + 
+  coord_cartesian(xlim = c(500, 600)) + 
+  theme_bw()  
+
+SpectraMeta |>
+  filter(Strain == "MED4") |>
+  ggplot() +
+  geom_line(aes(x = nm, y = ANorm_2), size = 0.5) +
+  geom_line(aes(x = nm, y = ANorm_250), size = 0.1, colour = "red") +
+  facet_grid(cols = vars(Strain), rows = vars(Par_ue, O2_uM, ID)) +
+  coord_cartesian(xlim = c(500, 600)) + 
+  theme_bw()   
+
+
+
 ```
 
 Add Turner Chlorophyll data to estimate a* etc.

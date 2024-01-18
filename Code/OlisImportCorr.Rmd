@@ -64,20 +64,24 @@ gs4_deauth()
 
 # imagine this is the URL or ID of a Sheet readable by anyone (with a link)
 # MultiCulti metadata
-MetaData <- read_sheet(Catalog)%>%
+MetaData <- read_sheet(Catalog) |>
   # read_sheet has an annoying "feature" to set the type of columns it can't parse to a list.
   # ggplot/dplyr doesn't like working with a dataframe of lists.
   # In this case WL is set to a list since some values are numbers, some are strings, some are blank.
   # To fix this, first drop all rows missing WL, then unlist.
   # Must first drop NA rows since unlist will collapse NULL lists, then the unlisted WL is a shorter length than original WL column, which mutate doesn't like.
   drop_na(WL) %>%
-  mutate(WL = unlist(WL))
+  mutate(WL = unlist(WL)) |>
+  filter(!str_detect(string = Description, pattern = "czech")) |> # remove 'duplicate' SampleID rows from MetaData
+  select(-c("Description", "Motivation", "doi", "Par_ueAdjusted", "DateOfAdjustment", "ElaspedHoursAtAdjustment", "...45", "...46"))
 
 as.data.frame(MetaData)
 
-MetaData <- MetaData %>%
+MetaData <- MetaData |>
    mutate(ExpDate = lubridate::ymd(ExpDate),
-          ExpEndDate = lubridate::ymd_hms(`ExpEndDate`))
+          ExpEndDate = lubridate::ymd_hms(`ExpEndDate`)) |>
+    filter(str_detect(string = SampleID, pattern = "JuNa|MiSa")) #simplify MetaData to only include JuNa or MiSa samples
+
 # find units for chl
 ChlData <- read_sheet(ChlTurner) |>
   mutate(Chl = as.numeric(Reading_rfu) * as.numeric(Chl_slope) + as.numeric(Chl_intercept))
@@ -289,33 +293,56 @@ SpectraWide |>
 
 # Merge OLISSpectra with MetaData and ChlData
 
-> SpectraMeta <- SpectraWide %>%
-+   left_join(., MetaData, by = c("ID" = "SampleID"))
-Warning: Detected an unexpected many-to-many relationship between `x` and `y`.
+> SpectraMeta <- SpectraWide %>% -->
+<!-- +   left_join(., MetaData, by = c("ID" = "SampleID")) -->
+<!-- Warning: Detected an unexpected many-to-many relationship between `x` and `y`. -->
+#Issue is with samples from czech that have repeated SampleID; fixed by filter on MetaData
+
 ```{r SpectraWide with MetaData}
-
-
 SpectraMeta <- SpectraWide %>%
   left_join(., MetaData, by = c("ID" = "SampleID"))
 
 SpectraMeta <- SpectraMeta |>
   mutate(O2_uM = case_when(O2 == 0 ~ 2,
                            O2 == 1 ~ 25,
-                           O2 == 21 ~ 250)) |>
-    select(-c("Description", "Motivation", "doi", "Par_ueAdjusted", "DateOfAdjustment", "ElaspedHoursAtAdjustment", "...44", "...45", "...46")) 
+                           O2 == 21 ~ 250)) 
     
 SpectraMeta <- SpectraMeta |>
   left_join(ChlData, join_by(ID == CultureID))
         
+
+
 SpectraMeta |>
+  filter()
   ggplot() +
-  geom_line(aes(x = nm, y = SecondDeriv_2), size = 0.5) +
-  geom_line(aes(x = nm, y = SecondDeriv_250), size = 0.1, colour = "red") +
-  facet_grid(cols = vars(Strain), rows = vars(Par_ue, O2_uM)) +
+  geom_line(aes(x = nm, y = SecondDeriv_2), linewidth  = 0.5) +
+  geom_line(aes(x = nm, y = SecondDeriv_250), linewidth = 0.1, colour = "red") +
+  facet_grid(rows = vars(Strain), cols = vars(Par_ue, O2_uM)) +
   coord_cartesian(xlim = c(500, 600)) + 
-  theme_bw()            
+  theme_bw()   
+  
+  SpectraMeta |>
+  filter(Par_ue == 30) |>
+  filter(O2_uM == 250) |>
+  ggplot() +
+  geom_line(aes(x = nm, y = SecondDeriv_2), linewidth  = 0.5) +
+  geom_line(aes(x = nm, y = SecondDeriv_250), linewidth = 0.1, colour = "red") +
+  facet_grid(rows = vars(Strain), cols = vars(Par_ue, O2_uM)) +
+  coord_cartesian(xlim = c(500, 600), ylim = c(-0.002, 0.001)) + 
+  theme_bw()   
+  
+  SpectraMeta |>
+  filter(Par_ue == 30) |>
+  filter(O2_uM == 250) |>
+  ggplot() +
+  geom_line(aes(x = nm, y = (SecondDeriv_2 - SecondDeriv_250)), colour = ID) +
+  facet_grid(rows = vars(Strain), cols = vars(Par_ue, O2_uM)) +
+  coord_cartesian(xlim = c(500, 600), ylim = c(-0.002, 0.001)) + 
+  theme_bw()   
 
 ```
+https://resources.amsbio.com/Datasheets/KC310100.pdf
+
 Spectra with MetaData
 ```{r spectra with metadata}
 SpectraMeta |>
@@ -331,6 +358,15 @@ SpectraMeta |>
   geom_line(aes(x = nm, y = ANorm_2 - ANorm_250), size = 0.5) +
   facet_grid(cols = vars(Strain), rows = vars(Par_ue, O2_uM, ID)) +
  # coord_cartesian(xlim = c(500, 600)) + 
+  theme_bw()   
+
+SpectraMeta |>
+  filter(Par_ue == 30) |>
+  filter(O2_uM == 250) |>
+  ggplot() +
+  geom_line(aes(x = nm, y = ANorm_2 - ANorm_250, colour = ID), size = 0.5) +
+  facet_grid(rows = vars(Strain), cols = vars(Par_ue, O2_uM)) + 
+  coord_cartesian(xlim = c(500, 600)) + 
   theme_bw()   
 ```
 

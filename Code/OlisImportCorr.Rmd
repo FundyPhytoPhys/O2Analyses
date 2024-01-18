@@ -350,6 +350,8 @@ SpectraMeta |>
 
 ```
 https://resources.amsbio.com/Datasheets/KC310100.pdf
+https://pubs.acs.org/doi/10.1021/cr400479b#
+Hint of Cytb oxidation/reduction?
 
 Spectra with MetaData
 ```{r spectra with metadata}

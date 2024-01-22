@@ -104,6 +104,10 @@ For SySl files 'raw' means spectra of undiluted culture; other spectra are 1 or 
 
 Ideally: we want to read and tidy some user-selected set of files taken from multiple dates
 
+Julie did a Pro99_baseline file for each set of OLIS measurements.
+So there should be a separate Pro99_baseline file for each measurement date.
+So in principle we should match Spectra with date-specific Pro99_baseline files.
+
 ```{r list available OLIS Files}
 OlisFiles <- list.files(path = DataIn, pattern = FileID, full.names = TRUE)
 OlisFiles
@@ -154,6 +158,7 @@ read.delim_plus <- function(flnm, filencode, delimiter, headerrows){read.delim(f
 
 
 # Import OLIS files
+Issue with Baseline vs. Pro99
 ```{r importspecific OLIS file}
 
 Spectra <- OlisFiles |> 
@@ -178,9 +183,20 @@ Spectra %>%
 Baseline <- Spectra |>
   filter(ID == "Pro99")
 
+Baseline %>%
+  ggplot() +
+  geom_point(aes(x = nm, y = A)) +
+  facet_grid(rows = vars(ID), cols = vars(Filename)) +
+  theme_bw()
+
+unique(Baseline$DateTime)
+
+#Incorrect matching b/t actual spectra and appropriate baselines...
 Spectra <- Spectra |>
-  filter(ID != "Pro99" ) |>
-  filter(ID != "Baseline") |>
+  filter(ID != "Pro99" )
+
+
+|>
   mutate(ABase = A - Baseline$A)  |>
   group_by(ID, O2_uM) |>
   mutate(ANorm = ABase/max(ABase)) |>

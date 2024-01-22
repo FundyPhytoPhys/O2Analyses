@@ -5,7 +5,7 @@ author: Douglas A. Campbell
 ---
 
 ##Introduction
-We use an optode to measure [O2] µmol l-1 in suspensions of phytoplankton.
+We use an optode to measure [O2] µmol L-1 in suspensions of phytoplankton.
 Changes in [O2] reflect (hopefully) oxygen evolution or oxygen consumption by the cell suspension.
 
 ## Materials and Methods

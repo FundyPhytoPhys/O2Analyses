@@ -63,24 +63,6 @@ Colours_nm
 
 ```
 
-This chunk reads in the MetaData catalog from googlesheets 
-```{r load Catalog, now as a google sheet}
-#  gs4_deauth()
-# # #deauthorizes access to googlesheet
-# # 
-#  MetaCatalog <- read_sheet(MetaDataURL) %>%
-# # # sheet is read in by sheet ID, obtained from the URL of the sheet.
-# # # read_sheet has an annoying "feature" to set the type of columns it can't parse to a list.
-# # # ggplot/dplyr doesn't like working with a dataframe of lists.
-# # # In this case WL is set to a list since some values are numbers, some are strings, some are blank.
-# # # To fix this, first drop all rows missing WL, then unlist.
-# # # Must first drop NA rows since unlist will collapse NULL lists, then the unlisted WL is a shorter length than original WL column, which mutate doesn't like.
-# # 
-#  drop_na(WL) %>%
-#    mutate(WL = unlist(WL))
-#  
-#  as.data.frame(MetaCatalog)
-```
 
 ```{r read imported O2, FRRf and meta data}
 SolFitsMeta <- readRDS(file.path(DataIn, paste(paste(Project, Run, FileID, sep = "_"), ".Rds", sep = ""))) |>
@@ -108,7 +90,7 @@ SolFitsMeta %>%
 
 SolFitsMeta %>%
   filter(Dark1s == 0) |>
-  filter(Strain == "MIT9313") |>
+  filter(Strain == "MED4") |>
   filter(LR_s < 65) |>
   ggplot() +
   geom_point(aes(x = ActPARCorr, y = qpOxbo, colour = MeasureO2_uM)) +
@@ -251,11 +233,11 @@ SolFitsMeta %>%
 
 SolFitsMeta %>%
   filter(LR_s < 70,
-         Strain == "MED4") |>
+         Strain == "MIT9313") |>
   ggplot() +
-  geom_point(aes(x = ActPARCorr, y =  ETRqpOxbo, colour = Ex_WL)) +
-  scale_colour_manual(values = Colours_nm) +
-  facet_grid(rows = vars(MeasureO2_uM), cols = vars(Par_ue, O2_uM)) +
+  geom_point(aes(x = ActPARCorr, y =  ETRqpOxbo, colour = MeasureO2_uM)) +
+  #scale_colour_manual(values = Colours_nm) +
+  facet_grid(rows = vars(Ex_WL), cols = vars(Par_ue, O2_uM)) +
   theme_bw()
 
 SolFitsMeta %>%
@@ -447,17 +429,18 @@ ETRModelsParam <- ETRModels |>
 
 ETRModelsParam
 
-
+ETRModelsParam |>
+  filter(AIClow == 1)
 ```
 
 Plot alpha, Pmax, Ek
 ```{r alpha and pmax}
 
-ModType = "LRCplatt"
+ModType = "LRC"
 
 ETRModelsParam |>
   filter(ModelType == ModType) |>
-  filter(std.error_Pmax < 0.5 * estimate_Pmax) |>
+  #filter(std.error_Pmax < 0.5 * estimate_Pmax) |>
   ggplot() +
   geom_point(aes(x = Par_ue, y = estimate_a, colour = MeasureO2_uM)) +
   geom_errorbar(aes(x = Par_ue, y = estimate_a, ymin = (estimate_a - std.error_a), ymax = (estimate_a + std.error_a), colour = MeasureO2_uM), width = 0.3) +
@@ -466,18 +449,19 @@ ETRModelsParam |>
   theme_bw()
 
 ETRModelsParam |>
-  filter(ModelType == ModType) |>
+  #filter(ModelType == ModType) |>
+  filter(AIClow == 1) |>
   filter(std.error_Pmax < 0.5 * estimate_Pmax) |>
   ggplot() +
   geom_point(aes(x = MeasureO2_uM, y = estimate_Pmax, colour = as.factor(Par_ue))) +
   geom_errorbar(aes(x = MeasureO2_uM, y = estimate_Pmax, ymin = (estimate_Pmax - std.error_Pmax), ymax = (estimate_Pmax + std.error_Pmax), colour = as.factor(Par_ue)), width = 0.3) +
   facet_grid(rows = vars(O2_uM), cols = vars(Strain)) + 
-  labs(title = ModType) +
+  #labs(title = ModType) +
   theme_bw()
 
 ETRModelsParam |>
   filter(ModelType == ModType) |>
-  filter(std.error_Pmax < 0.5 * estimate_Pmax) |>
+  #filter(std.error_Pmax < 0.5 * estimate_Pmax) |>
   ggplot() +
   geom_point(aes(x = MeasureO2_uM, y = estimate_Ek, colour = as.factor(Par_ue))) +
   geom_errorbar(aes(x = MeasureO2_uM, y = estimate_Ek, ymin = (estimate_Ek - std.error_Ek), ymax = (estimate_Ek + std.error_Ek), colour = as.factor(Par_ue)), width = 0.3) +

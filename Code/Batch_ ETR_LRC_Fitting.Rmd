@@ -45,6 +45,7 @@ ChlTurner <- "https://docs.google.com/spreadsheets/d/13mQm0B3siS65UuGjNdzvpHFomf
 ```{r libraries}
 library(tidyverse)
 library(lubridate)
+library(photobiology) #photobiology::w_length2rgb
 # library(googlesheets4)
 # library(googledrive)
 library(minpack.lm) #non linear model fitting
@@ -55,7 +56,7 @@ library(broom)
 
 ```{r set colours}
 Wavelengths_nm = c(445, 470, 505, 535, 590)
-Colours_nm = c(w_length2rgb(Wavelengths_nm[1]), w_length2rgb(Wavelengths_nm[2]), w_length2rgb(Wavelengths_nm[3]), w_length2rgb(Wavelengths_nm[4]), w_length2rgb(Wavelengths_nm[5]))
+Colours_nm = c(w_length2rgb(Wavelengths_nm[1]), w_length2rgb(Wavelengths_nm[2]), w_length2rgb(Wavelengths_nm[3]), photobiology::w_length2rgb(Wavelengths_nm[4]), w_length2rgb(Wavelengths_nm[5]))
 
 names(Colours_nm) <- Wavelengths_nm
 Colours_nm
@@ -69,6 +70,7 @@ SolFitsMeta <- readRDS(file.path(DataIn, paste(paste(Project, Run, FileID, sep =
   mutate(Alp12QA = Alp1QA + Alp2QA)
 
 ```
+
 SolFitsMeta variables
 ```{r solfitsmeta variables}
 colnames(SolFitsMeta)
@@ -235,9 +237,9 @@ SolFitsMeta %>%
   filter(LR_s < 70,
          Strain == "MIT9313") |>
   ggplot() +
-  geom_point(aes(x = ActPARCorr, y =  ETRqpOxbo, colour = MeasureO2_uM)) +
-  #scale_colour_manual(values = Colours_nm) +
-  facet_grid(rows = vars(Ex_WL), cols = vars(Par_ue, O2_uM)) +
+  geom_point(aes(x = O2_uM, y =  ETRqpOxbo, colour = MeasureO2_uM)) +
+  scale_colour_manual(values = Colours_nm) +
+  facet_grid(rows = vars(Ex_WL), cols = vars(Par_ue)) +
   theme_bw()
 
 SolFitsMeta %>%
@@ -449,13 +451,14 @@ ETRModelsParam |>
   theme_bw()
 
 ETRModelsParam |>
-  #filter(ModelType == ModType) |>
-  filter(AIClow == 1) |>
-  filter(std.error_Pmax < 0.5 * estimate_Pmax) |>
+  filter(ModelType == ModType) |>
+  filter(Strain != "SS120") |>
+  #filter(AIClow == 1) |>
+  filter(std.error_Pmax < 1 * estimate_Pmax) |>
   ggplot() +
-  geom_point(aes(x = MeasureO2_uM, y = estimate_Pmax, colour = as.factor(Par_ue))) +
-  geom_errorbar(aes(x = MeasureO2_uM, y = estimate_Pmax, ymin = (estimate_Pmax - std.error_Pmax), ymax = (estimate_Pmax + std.error_Pmax), colour = as.factor(Par_ue)), width = 0.3) +
-  facet_grid(rows = vars(O2_uM), cols = vars(Strain)) + 
+  geom_point(aes(x = MeasureO2_uM, y = estimate_Pmax, colour = as.factor(O2_uM))) +
+  geom_errorbar(aes(x = MeasureO2_uM, y = estimate_Pmax, ymin = (estimate_Pmax - std.error_Pmax), ymax = (estimate_Pmax + std.error_Pmax), colour = as.factor(O2_uM)), width = 0.3) +
+  facet_grid(rows = vars(Par_ue), cols = vars(Strain)) + 
   #labs(title = ModType) +
   theme_bw()
 

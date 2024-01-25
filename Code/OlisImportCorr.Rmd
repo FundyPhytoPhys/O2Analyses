@@ -230,8 +230,8 @@ Spectra <- Spectra |>
 #range rolling window variables; be careful with different data sets
  NmperRow <- ((Baseline$nm[length(Baseline$nm)]- Baseline$nm[1]) +1)/nrow(Baseline)
 
-FirstRange <- 10
-SecondRange <- 10
+FirstRange <- 20
+SecondRange <- 20
 
 Spectra <- Spectra %>%
   group_by(Filename) %>%

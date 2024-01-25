@@ -341,6 +341,16 @@ SpectraMeta |>
   theme_bw()   
 
 SpectraMeta |>
+  filter(Strain != "SS120") |>
+  filter(Par_ue == 90) |>
+  ggplot() +
+  geom_point(aes(x = nm, y = SecondDeriv_2), size  = 0.5) +
+  geom_point(aes(x = nm, y = SecondDeriv_250), size = 0.1, colour = "red") +
+  facet_grid(rows = vars(Strain), cols = vars(Par_ue, O2_uM)) +
+  #coord_cartesian(xlim = c(500, 600)) + 
+  theme_bw()   
+
+SpectraMeta |>
   filter(Strain == "MED4") |>
   #filter(Par_ue != 180) |>
   filter(ID != "JuNa1200") |>
@@ -348,7 +358,7 @@ SpectraMeta |>
   geom_line(aes(x = nm, y = SecondDeriv_2), linewidth  = 0.5) +
   geom_line(aes(x = nm, y = SecondDeriv_250), linewidth = 0.1, colour = "red") +
   facet_grid(rows = vars(O2_uM), cols = vars(Par_ue)) +
-  coord_cartesian(xlim = c(500, 600)) + 
+  #coord_cartesian(xlim = c(500, 600)) + 
   theme_bw() 
   
   SpectraMeta |>
@@ -357,7 +367,7 @@ SpectraMeta |>
   ggplot() +
   geom_line(aes(x = nm, y = SecondDeriv_2), linewidth  = 0.5) +
   geom_line(aes(x = nm, y = SecondDeriv_250), linewidth = 0.1, colour = "red") +
-  facet_grid(rows = vars(Strain), cols = vars(Par_ue, O2_uM)) +
+  facet_grid(rows = vars(Strain, ID), cols = vars(Par_ue, O2_uM)) +
   coord_cartesian(xlim = c(500, 600), ylim = c(-0.002, 0.001)) + 
   theme_bw()   
   

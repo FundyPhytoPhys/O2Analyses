@@ -377,6 +377,7 @@ line_colours = c("ETRqpOxbo" = "green",
             "residual" = "red")
 
 ETRModels %>%
+  filter(Strain != "SS120") |>
   unnest(LRC_Augment) %>%
   ggplot(aes(x = ActPARCorr)) +
   geom_point(aes(y = ETRqpOxbo, colour =  "ETRqpOxbo")) +
@@ -473,7 +474,15 @@ ETRModelsParam |>
   theme_bw()
 ```
 
+Probably need an ANOVA of estimate_Pmax
+```{r ANOVA comparing models}
 
+ETRANOVA <- ETRModels |>
+  filter(Strain != "SS120") |>
+  select(Strain, Par_ue, O2_uM, MeasureO2_uM, LRC_model) |>
+  group_by(Strain, Par_ue, O2_uM) |>
+  anova(LRC_model)
+```
 
 
 

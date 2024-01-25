@@ -51,6 +51,7 @@ library(photobiology) #photobiology::w_length2rgb
 library(minpack.lm) #non linear model fitting
 library(broom)
 
+
 ```
 
 
@@ -474,44 +475,51 @@ ETRModelsParam |>
   theme_bw()
 ```
 
-Probably need an ANOVA of estimate_Pmax, and/or an ANOVA comparison of whether MeasureO2_uM affects the LRC model within a strain (and possibly within a growth light and a growth O2?)
+Probably need an ANOVA of estimate_Pmax vs. MeasureO2_uM, and/or a comparison of whether MeasureO2_uM affects the LRC model fit within a strain (and possibly within a growth light and a growth O2?)
 https://stackoverflow.com/questions/45514426/run-multiple-model-and-save-model-comparison-results-in-dataframe-in-r
-```{r ANOVA comparing models}
 
-ETRanova <- ETRModels |>
-  filter(Strain != "SS120") |>
-  select(Strain, Par_ue, O2_uM, MeasureO2_uM, LRC_model) |>
-  pivot_wider(names_from = MeasureO2_uM, values_from = LRC_model) |>
-  rename(O2_uM25 = `25`,
-         O2_uM2 = `2`,
-         O2_uM250 = `250`,
-         GrowthO2_uM = O2_uM) |>
-  #mutate(LRCanova = map2(O2_uM25, O2_uM2, ~anova(.x, .y))) 
-  mutate(LRCanova = pmap(.l = list(O2_uM25, O2_uM2, O2_uM250), .f = anova()))
+```{r comparing models across [O2]}
 
+# ETRanova <- ETRModels |>
+#   filter(Strain != "SS120") |>
+#   select(Strain, Par_ue, O2_uM, MeasureO2_uM, LRC_model) |>
+#   pivot_wider(names_from = MeasureO2_uM, values_from = LRC_model) |>
+#   rename(O2_uM25 = `25`,
+#          O2_uM2 = `2`,
+#          O2_uM250 = `250`,
+#          GrowthO2_uM = O2_uM) %>% #need old pipe to use . within pmap
+#   mutate(LRC_25_2 = map2(O2_uM25, O2_uM2, stats::anova)) |>
+#   mutate(LRC_25_250 = map2(O2_uM25, O2_uM250, ~stats::anova(.x, .y))) 
+#   #mutate(LRCanova = pmap(., list(O2_uM25 = O2_uM25, O2_uM2 =  O2_uM2, O2_uM250 = O2_uM250),  stats::anova(O2_uM25, O2_uM2, O2_uM250)))
+#   #anova does not work to compare 3 models at time; only two by two
+# 
+# 
+#   # nest(.by = c(Strain, Par_ue, O2_uM)) |>
+#   # mutate(LRC_anova = map2())
+#   
+# 
+# anova(LRC_model)
+# 
+# 
+# library(tidyverse)
+# library(broom)
+# diamonds %>% 
+#         group_by(cut) %>% 
+#            nest() %>% 
+#            mutate(
+#                model1 = map(data, ~lm(price~carat, data=.)),
+#                model2 = map(data, ~lm(price~carat+depth, data=.))
+#            ) %>% 
+#            mutate(anova = map2(model1, model2, ~anova(.x,.y))) %>% 
+#         mutate(tidy_anova = map(anova, broom::tidy)) %>% 
+#         mutate(p_val = map_dbl(tidy_anova, ~.$p.value[2])) %>%
+#         select(p_val)
 
-  # nest(.by = c(Strain, Par_ue, O2_uM)) |>
-  # mutate(LRC_anova = map2())
-  
-
-anova(LRC_model)
-
-
-library(tidyverse)
-library(broom)
-diamonds %>% 
-        group_by(cut) %>% 
-           nest() %>% 
-           mutate(
-               model1 = map(data, ~lm(price~carat, data=.)),
-               model2 = map(data, ~lm(price~carat+depth, data=.))
-           ) %>% 
-           mutate(anova = map2(model1, model2, ~anova(.x,.y))) %>% 
-        mutate(tidy_anova = map(anova, broom::tidy)) %>% 
-        mutate(p_val = map_dbl(tidy_anova, ~.$p.value[2])) %>%
-        select(p_val)
 ```
 
+```{r Compare Pmax across MeasureO2_uM}
+
+```
 
 
 

@@ -190,7 +190,7 @@ Baseline <- Spectra |>
   select(-c(Filename, DateTime, Time)) |>
   pivot_wider(names_from = Date, values_from = A)
 
-#Incorrect matching b/t actual spectra and appropriate baselines...
+#Correct matching b/t actual spectra and appropriate baselines...
 Spectra <- Spectra |>
   filter(ID != "Pro99" ) |>
   group_by(Filename) |>

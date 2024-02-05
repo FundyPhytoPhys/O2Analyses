@@ -3,11 +3,21 @@ title: "ETR LRC Fitting"
 author: Douglas A. Campbell
 ---
 
-##Introduction
+# Introduction
 We import tidied data from Solisense FRRf from suspensions of phytoplankton.
 Changes in fluorescence parameters reflect photophysiology of  the cell suspension.
 
-## Materials and Methods
+# Decisions
+Caption text can 'live' as an element of a ggplot object, OR
+as a section of the chunk that generates the ggplot object, OR
+as formatted paragraph in the .Rmd, OR, possibly,
+as a formatted section with auto-numbering in a googldoc
+
+But, captions do not just 'float' as unformatted, unnumbered text b/c they must accompany their relevant figure.
+Our group has usually used:
+as a section of the chunk that generates the ggplot object, OR
+
+# Materials and Methods
 
 This .Rmd Rworkbook imports FRRf and Metadata in .Rds after import through a  SoliSenseImport.  
 
@@ -204,6 +214,7 @@ SolFitsMeta %>%
   facet_grid(rows = vars(MeasureO2_uM), cols = vars(Strain, O2_uM, Par_ue)) +
   theme_bw()
 ```
+
 data exploration 
 actPARcorr <- umol photons m^-2 s^-1 of actinic light applied to the sample.
 qpOxbo <- fraction of PSII open for photosynthesis
@@ -369,7 +380,7 @@ ETRModels <- SolFitsMeta %>%
 ```
 
 # Plot models
-```{r plot models}
+```{r LRC_plot}
 # Adding legend for lines
 #https://community.rstudio.com/t/adding-manual-legend-to-ggplot2/41651/2
 
@@ -390,6 +401,12 @@ ETRModels %>%
   scale_x_continuous(expand = c(0,0)) +
   facet_grid(cols = vars(Strain, Par_ue, O2_uM), rows = vars(MeasureO2_uM)) +
   theme_bw()
+```
+
+
+```{r LRCplatt_plot, fig.cap = "Light response curves of PSII electron transport (e- PSII-1 s-1) for three *Prochlorococcus* strains after growth under different combinations of light level and oxygen concentration. The green points represent the experimental data, the black line denotes the fitted model (CITATION), and the red points denote residual values.", out.height="800pt", out.width="100%", echo = FALSE}
+
+#Will need to add proper units on X & Y axis, but not YET
 
 ETRModels %>%
   unnest(LRCplatt_Augment) %>%
@@ -398,16 +415,20 @@ ETRModels %>%
   geom_line(aes(y = `.fitted`, colour = "fitted")) +
   geom_point(aes(y = `.resid`, colour = "residual"), size = 0.5) +
   geom_hline(yintercept = 0, linetype = "dashed") + 
-  labs(colour = "Legend", title = "LRCplatt") + 
+  labs(colour = "Legend", title = "Light response curves of PSII electron transport for *Prochlorococcus*") + 
   scale_colour_manual(values = line_colours) +
   scale_x_continuous(expand = c(0,0)) +
   facet_grid(cols = vars(Strain, Par_ue, O2_uM), rows = vars(MeasureO2_uM)) +
   theme_bw()
 
+#knitr::include_graphics(file.path( FiguresFP,"Map_Study_Sites.png"))
+#```
 ```
-caption:Light response curves of photosynthetic activity. 
-this plot shows the light response curves of photosynthetic activity for three *prochlorococcus* strains under different light intensities and oxygen concentrations. the green points represent the experimental data, the black line denotes the fitted model, and the red points denote residual values.
-nlsLM generates AIC accessed with broom::glance
+
+
+
+## nlsLM generates AIC accessed with broom::glance
+
 ```{r aic comparisons}
 #https://www.scribbr.com/statistics/akaike-information-criterion/
 
@@ -475,8 +496,12 @@ ETRModelsParam |>
   labs(title = ModType) +
   theme_bw()
 ```
-caption: Analysis of Photosynthetic Parameters 
-This plot presents an analysis of phtotosynthetic parameters derived from the previous light response curve plot. the estimates of maximum photosynthetic rate (Pmax) are showed against varying oxygen concentrations, with error bars representing the standard error. Data is grouped by strains and light intensities, providing insights into the relationship between oxygen concentration and Pmax across different experimental conditions. 
+
+To include caption in chunk label, chunk name has to be 1 single 'word' of continuous characters; no spaces, and each figure has to be in its own chunk.
+
+caption: Analysis of Maximum Electron Transport Rate for *Prochlorococcus*
+Analyses of maximum photosynthetic rate (Pmax),  derived from light response curve fits (XXXRefer to Figure). Pmax is plotted vs. measurement oxygen concentrations, with error bars representing the standard error of the estimate. Data is grouped by strain and growth light level.
+
 Probably need an ANOVA of estimate_Pmax vs. MeasureO2_uM, and/or a comparison of whether MeasureO2_uM affects the LRC model fit within a strain (and possibly within a growth light and a growth O2?)
 https://stackoverflow.com/questions/45514426/run-multiple-model-and-save-model-comparison-results-in-dataframe-in-r
 
@@ -521,109 +546,6 @@ https://stackoverflow.com/questions/45514426/run-multiple-model-and-save-model-c
 ```
 
 ```{r Compare Pmax across MeasureO2_uM}
-
-```
-
-
-
-
-# Plots showing fit parameters
-## LRCbeta model with 'photoinhibition' of O2 evolution under increasing light.
-```{r plot LRCbeta parameters}
-# LRCbeta_param_colours = line_colours = c("umolO2_mmolChl1_s1" = "green",
-#                                  "alpha" = "green",
-#                                  "fitted" = "black",
-#                                  "resid" = "red",
-#                                  "beta" = "orange",
-#                                  "Ek" = "blue",
-#                                  "Respiration" = "darkred",
-#                                  "Pmax" = "darkgreen",
-#                                  "O2Comp" = "red",
-#                                  "dR" = "darkred")
-#   
-# a_fun <- function(I, a = as.numeric(LRCbeta_Param2$a[1]), R = as.numeric(LRCbeta_Param2$R[1])){(I * a) - R
-# }
-# 
-# b_fun <- function(I, b = as.numeric(LRCbeta_Param2$b[1]), g = as.numeric(LRCbeta_Param2$g[1]), R = as.numeric(LRCbeta_Param2$R[1])){(I * (1-(b*I))/(1 + (g*I))) - R
-# }
-# 
-# r_fun <- function(R = as.numeric(LRCdR_Param2$R[1]), I, d){R + (R * I * d)
-#   }
-# 
-# 
-# O2Models %>%
-#   unnest(LRCbeta_Predict) %>%
-#   mutate(R = LRCbeta_Param2$R[1],
-#          PMax_R = LRCbeta_Param2$Pmax_R[1],
-#          Ek = LRCbeta_Param2$EK[1],
-#          O2Comp = LRCbeta_Param2$O2Comp[1],
-#          alpha = a_fun(I = umolphotons_m2_s1, a = as.numeric(LRCbeta_Param2$a[1])),
-#          beta = b_fun(I = umolphotons_m2_s1, b = as.numeric(LRCbeta_Param2$b[1]), g = as.numeric(LRCbeta_Param2$g[1]), R = R),
-#          dR = r_fun(I = umolphotons_m2_s1, d = 0.001)) %>%
-#   ggplot(aes(x = umolphotons_m2_s1)) +
-#   xlim(0, max(as.numeric(O2Data$umolphotons_m2_s1) + 20, na.rm = TRUE)) +
-#   ylim(min(as.numeric(O2Data$umolO2_mmolChl1_s1), na.rm = TRUE) - 20, max(as.numeric(O2Data$umolO2_mmolChl1_s1) + 20, na.rm = TRUE)) +
-#   geom_point(aes(y = umolO2_mmolChl1_s1, colour =  "umolO2_mmolChl1_s1")) +
-#   geom_line(aes(y = `.fitted`, colour = "fitted")) +
-#   geom_hline(yintercept = 0, linetype = "dashed") + 
-#   geom_line(aes(y = -R, colour = "Respiration")) +
-#   geom_line(aes(y = PMax_R, colour = "Pmax")) +
-#   geom_line(aes(y = alpha, colour = "alpha")) +
-#   geom_line(aes(y = beta, colour = "beta"), linetype = "dotted") +
-#   geom_line(aes(x = Ek, y = umolO2_mmolChl1_s1, colour = "Ek")) +
-#   geom_line(aes(x = O2Comp, y = umolO2_mmolChl1_s1, colour = "O2Comp")) +
-#   labs(title = "LRCbeta", subtitle = Operator, colour = "Legend") + 
-#   scale_colour_manual(values = LRCbeta_param_colours) +
-#   scale_x_continuous(expand = c(0,0)) +
-#   theme_bw()
-# 
-# ```
-# 
-# ## LRCdR model with acceleration of respiration under increasing light.
-# ```{r plot LRCdR parameters}
-# 
-# # function with light-dependent acceleration of Respiration
-# # lrc_dr <- function(I, a, Pmax, R, d){((a * I * Pmax)/((a*I) + Pmax)) - (R + (R * I^2 * d))
-# # }
-# 
-# LRCdR_param_colours = line_colours = c("umolO2_mmolChl1_s1" = "green",
-#                                  "alpha" = "green",
-#                                  "fitted" = "black",
-#                                  "Ek" = "blue",
-#                                  "Pmax" = "darkgreen",
-#                                  "O2Comp" = "red",
-#                                  "dR" = "darkred")
-#   
-# a_fun <- function(I, a = as.numeric(LRCbeta_Param2$a[1]), R = as.numeric(LRCbeta_Param2$R[1])){(I * a) - R
-# }
-# 
-# r_fun <- function(R = as.numeric(LRCdR_Param2$R[1]), I, d){R + (R * I^2 * d)
-# }
-# 
-# 
-# O2Models %>%
-#   unnest(LRCdR_Predict) %>%
-#   mutate(R = LRCdR_Param2$R[1],
-#          PMax_R = LRCdR_Param2$Pmax_R[1],
-#          Ek = LRCdR_Param2$EK[1],
-#          O2Comp = LRCdR_Param2$O2Comp[1],
-#          alpha = a_fun(I = umolphotons_m2_s1, a = as.numeric(LRCdR_Param2$a[1])),
-#          dR = r_fun(I = umolphotons_m2_s1, d = as.numeric(LRCdR_Param2$d[1]))) %>%
-#   ggplot(aes(x = umolphotons_m2_s1)) +
-#   # xlim(0, max(as.numeric(O2Data$umolphotons_m2_s1), na.rm = TRUE)) +
-#   # ylim(min(as.numeric(O2Data$umolO2_mmolChl1_s1) * 2, na.rm = TRUE) - 20, max(as.numeric(O2Data$umolO2_mmolChl1_s1) *2, na.rm = TRUE)) +
-#   geom_point(aes(y = umolO2_mmolChl1_s1, colour =  "umolO2_mmolChl1_s1")) +
-#   geom_line(aes(y = `.fitted`, colour = "fitted")) +
-#   geom_hline(yintercept = 0, linetype = "dashed") + 
-#   geom_line(aes(y = PMax_R, colour = "Pmax")) +
-#   geom_line(aes(y = alpha, colour = "alpha")) +
-#   geom_line(aes(y = -dR, colour = "dR"), linetype = "dashed") +
-#   geom_line(aes(x = Ek, y = umolO2_mmolChl1_s1, colour = "Ek")) +
-#   geom_line(aes(x = O2Comp, y = umolO2_mmolChl1_s1, colour = "O2Comp")) +
-#   labs(title = "LRCdR", subtitle = Operator, colour = "Legend") + 
-#   scale_colour_manual(values = LRCdR_param_colours) +
-#   scale_x_continuous(expand = c(0,0)) +
-#   theme_bw()
 
 ```
 

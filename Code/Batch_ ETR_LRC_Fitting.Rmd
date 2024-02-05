@@ -433,6 +433,7 @@ ETRModels %>%
 #https://www.scribbr.com/statistics/akaike-information-criterion/
 
 #need to remove 'null' models to facilitate conversion of AIC from 'list' derived from 'Glance' column, to dbl
+
 ETRModelsParam <- ETRModels |>
   select(-c(data)) |>
   pivot_longer(cols = -c(Project, Strain, Ex_WL, Par_ue, O2_uM, MeasureO2_uM)) |>
@@ -457,6 +458,13 @@ ETRModelsParam
 
 ETRModelsParam |>
   filter(AIClow == 1)
+
+ETRModelsParam |>
+  filter(ModelType == "LRC") |>
+  mutate(ETR_GrowthPAR = lrc(I = Par_ue, a = estimate_a, Pmax = estimate_Pmax))
+
+# lrc <- function(I, a, Pmax){((a * I * Pmax)/((a*I) + Pmax))
+# }
 ```
 
 Plot alpha, Pmax, Ek
@@ -494,6 +502,17 @@ ETRModelsParam |>
   geom_errorbar(aes(x = MeasureO2_uM, y = estimate_Ek, ymin = (estimate_Ek - std.error_Ek), ymax = (estimate_Ek + std.error_Ek), colour = as.factor(Par_ue)), width = 0.3) +
   facet_grid(rows = vars(O2_uM), cols = vars(Strain)) + 
   labs(title = ModType) +
+  theme_bw()
+
+ETRModelsParam |>
+  filter(ModelType == "LRC") |>
+  filter(Strain != "SS120") |>
+  mutate(ETR_GrowthPAR = lrc(I = Par_ue, a = estimate_a, Pmax = estimate_Pmax)) |>
+  ggplot() +
+  geom_point(aes(x = MeasureO2_uM, y = ETR_GrowthPAR, colour = as.factor(Par_ue))) +
+  #geom_errorbar(aes(x = MeasureO2_uM, y = estimate_Ek, ymin = (estimate_Ek - std.error_Ek), ymax = (estimate_Ek + std.error_Ek), colour = as.factor(Par_ue)), width = 0.3) +
+  facet_grid(rows = vars(O2_uM), cols = vars(Strain)) + 
+  labs(title = "LRC") +
   theme_bw()
 ```
 

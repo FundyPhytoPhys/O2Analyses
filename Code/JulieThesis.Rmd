@@ -28,6 +28,11 @@ Bath_ETR_LRC_Fitting.Rmd
 
 {r PmaxPlot, fig.cap = "Analysis of Maximum Electron Transport Rate for *Prochlorococcus*. Analyses of maximum photosynthetic rate (Pmax),  derived from light response curve fits (XXXRefer to Figure). Pmax is plotted vs. measurement oxygen concentrations, with error bars representing the standard error of the estimate. Data is grouped by strain and growth light level.", out.height="800pt", out.width="100%", echo = FALSE}
 
+OlisImportCorr.Rmd
+
+{r SecondDerivPlot, Fig cap = "This plot illustrates the spectral data obtained from an OLIS spectrophotometer for strain MED4 under varying oxygen concentrations (O2_uM) and photosynthetically active radiation (PAR_ue) levels.The black lines represent the second derivative spectra at 25 and 250 µM oxygen concentration, while the red lines depict the second derivative spectra at 25 and 250 µM oxygen concentration. ", out.height="800pt", out.width="100%", echo = FALSE}
+
+!!! this one i need explaining of what the lines are !!!
 
 
 DualPamPlotting.Rmd

@@ -361,7 +361,7 @@ SpectraMeta |>
   theme_bw()  
 ```
 
-```{r SecondDerivPlot, Fig cap = "This plot illustrates the spectral data obtained from an OLIS spectrophotometer for strain MED4 under varying oxygen concentrations (O2_uM) and photosynthetically active radiation (PAR_ue) levels.The black lines represent the second derivative spectra at 25 and 250 µM oxygen concentration, while the red lines depict the second derivative spectra at 25 and 250 µM oxygen concentration. ", out.height="800pt", out.width="100%", echo = FALSE}
+```{r SecondDerivPlot, Fig cap = "Spectrophotometric Analysis of Strain MED4. This plot illustrates the spectral data obtained from an OLIS spectrophotometer for strain MED4 under varying oxygen concentrations (O2_uM) and photosynthetically active radiation (PAR_ue) levels.The black lines represent the second derivative spectra at 25 and 250 µM oxygen concentration, while the red lines depict the second derivative spectra at 25 and 250 µM oxygen concentration. ", out.height="800pt", out.width="100%", echo = FALSE}
 SpectraMeta |>
   filter(Strain == "MED4") |>
   #filter(Par_ue != 180) |>

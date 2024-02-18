@@ -481,7 +481,9 @@ ETRModelsParam |>
   facet_grid(rows = vars(O2_uM), cols = vars(Strain)) + 
   labs(title = ModType) +
   theme_bw()
+```
 
+```{r PmaxPlot, fig.cap = "Analysis of Maximum Electron Transport Rate for *Prochlorococcus*. Analyses of maximum photosynthetic rate (Pmax),  derived from light response curve fits (XXXRefer to Figure). Pmax is plotted vs. measurement oxygen concentrations, with error bars representing the standard error of the estimate. Data is grouped by strain and growth light level.", out.height="800pt", out.width="100%", echo = FALSE}
 ETRModelsParam |>
   filter(ModelType == ModType) |>
   filter(Strain != "SS120") |>
@@ -493,7 +495,10 @@ ETRModelsParam |>
   facet_grid(rows = vars(Par_ue), cols = vars(Strain)) + 
   #labs(title = ModType) +
   theme_bw()
+``` 
 
+
+``` {r} 
 ETRModelsParam |>
   filter(ModelType == ModType) |>
   #filter(std.error_Pmax < 0.5 * estimate_Pmax) |>

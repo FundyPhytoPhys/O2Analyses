@@ -441,7 +441,9 @@ DualPAMMeta |>
   geom_smooth(aes(x = qP, y = (YI)), method = "lm") +
   facet_grid(cols = vars(MeasureO2_uM), rows = vars(Strain, Par_ue, O2_Category)) +
   theme_bw()
+```
 
+``` {r DualPamLRC, fig.cap = "Light response curves of PSI electron transport (e- PSI-1 s-1) for two *Prochlorococcus* strains after growth under different combinations of light level and oxygen concentration. The blue and red points represent the experimental data.", out.height="800pt", out.width="100%", echo = FALSE}}
 DualPAMMeta |>
   filter(MeasureO2_uM %in% c(2, 25, 250)) |>
   #filter(!(SampleID %in% NoO2Runs)) |>

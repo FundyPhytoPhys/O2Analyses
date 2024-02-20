@@ -16,7 +16,8 @@ csl: plos-one.csl
 ---
 
 ## Results 
-
+find code to insert figures. 
+also sinces its not saved as png how do i put it into a poster?
 
 
 ## Discussion

@@ -1,19 +1,19 @@
 ---
-title: Generate Reproducible & Live HTML and PDF Conference Posters Using RMarkdown
+title: Growth, Functional and Bioinformatic Analyses of Photosynthetic Strategies of Prochlorococcus Strains
 author:
-  - name: Julie Nadeau
+  - name: '**Julie Nadeau**'
     affil: 1
-    orcid: '0000-0002-1099-3857'
-  - name: Another G. Author
-    affil: 2
-affiliation:
+    main: true
+  - name: Mireille Savoie
+    affil: 1
+  - name: Douglas Campbell
+    affil: 1
+affiliation: 
   - num: 1
-    address: Department of Earth Science, Brock University
-  - num: 2
-    address: Department of Graphics and Layouts, University of Posters; Canada
+    address: Department of Biochemistry, Mount Allison University
 column_numbers: 3
-logoright_name: https&#58;//raw.githubusercontent.com/brentthorne/posterdown/master/images/betterhexlogo.png
-logoleft_name: https&#58;//raw.githubusercontent.com/brentthorne/posterdown/master/images/betterhexlogo.png
+#logoright_name: https&#58;//raw.githubusercontent.com/brentthorne/posterdown/master/images/betterhexlogo.png
+#logoleft_name: https&#58;//raw.githubusercontent.com/brentthorne/posterdown/master/images/betterhexlogo.png
 output: 
   posterdown::posterdown_html:
     self_contained: false
@@ -25,14 +25,26 @@ knitr::opts_chunk$set(echo = FALSE)
 ```
 
 # Introduction
+Photosynthesis is the fundamental process in the biosphere. 
 
-Welcome to `posterdown` ! This is my attempt to provide a semi-smooth workflow for those who wish to take their R Markdown skills to the conference world. Most features from R Markdown are available in this package such as Markdown section notation, figure captioning, and even citations like this one [@R-rmarkdown]. The rest of this example poster will show how you can insert typical conference poster features into your own document. 
+*Prochlorococcus*:
+<p class="forceBreak"></p>
+- Photosynthetic unicellular cyanobacterium 
+- Important in global carbon cycling
+- Contributes significantly to primary production in the open oceans. 
+- Strains occupy a wide range of habitats.
+- With climate change, ocean warming and lower nutrients,    Prochlorococcus is expected to benefit, increasing its distribution and global abundance.
+
+We use:
+<p class="forceBreak"></p>
+- Bioptical measures of growth and photosynthesis
+- Bioinformatics analysis of strain capacities
 
 ## Objectives
 
-1. Easy to use reproducible poster design. 
-2. Integration with R Markdown.
-3. Easy transition from `posterdown` to `pagedown` report or manuscript documents [@R-pagedown].
+1. Determine whether the cells are constitutively able to accomodate changes in oxygen, or whether they acclimate over a period of time to different levels of oxygen.
+2. Investigate photosynthetic strategies of *Prochlorococcus* strains.
+3. To provide insights into the ecological niches of *Prochlorococcus* strains.
 
 # Methods
 

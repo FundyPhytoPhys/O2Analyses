@@ -78,7 +78,8 @@ Colours_nm
 
 ```{r read imported O2, FRRf and meta data}
 SolFitsMeta <- readRDS(file.path(DataIn, paste(paste(Project, Run, FileID, sep = "_"), ".Rds", sep = ""))) |>
-  mutate(Alp12QA = Alp1QA + Alp2QA)
+  mutate(Alp12QA = Alp1QA + Alp2QA) %>%
+  filter(Strain != "SS120")
 
 ```
 
@@ -254,14 +255,14 @@ SolFitsMeta %>%
   facet_grid(rows = vars(Ex_WL), cols = vars(Par_ue)) +
   theme_bw()
 
-SolFitsMeta %>%
-  filter(LR_s < 70,
-         Strain == "SS120") |>
-  ggplot() +
-  geom_point(aes(x = ActPARCorr, y =  ETRqpOxbo, colour = Ex_WL)) +
-  scale_colour_manual(values = Colours_nm) +
-  facet_grid(rows = vars(MeasureO2_uM), cols = vars(Par_ue, O2_uM)) +
-  theme_bw()
+# SolFitsMeta %>%
+#   filter(LR_s < 70,
+#          Strain == "SS120") |>
+#   ggplot() +
+#   geom_point(aes(x = ActPARCorr, y =  ETRqpOxbo, colour = Ex_WL)) +
+#   scale_colour_manual(values = Colours_nm) +
+#   facet_grid(rows = vars(MeasureO2_uM), cols = vars(Par_ue, O2_uM)) +
+#   theme_bw()
 
 SolFitsMeta %>%
   filter(LR_s < 70,
@@ -389,14 +390,13 @@ line_colours = c("ETRqpOxbo" = "green",
             "residual" = "red")
 
 ETRModels %>%
-  filter(Strain != "SS120") |>
-  unnest(LRC_Augment) %>%
+  unnest(LRCplatt_Augment) %>%
   ggplot(aes(x = ActPARCorr)) +
   geom_point(aes(y = ETRqpOxbo, colour =  "ETRqpOxbo")) +
   geom_line(aes(y = `.fitted`, colour = "fitted")) +
   geom_point(aes(y = `.resid`, colour = "residual"), size = 0.5) +
   geom_hline(yintercept = 0, linetype = "dashed") + 
-  labs(colour = "Legend", title = "LRC") + 
+  labs(colour = "Legend", title = "LRCplatt") + 
   scale_colour_manual(values = line_colours) +
   scale_x_continuous(expand = c(0,0)) +
   facet_grid(cols = vars(Strain, Par_ue, O2_uM), rows = vars(MeasureO2_uM)) +
@@ -404,12 +404,12 @@ ETRModels %>%
 ```
 
 
-```{r LRCplatt_plot, fig.cap = "Light response curves of PSII electron transport (e- PSII-1 s-1) for three *Prochlorococcus* strains after growth under different combinations of light level and oxygen concentration. The green points represent the experimental data, the black line denotes the fitted model (CITATION), and the red points denote residual values.", out.height="800pt", out.width="100%", echo = FALSE}
+```{r LRC_plot, fig.cap = "PSII electron transport (e- PSII-1 s-1) vs measurement light (units) for *Prochlorococcus* strains MED4 (Clade ...) and MIT9313 (Clade LLIII) after growth under different combinations of light level (30, 90, 180 units) and oxygen concentration (2, 25, 250 uM). The green points represent the experimental data, the black line denotes the fitted model (CITATION), and the red points denote residuals.", out.height="800pt", out.width="100%", echo = FALSE}
 
 #Will need to add proper units on X & Y axis, but not YET
 
 ETRModels %>%
-  unnest(LRCplatt_Augment) %>%
+  unnest(LRC_Augment) %>%
   ggplot(aes(x = ActPARCorr)) +
   geom_point(aes(y = ETRqpOxbo, colour =  "ETRqpOxbo")) +
   geom_line(aes(y = `.fitted`, colour = "fitted")) +
@@ -419,6 +419,39 @@ ETRModels %>%
   scale_colour_manual(values = line_colours) +
   scale_x_continuous(expand = c(0,0)) +
   facet_grid(cols = vars(Strain, Par_ue, O2_uM), rows = vars(MeasureO2_uM)) +
+  theme_bw()
+```
+
+```{r LRC_fittedMED4}
+ETRModels %>%
+  filter(Strain == "MED4") %>%
+  unnest(LRC_Augment) %>%
+  ggplot(aes(x = ActPARCorr)) +
+ # geom_point(aes(y = ETRqpOxbo, colour =  "ETRqpOxbo")) +
+  geom_line(aes(y = `.fitted`, colour = MeasureO2_uM)) +
+ # geom_point(aes(y = `.resid`, colour = "residual"), size = 0.5) +
+ # geom_hline(yintercept = 0, linetype = "dashed") + 
+  labs(colour = "Legend", title = "Light response curves of PSII electron transport for *Prochlorococcus* MED4") + 
+#  scale_colour_manual(values = line_colours) +
+  scale_x_continuous(expand = c(0,0)) +
+  facet_grid(cols = vars(Par_ue), rows = vars(O2_uM)) +
+  theme_bw()
+```
+
+
+```{r LRC_fittedMIT9313}
+ETRModels %>%
+  filter(Strain == "MIT9313") %>%
+  unnest(LRC_Augment) %>%
+  ggplot(aes(x = ActPARCorr)) +
+ # geom_point(aes(y = ETRqpOxbo, colour =  "ETRqpOxbo")) +
+  geom_line(aes(y = `.fitted`, colour = MeasureO2_uM)) +
+ # geom_point(aes(y = `.resid`, colour = "residual"), size = 0.5) +
+ # geom_hline(yintercept = 0, linetype = "dashed") + 
+  labs(colour = "Legend", title = "Light response curves of PSII electron transport for *Prochlorococcus* MIT9313") + 
+#  scale_colour_manual(values = line_colours) +
+  scale_x_continuous(expand = c(0,0)) +
+  facet_grid(cols = vars(Par_ue), rows = vars(O2_uM)) +
   theme_bw()
 
 #knitr::include_graphics(file.path( FiguresFP,"Map_Study_Sites.png"))
@@ -467,8 +500,8 @@ ETRModelsParam |>
 # }
 ```
 
-Plot alpha, Pmax, Ek
-```{r alpha and pmax}
+Plot alpha, Ek
+```{r alpha and Ek}
 
 ModType = "LRC"
 
@@ -481,24 +514,7 @@ ETRModelsParam |>
   facet_grid(rows = vars(O2_uM), cols = vars(Strain)) + 
   labs(title = ModType) +
   theme_bw()
-```
 
-```{r PmaxPlot, fig.cap = "Analysis of Maximum Electron Transport Rate for *Prochlorococcus*. Analyses of maximum photosynthetic rate (Pmax),  derived from light response curve fits (XXXRefer to Figure). Pmax is plotted vs. measurement oxygen concentrations, with error bars representing the standard error of the estimate. Data is grouped by strain and growth light level.", out.height="800pt", out.width="100%", echo = FALSE}
-ETRModelsParam |>
-  filter(ModelType == ModType) |>
-  filter(Strain != "SS120") |>
-  #filter(AIClow == 1) |>
-  filter(std.error_Pmax < 1 * estimate_Pmax) |>
-  ggplot() +
-  geom_point(aes(x = MeasureO2_uM, y = estimate_Pmax, colour = as.factor(O2_uM))) +
-  geom_errorbar(aes(x = MeasureO2_uM, y = estimate_Pmax, ymin = (estimate_Pmax - std.error_Pmax), ymax = (estimate_Pmax + std.error_Pmax), colour = as.factor(O2_uM)), width = 0.3) +
-  facet_grid(rows = vars(Par_ue), cols = vars(Strain)) + 
-  #labs(title = ModType) +
-  theme_bw()
-``` 
-
-
-``` {r} 
 ETRModelsParam |>
   filter(ModelType == ModType) |>
   #filter(std.error_Pmax < 0.5 * estimate_Pmax) |>
@@ -521,6 +537,20 @@ ETRModelsParam |>
   theme_bw()
 ```
 
+
+```{r PmaxPlot, fig.cap = "Analysis of Maximum PSII Electron Transport Rate (Pmax) for *Prochlorococcus* MED4 (Clade...) and MIT9313 (Clade...). Pmax,  derived from light response curve fits (XXXRefer to Figure), is plotted vs. measurement oxygen concentrations, with error bars representing the standard error of the estimate. Data is grouped by strain and growth light level, colours indicate different growth oxygen levels.", out.height="800pt", out.width="100%", echo = FALSE}
+ETRModelsParam |>
+  filter(ModelType == ModType) |>
+  #filter(AIClow == 1) |>
+  filter(std.error_Pmax < 1 * estimate_Pmax) |>
+  ggplot() +
+  geom_point(aes(x = MeasureO2_uM, y = estimate_Pmax, colour = as.factor(O2_uM))) +
+  geom_line(aes(x = MeasureO2_uM, y = estimate_Pmax, colour = as.factor(O2_uM))) +
+  geom_errorbar(aes(x = MeasureO2_uM, y = estimate_Pmax, ymin = (estimate_Pmax - std.error_Pmax), ymax = (estimate_Pmax + std.error_Pmax), colour = as.factor(O2_uM)), width = 0.3) +
+  facet_grid(rows = vars(Par_ue), cols = vars(Strain)) + 
+  #labs(title = ModType) +
+  theme_bw()
+``` 
 To include caption in chunk label, chunk name has to be 1 single 'word' of continuous characters; no spaces, and each figure has to be in its own chunk.
 
 caption: Analysis of Maximum Electron Transport Rate for *Prochlorococcus*

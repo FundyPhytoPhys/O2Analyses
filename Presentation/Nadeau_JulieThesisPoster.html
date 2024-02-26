@@ -19,7 +19,7 @@ Google fonts api stuff
 
 
 
-<title>Growth, Functional and Bioinformatic Analyses of Photosynthetic Strategies of Prochlorococcus Strains</title>
+<title>Growth and Functional Analyses of Photosynthetic Strategies of Prochlorococcus Strains</title>
 
 
 
@@ -344,7 +344,7 @@ font-size: 20pt;
 </div>
 <!-- Poster Title -->
 <div class= "poster_title">
-<h1 id="title">Growth, Functional and Bioinformatic Analyses of Photosynthetic Strategies of Prochlorococcus Strains</h1>
+<h1 id="title">Growth and Functional Analyses of Photosynthetic Strategies of Prochlorococcus Strains</h1>
 <h3 id="author"><strong>Julie Nadeau</strong><sup>1</sup>, Mireille Savoie<sup>1</sup>, Douglas Campbell<sup>1</sup></h3><br>
 <h5 id="affiliation"><sup>1</sup> Department of Biochemistry, Mount Allison University</h5>
 </div>
@@ -386,11 +386,84 @@ We use:
 </div>
 <div id="methods" class="section level1">
 <h1>Methods</h1>
-<p>This package uses the same workflow approach as the R Markdown you know and love. Basically it goes from RMarkdown &gt; Knitr &gt; Markdown &gt; Pandoc &gt; HTML/CSS &gt; PDF. You can even use the bibliography the same way <span class="citation">(Thorne 2019)</span>.</p>
+<strong>Bioptical Analysis of Growth Rates</strong>
+<p class="forceBreak">
+</p>
+Three strains of Prochlorococcus, MED4, MIT9313, SS120
+Multi-Cultivator monitors OD680 (Chlorophyll and scattering) and OD720 (cell scattering)
+<p class="forceBreak">
+</p>
+Applies combinations:
+<p class="forceBreak">
+</p>
+<ul>
+<li>Dissolved O2
+<ul>
+<li>230-280 uM (full O2)</li>
+<li>25-50 uM (intermediate O2)</li>
+<li>0.5-5.0 uM (low O2)
+<p class="forceBreak">
+</p></li>
+</ul></li>
+<li>Photoperiod
+<p class="forceBreak">
+</p>
+<ul>
+<li>12 h
+<p class="forceBreak">
+</p></li>
+</ul></li>
+<li>Light level
+<p class="forceBreak">
+</p>
+<ul>
+<li>30 µmol photons m-2 s-1</li>
+<li>90 µmol photons m-2 s-1</li>
+<li>180 µmol photons m-2 s-1
+<p class="forceBreak">
+</p></li>
+</ul></li>
+<li>Waveband
+<p class="forceBreak">
+</p>
+<ul>
+<li>450 ∓ 45 nm (Blue)</li>
+</ul></li>
+</ul>
+<p>all at 22°C, to each of 8 separate tubes.</p>
+<p>Centrifuged samples and the cell pellets frozen in liquid nitrogen and preserved in an -80 oC freezer. Enables future transcriptomic analyses.</p>
+<strong>Bioptical Functional Measurements</strong>
+<p class="forceBreak">
+</p>
+<ul>
+<li>Expose samples to a series of increasing light levels and track a ‘light response’ curve of photosynthetic function of Photosystem II, using Solisense FRRf Instrument, at
+<ul>
+<li>230-280 uM (full O2)</li>
+<li>25-50 uM (intermediate O2)</li>
+<li>0.5-5.0 uM (low O2)
+<p class="forceBreak">
+</p>
+Whole Cell Absorbance Spectra using Olis Spectrophotometer at</li>
+<li>230-280 uM (full O2)</li>
+<li>0.5-5.0 uM (low O2)</li>
+</ul></li>
+</ul>
+<p>Chlorophyll a concentrations determined using the Turner Trilogy on each sample</p>
+<strong>Photosystem I Measurements</strong>
+<p class="forceBreak">
+</p>
+<ul>
+<li>Expose samples to a series of increasing light levels and track a ‘light response’ curve of photosynthetic function of Photosystem I and Photosystem II in parallel, using Dual-PAM-100 Instrument, at
+<ul>
+<li>230-280 uM (full O2)</li>
+<li>25-50 uM (intermediate O2)</li>
+<li>0.5-5.0 uM (low O2)</li>
+</ul></li>
+</ul>
+<p>Chlorophyll a concentrations were determined using a Spectrophotometer on each sample</p>
 </div>
 <div id="results" class="section level1">
 <h1>Results</h1>
-<p>Usually you want to have a nice table displaying some important results that you have calculated. In <code>posterdown</code> this is as easy as using the <code>kable</code> table formatting you are probably use to as per typical R Markdown formatting.</p>
 <p>You can reference tables like so: Table <a href="#tab:mytable">1</a>. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam placerat augue at velit tincidunt semper. Donec elementum porta posuere. Nullam interdum, odio at tincidunt feugiat, turpis nisi blandit eros, eu posuere risus felis non quam. Nam eget lorem odio. Duis et aliquet orci. Phasellus nec viverra est.</p>
 <table>
 <caption>

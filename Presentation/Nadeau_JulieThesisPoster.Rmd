@@ -1,5 +1,5 @@
 ---
-title: Growth, Functional and Bioinformatic Analyses of Photosynthetic Strategies of Prochlorococcus Strains
+title: Growth and Functional Analyses of Photosynthetic Strategies of Prochlorococcus Strains
 author:
   - name: '**Julie Nadeau**'
     affil: 1
@@ -48,11 +48,61 @@ We use:
 
 # Methods
 
-This package uses the same workflow approach as the R Markdown you know and love. Basically it goes from RMarkdown > Knitr > Markdown > Pandoc > HTML/CSS > PDF. You can even use the bibliography the same way [@R-posterdown].
+**Bioptical Analysis of Growth Rates**
+<p class="forceBreak"></p>
+Three strains of Prochlorococcus, MED4, MIT9313, SS120
+Multi-Cultivator monitors OD680 (Chlorophyll and scattering) and OD720 (cell scattering)
+<p class="forceBreak"></p>
+Applies combinations:
+<p class="forceBreak"></p>
+- Dissolved O2
+  - 230-280 uM (full O2)
+  - 25-50 uM (intermediate O2) 
+  - 0.5-5.0 uM (low O2) 
+<p class="forceBreak"></p>
+- Photoperiod 
+<p class="forceBreak"></p>
+  - 12 h
+<p class="forceBreak"></p>
+- Light level 
+<p class="forceBreak"></p>
+  - 30 µmol photons m-2 s-1
+  - 90 µmol photons m-2 s-1
+  - 180 µmol photons m-2 s-1
+<p class="forceBreak"></p>
+- Waveband 
+<p class="forceBreak"></p>
+  - 450 ∓ 45 nm (Blue)
+  
+all at 22°C, to each of 8 separate tubes.
+
+Centrifuged samples and the cell pellets frozen in liquid nitrogen and preserved in an -80 oC freezer. Enables future transcriptomic analyses.
+
+**Bioptical Functional Measurements**
+<p class="forceBreak"></p>
+- Expose samples to a series of increasing light levels and track a 'light response' curve of photosynthetic function of Photosystem II, using Solisense FRRf  Instrument, at
+  - 230-280 uM (full O2)
+  - 25-50 uM (intermediate O2) 
+  - 0.5-5.0 uM (low O2) 
+<p class="forceBreak"></p>
+Whole Cell Absorbance Spectra using Olis Spectrophotometer at
+  - 230-280 uM (full O2) 
+  - 0.5-5.0 uM (low O2) 
+
+Chlorophyll a concentrations determined using the Turner Trilogy on each sample
+
+**Photosystem I Measurements**
+<p class="forceBreak"></p>
+- Expose samples to a series of increasing light levels and track a 'light response' curve of photosynthetic function of Photosystem I and Photosystem II in parallel, using Dual-PAM-100 Instrument, at
+  - 230-280 uM (full O2)
+  - 25-50 uM (intermediate O2) 
+  - 0.5-5.0 uM (low O2) 
+
+Chlorophyll a concentrations were determined using a Spectrophotometer on each sample
 
 # Results
 
-Usually you want to have a nice table displaying some important results that you have calculated. In `posterdown` this is as easy as using the `kable` table formatting you are probably use to as per typical R Markdown formatting.
+
 
 You can reference tables like so: Table \@ref(tab:mytable). Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam placerat augue at velit tincidunt semper. Donec elementum porta posuere. Nullam interdum, odio at tincidunt feugiat, turpis nisi blandit eros, eu posuere risus felis non quam. Nam eget lorem odio. Duis et aliquet orci. Phasellus nec viverra est.
 

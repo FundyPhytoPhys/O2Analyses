@@ -85,7 +85,7 @@ Centrifuged samples and the cell pellets frozen in liquid nitrogen and preserved
   - 25-50 µM (intermediate O2) 
   - 0.5-5.0 µM (low O2) 
 <p class="forceBreak"></p>
-Whole Cell Absorbance Spectra using Olis Spectrophotometer at
+- Whole Cell Absorbance Spectra using Olis Spectrophotometer at
   - 230-280 µM (full O2) 
   - 0.5-5.0 µM (low O2) 
 

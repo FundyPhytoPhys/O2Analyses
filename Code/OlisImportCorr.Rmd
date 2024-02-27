@@ -361,7 +361,7 @@ SpectraMeta |>
   theme_bw()  
 ```
 
-```{r SecondDerivPlot, Fig cap = "Second derivative of whole cell absorbance spectra of *Prochlorococcus* strains MED4 and MIT9313.  Spectra were measured under 2 (black line) or 250 (red line) µM O2, after growth under 90 units and 2, 25, or 250 µM O2.", out.height="800pt", out.width="100%", echo = FALSE}
+```{r SecondDerivPlot, Fig cap = "Normalized whole cell absorbance spectra of *Prochlorococcus* strains MED4 and MIT9313.  Spectra were normalized to A440 and measured under 2 (black line) or 250 (red line) µM O2, after growth under 90 µmol photons m-2 s-1 and 2, 25, or 250 µM O2.", out.height="800pt", out.width="100%", echo = FALSE}
 #normamilized to A440 
 SpectraMeta |>
   #filter(Strain == "MED4") |>
@@ -373,7 +373,9 @@ SpectraMeta |>
   facet_grid(rows = vars(O2_uM), cols = vars(Strain)) +
   #coord_cartesian(xlim = c(500, 600)) + 
   theme_bw() 
+```
 
+```{r SecondDerivPlot, Fig cap = "Second derivative of whole cell absorbance spectra of *Prochlorococcus* strains MED4 and MIT9313.  Spectra were measured under 2 (black line) or 250 (red line) µM O2, after growth under 90 µmol photons m-2 s-1 and 2, 25, or 250 µM O2.", out.height="800pt", out.width="100%", echo = FALSE}
 SpectraMeta |>
   #filter(Strain == "MED4") |>
   filter(Par_ue == 90) |>
@@ -384,9 +386,22 @@ SpectraMeta |>
   facet_grid(rows = vars(O2_uM), cols = vars(Strain)) +
   #coord_cartesian(xlim = c(500, 600)) + 
   theme_bw() 
+```
 
+```{r}
 SpectraMeta |>
   filter(Strain == "MIT9313") |>
+  #filter(Par_ue != 180) |>
+ # filter(ID != "JuNa1200") |>
+  ggplot() +
+  geom_line(aes(x = nm, y = SecondDeriv_2), linewidth  = 0.5) +
+  geom_line(aes(x = nm, y = SecondDeriv_250), linewidth = 0.1, colour = "red") +
+  facet_grid(rows = vars(O2_uM), cols = vars(Par_ue)) +
+  #coord_cartesian(xlim = c(500, 600)) + 
+  theme_bw()
+
+SpectraMeta |>
+  filter(Strain == "MED4") |>
   #filter(Par_ue != 180) |>
  # filter(ID != "JuNa1200") |>
   ggplot() +

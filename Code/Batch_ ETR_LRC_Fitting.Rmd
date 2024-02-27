@@ -422,7 +422,7 @@ ETRModels %>%
   theme_bw()
 ```
 
-```{r LRC_fittedMED4}
+```{r LRC_fittedMED4,fig.cap = "Fitted LRC of PSII electron transport (e- PSII-1 s-1) vs measurement light (units) for *Prochlorococcus* strain MED4 (Clade ...) and after growth under different combinations of light level (30, 90, 180 units) and oxygen concentration (2, 25, 250 uM), derived from light response curve fits (XXXRefer to Figure). The curves are differentiated by varying oxygen concentrations (colors), with different panels representing different combinations of light levels and growth oxygen concentrations.", out.height="800pt", out.width="100%", echo = FALSE}
 ETRModels %>%
   filter(Strain == "MED4") %>%
   unnest(LRC_Augment) %>%
@@ -439,7 +439,7 @@ ETRModels %>%
 ```
 
 
-```{r LRC_fittedMIT9313}
+```{r LRC_fittedMIT9313, fig.cap = "Fitted LRC of PSII electron transport (e- PSII-1 s-1) vs measurement light (units) for *Prochlorococcus* strain MIT9313 (Clade ...) and after growth under different combinations of light level (30, 90, 180 units) and oxygen concentration (2, 25, 250 uM), derived from light response curve fits (XXXRefer to Figure). The curves are differentiated by varying oxygen concentrations (colors), with different panels representing different combinations of light levels and growth oxygen concentrations.", out.height="800pt", out.width="100%", echo = FALSE}}
 ETRModels %>%
   filter(Strain == "MIT9313") %>%
   unnest(LRC_Augment) %>%

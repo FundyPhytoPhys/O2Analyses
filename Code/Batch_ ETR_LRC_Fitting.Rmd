@@ -43,6 +43,8 @@ FileID <- "SolFitsMeta"
 DataIn <- file.path("..", "Data", "ProcessedData")
 #DataOut <- file.path("..","ImportData", "Optode")
 
+PlotsPathOut <- file.path("Figures")
+
 #Set URL for MetaData
 #Catalog <- "https://docs.google.com/spreadsheets/d/1ZXpwR7Gfto-uRzVdXzMpQF4frbrvMLH_IyLqonFZRSw/edit#gid=0"
 
@@ -408,7 +410,7 @@ ETRModels %>%
 
 #Will need to add proper units on X & Y axis, but not YET
 
-ETRModels %>%
+LRCplot <- ETRModels %>%
   unnest(LRC_Augment) %>%
   ggplot(aes(x = ActPARCorr)) +
   geom_point(aes(y = ETRqpOxbo, colour =  "ETRqpOxbo")) +
@@ -423,7 +425,7 @@ ETRModels %>%
 ```
 
 ```{r LRC_fittedMED4,fig.cap = "Fitted LRC of PSII electron transport (e- PSII-1 s-1) vs measurement light (µmol photons m-2 s-1) for *Prochlorococcus* strain MED4 (Clade HLI) and after growth under different combinations of light level (30, 90, 180 µmol photons m-2 s-1) and oxygen concentration (2, 25, 250 uM), derived from light response curve fits (XXXRefer to Figure). The curves are differentiated by varying oxygen concentrations (colors), with different panels representing different combinations of light levels and growth oxygen concentrations.", out.height="800pt", out.width="100%", echo = FALSE}
-ETRModels %>%
+FittedLRCMED4 <- ETRModels %>%
   filter(Strain == "MED4") %>%
   unnest(LRC_Augment) %>%
   ggplot(aes(x = ActPARCorr)) +
@@ -440,7 +442,7 @@ ETRModels %>%
 
 
 ```{r LRC_fittedMIT9313, fig.cap = "Fitted LRC of PSII electron transport (e- PSII-1 s-1) vs measurement light (µmol photons m-2 s-1) for *Prochlorococcus* strain MIT9313 (Clade LLIV) and after growth under different combinations of light level (30, 90, 180 µmol photons m-2 s-1) and oxygen concentration (2, 25, 250 µM), derived from light response curve fits (XXXRefer to Figure). The curves are differentiated by varying oxygen concentrations (colors), with different panels representing different combinations of light levels and growth oxygen concentrations.", out.height="800pt", out.width="100%", echo = FALSE}}
-ETRModels %>%
+FittedLRCMIT9313 <- ETRModels %>%
   filter(Strain == "MIT9313") %>%
   unnest(LRC_Augment) %>%
   ggplot(aes(x = ActPARCorr)) +
@@ -539,7 +541,7 @@ ETRModelsParam |>
 
 
 ```{r PmaxPlot, fig.cap = "Analysis of Maximum PSII Electron Transport Rate (Pmax) for *Prochlorococcus* MED4 (Clade HLI) and MIT9313 (Clade LLIV). Pmax,  derived from light response curve fits (XXXRefer to Figure), is plotted vs. measurement oxygen concentrations, with error bars representing the standard error of the estimate. Data is grouped by strain and growth light level, colours indicate different growth oxygen levels.", out.height="800pt", out.width="100%", echo = FALSE}
-ETRModelsParam |>
+EstimatePmax <- ETRModelsParam |>
   filter(ModelType == ModType) |>
   #filter(AIClow == 1) |>
   filter(std.error_Pmax < 1 * estimate_Pmax) |>
@@ -603,4 +605,19 @@ https://stackoverflow.com/questions/45514426/run-multiple-model-and-save-model-c
 
 ```
 
+```{r save spectra plots}
+ggsave(filename = file.path(PlotsPathOut, "EstimatePmax.png"), plot = EstimatePmax)
+```
+
+```{r save spectra plots}
+ggsave(filename = file.path(PlotsPathOut, "FittedLRCMIT9313.png"), plot = FittedLRCMIT9313)
+```
+
+```{r save spectra plots}
+ggsave(filename = file.path(PlotsPathOut, "FittedLRCMED4.png"), plot = FittedLRCMED4)
+```
+
+```{r save spectra plots}
+ggsave(filename = file.path(PlotsPathOut, "LRCplot.png"), plot = LRCplot)
+```
 

@@ -50,7 +50,7 @@ library(googlesheets4)
 ```{r set project variables}
 Project <- "PICO"
 DataOut <- file.path("..", "Data", "ProcessedData")
-
+PlotsPathOut <- file.path("Figures")
 
 NoO2Runs <- c("JuNa1201", "JuNa1202", "JuNa1203", "JuNa1204", "JuNa1205")
 BadRuns <- c("JuNa1215")
@@ -428,8 +428,10 @@ DualPAMMeta |>
   geom_smooth(aes(x = qP, y = (1-YND)), method = "lm") +
   facet_grid(cols = vars(MeasureO2_uM), rows = vars(Strain, Par_ue, O2_Category)) +
   theme_bw()
+```
 
-DualPAMMeta |>
+```{r YIIvsYI, fig.cap = "PSII electron transport (e- PSII-1 s-1) vs PSI electron transport (e- PSII-1 s-1) for *Prochlorococcus* strains PCC9511 (Clade ...) and MIT9313 (Clade LLV) after growth under different combinations of light level (30, 90, 180 µmol photons m-2 s-1) and oxygen concentration (2, 25, 250 µM). The blue and red points represent the experimental data.", out.height="800pt", out.width="100%", echo = FALSE}
+YIIvsYI <- DualPAMMeta |>
   filter(MeasureO2_uM %in% c(2, 25, 250)) |>
   filter(!(SampleID %in% NoO2Runs)) |>
   filter(!SampleID %in% BadRuns) |>
@@ -440,15 +442,15 @@ DualPAMMeta |>
   geom_point(aes(x = qP, y = (YI))) +
   geom_smooth(aes(x = qP, y = (YI)), method = "lm") +
   coord_cartesian(xlim = c(0, 1), ylim = c(0, 1), ) +
-  facet_grid(cols = vars(MeasureO2_uM), rows = vars(Strain, Par_ue, O2_Category)) +
+  facet_grid(cols = vars(Strain, Par_ue, O2_Category), rows = vars(MeasureO2_uM)) +
   theme_bw()
   
   #google to fix aspect ratio 1:1 
   #filter for same subset
 ```
 
-``` {r DualPamLRC, fig.cap = "PSII electron transport (e- PSII-1 s-1) vs measurement light (µmol photons m-2 s-1) for *Prochlorococcus* strains PCC9511 (Clade ...) and MIT9313 (Clade LLIII) after growth under different combinations of light level (30, 90, 180 µmol photons m-2 s-1) and oxygen concentration (2, 25, 250 µM). The blue and red points represent the experimental data.", out.height="800pt", out.width="100%", echo = FALSE}}
-DualPAMMeta |>
+``` {r DualPamLRC, fig.cap = "PSII electron transport (e- PSII-1 s-1) vs measurement light (µmol photons m-2 s-1) for *Prochlorococcus* strains PCC9511 (Clade ...) and MIT9313 (Clade LLIII) after growth under different combinations of light level (30, 90, 180 µmol photons m-2 s-1) and oxygen concentration (2, 25, 250 µM). The blue and red points represent the experimental data.", out.height="800pt", out.width="100%", echo = FALSE}
+DualPamLRC <- DualPAMMeta |>
   filter(MeasureO2_uM %in% c(2, 25, 250)) |>
   #filter(!(SampleID %in% NoO2Runs)) |>
   filter(!SampleID %in% BadRuns) |>
@@ -468,4 +470,13 @@ DualPAMMeta |>
 ```{r save DualPAMMeta}
  saveRDS(Y_PAR_FitValues, file.path(DataOut, paste(Project, "Y_PAR_FitValues.Rds", sep = "_"), fsep = .Platform$file.sep))
 
+```
+
+
+```{r save spectra plots}
+ggsave(filename = file.path(PlotsPathOut, "DualPamLRC.png"), plot = DualPamLRC)
+```
+
+```{r save spectra plots}
+ggsave(filename = file.path(PlotsPathOut, "YIIvsYI.png"), plot = YIIvsYI)
 ```

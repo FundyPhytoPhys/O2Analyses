@@ -30,18 +30,15 @@ Figures<-file.path("..","code","Figures")
 
 # Introduction
 Photosynthesis is the fundamental process in the biosphere. 
-
 *Prochlorococcus*:
 <p class="forceBreak"></p>
 - Photosynthetic unicellular cyanobacterium 
 - Important in global carbon cycling, *Prochlorococcus* contributes significantly to primary production in the open oceans. 
 - Strains occupy a wide range of habitats.
 - With climate change, ocean warming causing a decrease of oxygen solubility at the surface, *Prochlorococcus* is expected to benefit, increasing its distribution and global abundance.
-
-```{r BiologicalInteraction, fig.cap= 'The biological interactions of *Prochlorococcus* with some key players in the marine carbon cycle.', out.width='100%'}
+```{r BiologicalInteraction, fig.cap= 'The biological interactions of *Prochlorococcus* with some key players in the marine carbon cycle. Adapted from (Cai et al., 2023).', out.width='100%'}
 knitr::include_graphics(file.path(Figures,"BiologicalInteraction.png"))
 ```
-
 We use:
 <p class="forceBreak"></p>
 - Bioptical measures of growth and photosynthesis
@@ -64,7 +61,7 @@ Applies combinations:
 <p class="forceBreak"></p>
 - Dissolved O2
   - 230-280 µM (full O2)
-  - 25-50 µM (intermediate O2) 
+  - 25-50 µM (intermediate O2)
   - 0.5-5.0 µM (low O2) 
 <p class="forceBreak"></p>
 - Photoperiod 
@@ -118,28 +115,18 @@ knitr::include_graphics(file.path(Figures,"FittedLRCMIT9313.png"))
 knitr::include_graphics(file.path(Figures,"EstimatePmax.png"))
 ```
 
+Across both strains, a trend is observed, indicating that Pmax values exhibit variation corresponding to changes in oxygen concentration. Specifically, strain MED4 demonstrates relatively consistent Pmax values across different oxygen concentrations, although with minor fluctuations. Since Pmax remains reletively stable across varying oxygen concentrations, this suggests that the cells are constitutively adapted to cope with changes in oxygen levels.
+
+However, strain MIT9313 exhibits more pronounced differences in Pmax values, particularly evident between the lowest (2 µM) and highest (250 µM) oxygen levels. These findings underscore the strain-specific responses of *Prochlorococcus* to varying oxygen concentrations, suggesting a significant influence of oxygen levels on the PSII electron transport capacity of these strains. Since Pmax valuex show significant changes in the response to a change in oxygen concentrations, it suggests that the cells are capable of acclimating to different oxygen concentrations over time.
+
 Or with figures: Figure \@ref(fig:standard-plot), or Figure \@ref(fig:morefigs).
 ```{r DualPamLRC, fig.cap= 'PSII electron transport (e- PSII-1 s-1) vs measurement light (µmol photons m-2 s-1) for *Prochlorococcus* strains PCC9511 (Clade HLI) and MIT9313 (Clade LLIII) after growth under different combinations of light level (30, 90, 180 µmol photons m-2 s-1) and oxygen concentration (2, 25, 250 µM). The blue and red points represent the experimental data.', out.width='100%'}
 knitr::include_graphics(file.path(Figures,"DualPamLRC.png"))
 ```
 
-
-
-```{r morefigs, out.width='80%', echo=TRUE, fig.cap='Amazing, right?!', fig.height=5}
-data <- iris
-
-plot(x = data$Sepal.Length, 
-     y = data$Sepal.Width, 
-     col = data$Species,
-     pch = 19, 
-     xlab = "Sepal Length (cm)",
-     ylab = "Sepal Width (cm)")
-
-```
-
 # Next Steps
 
-Aliquam sed faucibus risus, quis efficitur erat. Vestibulum semper mauris quis tempus eleifend. Aliquam sagittis dictum ipsum, quis viverra ligula eleifend ut. Curabitur sagittis vitae arcu eget faucibus. In non elementum felis. Duis et aliquam nunc. Nunc pulvinar sapien nunc, vel pretium nisi efficitur in. Fusce fringilla maximus leo et maximus. Fusce at ligula laoreet, iaculis mi at, auctor odio. Praesent sed elementum justo. Aenean consectetur risus rhoncus tincidunt efficitur. Praesent dictum mauris at diam maximus maximus [@R-posterdown].
+In addition to the experiments conducted so far, transcriptomic analyses could provide insights into the molecular mechanisms underlying different *Prochlorococcus* strains responses to varying oxygen concentrations. By examining changes in gene expression patterns, particularly those associated with oxygen metabolism and photosynthesis regulation, researchers can identify key genes and pathways involved in the cellular response to different oxygen levels. Transcriptomic analyses would allow for a comprehensive understanding of how different *Prochlorococcus* strains modulates there gene expression profile to adapt to fluctuating environmental conditions, providing a deeper understanding into the cellular strategies employed by different *Prochlorococcus* strains to thrive in diverse marine ecosystems.
 
 # Conclusion
 

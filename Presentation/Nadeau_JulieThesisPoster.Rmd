@@ -8,6 +8,8 @@ author:
     affil: 1
   - name: Douglas Campbell
     affil: 1
+      - name: Naaman Omar
+    affil: 1
 affiliation: 
   - num: 1
     address: Department of Biochemistry, Mount Allison University

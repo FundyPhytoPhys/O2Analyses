@@ -283,7 +283,7 @@ font-size: 20pt;
 <!-- Poster Title -->
 <div class= "poster_title">
 <h1 id="title">Growth, Functional and Bioinformatic Analyses of Photosynthetic Strategies of <em>Prochlorococcus</em> Strains Under Varying Oxygen</h1>
-<h3 id="author"><strong>Julie Nadeau</strong><sup>1</sup>, Mireille Savoie<sup>1</sup>, Douglas Campbell<sup>1</sup></h3><br>
+<h3 id="author"><strong>Julie Nadeau</strong><sup>1</sup>, Mireille Savoie<sup>1</sup>, Douglas Campbell<sup>1</sup>, Naaman Omar<sup>1</sup></h3><br>
 <h5 id="affiliation"><sup>1</sup> Department of Biochemistry, Mount Allison University</h5>
 </div>
 <!-- Right Logo  -->
@@ -305,7 +305,7 @@ Photosynthesis is the fundamental process in the biosphere.
 <li>Strains occupy a wide range of habitats.</li>
 <li>With climate change, ocean warming causing a decrease of oxygen solubility at the surface, <em>Prochlorococcus</em> is expected to benefit, increasing its distribution and global abundance.
 <div class="figure"><span style="display:block;" id="fig:BiologicalInteraction"></span>
-<img src="../code/Figures/BiologicalInteraction.png" alt="The biological interactions of *Prochlorococcus* with some key players in the marine carbon cycle. Adapted from (Cai et al., 2023)." width="100%" />
+<img src="../code/Figures/BiologicalInteraction.png" alt="The biological interactions of *Prochlorococcus* with some key players in the marine carbon cycle. Adapted from (Cai et al., 2023)." width="80%" />
 <p class="caption">
 Figure 1: The biological interactions of <em>Prochlorococcus</em> with some key players in the marine carbon cycle. Adapted from (Cai et al., 2023).
 </p>
@@ -329,7 +329,7 @@ We use:
 <strong>Bioptical Analysis of Growth Rates</strong>
 <p class="forceBreak">
 </p>
-Three strains of Prochlorococcus, MED4, MIT9313, SS120
+Three strains of <em>Prochlorococcus</em>, MED4, MIT9313, SS120
 <p class="forceBreak">
 </p>
 Multi-Cultivator monitors OD680 (Chlorophyll and scattering) and OD720 (cell scattering)
@@ -341,9 +341,9 @@ Applies combinations:
 <ul>
 <li>Dissolved O<sub>2</sub>
 <ul>
-<li>230-280 µM (full O2)</li>
-<li>25-50 µM (intermediate O2)</li>
-<li>0.5-5.0 µM (low O2)
+<li>230-280 µM (full O<sub>2</sub>)</li>
+<li>25-50 µM (intermediate O<sub>2</sub>)</li>
+<li>0.5-5.0 µM (low O<sub>2</sub>)
 <p class="forceBreak">
 </p></li>
 </ul></li>
@@ -379,18 +379,18 @@ Applies combinations:
 </p>
 <ul>
 <li>Expose samples to a series of increasing light levels and track a ‘light response’ curve of photosynthetic function of Photosystem II, using Solisense FRRf Instrument.</li>
-<li>Expose samples to a series of increasing light levels and track a ‘light response’ curve of photosynthetic function of Photosystem I and Photosystem II in parallel, using Dual-PAM-100 Instrument. The oxygen levels tested included:
+<li>Photosystem I and Photosystem II in parallel, using Dual-PAM-100 Instrument. The oxygen levels tested included:
 <ul>
-<li>230-280 µM (full O2)</li>
-<li>25-50 µM (intermediate O2)</li>
-<li>0.5-5.0 µM (low O2)
+<li>230-280 µM (full O<sub>2</sub>)</li>
+<li>25-50 µM (intermediate O<sub>2</sub>)</li>
+<li>0.5-5.0 µM (low O<sub>2</sub>)
 <p class="forceBreak">
 </p></li>
 </ul></li>
 <li>Whole Cell Absorbance Spectra using Olis Spectrophotometer. The oxygen levels tested included:
 <ul>
-<li>230-280 µM (full O2)</li>
-<li>0.5-5.0 µM (low O2)</li>
+<li>230-280 µM (full O<sub>2</sub>)</li>
+<li>0.5-5.0 µM (low O<sub>2</sub>)</li>
 </ul></li>
 </ul>
 <p>Chlorophyll a concentrations determined using the Turner Trilogy or Spectrophotometer on each sample</p>
@@ -398,25 +398,25 @@ Applies combinations:
 <div id="results-discussion" class="section level1">
 <h1>Results &amp; Discussion</h1>
 <div class="figure"><span style="display:block;" id="fig:LRCplot"></span>
-<img src="../code/Figures/LRCplot.png" alt="PSII electron transport (e- PSII-1 s-1) vs measurement light (µmol photons m-2 s-1) for *Prochlorococcus* strains MED4 (Clade HLI) and MIT9313 (Clade LLIV) after growth under different combinations of light level (30, 90, 180 µmol photons m-2 s-1) and oxygen concentration (2, 25, 250 uM). The green points represent the experimental data, the black line denotes the fitted model (CITATION), and the red points denote residuals." width="100%" />
+<img src="../code/Figures/LRCplot.png" alt="PSII electron transport (e- PSII-1 s-1) vs measurement light (µmol photons m-2 s-1) for *Prochlorococcus* strains MED4 (Clade HLI) and MIT9313 (Clade LLIV) after growth under different combinations of light level (30, 90, 180 µmol photons m-2 s-1) and oxygen concentration (2, 25, 250 uM). The green points represent the experimental data, the black line denotes the fitted model (CITATION), and the red points denote residuals." width="80%" />
 <p class="caption">
 Figure 2: PSII electron transport (e- PSII-1 s-1) vs measurement light (µmol photons m-2 s-1) for <em>Prochlorococcus</em> strains MED4 (Clade HLI) and MIT9313 (Clade LLIV) after growth under different combinations of light level (30, 90, 180 µmol photons m-2 s-1) and oxygen concentration (2, 25, 250 uM). The green points represent the experimental data, the black line denotes the fitted model (CITATION), and the red points denote residuals.
 </p>
 </div>
 <div class="figure"><span style="display:block;" id="fig:FittedLRCMED4"></span>
-<img src="../code/Figures/FittedLRCMED4.png" alt="Fitted LRC of PSII electron transport (e- PSII-1 s-1) vs measurement light (µmol photons m-2 s-1) for *Prochlorococcus* strain MED4 (Clade HLI) and after growth under different combinations of light level (30, 90, 180 µmol photons m-2 s-1) and oxygen concentration (2, 25, 250 uM), derived from light response curve fits (XXXRefer to Figure). The curves are differentiated by varying oxygen concentrations (colors), with different panels representing different combinations of light levels and growth oxygen concentrations." width="100%" />
+<img src="../code/Figures/FittedLRCMED4.png" alt="Fitted LRC of PSII electron transport (e- PSII-1 s-1) vs measurement light (µmol photons m-2 s-1) for *Prochlorococcus* strain MED4 (Clade HLI) and after growth under different combinations of light level (30, 90, 180 µmol photons m-2 s-1) and oxygen concentration (2, 25, 250 uM), derived from light response curve fits (XXXRefer to Figure). The curves are differentiated by varying oxygen concentrations (colors), with different panels representing different combinations of light levels and growth oxygen concentrations." width="80%" />
 <p class="caption">
 Figure 3: Fitted LRC of PSII electron transport (e- PSII-1 s-1) vs measurement light (µmol photons m-2 s-1) for <em>Prochlorococcus</em> strain MED4 (Clade HLI) and after growth under different combinations of light level (30, 90, 180 µmol photons m-2 s-1) and oxygen concentration (2, 25, 250 uM), derived from light response curve fits (XXXRefer to Figure). The curves are differentiated by varying oxygen concentrations (colors), with different panels representing different combinations of light levels and growth oxygen concentrations.
 </p>
 </div>
 <div class="figure"><span style="display:block;" id="fig:FittedLRCMIT9313"></span>
-<img src="../code/Figures/FittedLRCMIT9313.png" alt="Fitted LRC of PSII electron transport (e- PSII-1 s-1) vs measurement light (µmol photons m-2 s-1) for *Prochlorococcus* strain MIT9313 (Clade LLIV) and after growth under different combinations of light level (30, 90, 180 µmol photons m-2 s-1) and oxygen concentration (2, 25, 250 µM), derived from light response curve fits (XXXRefer to Figure). The curves are differentiated by varying oxygen concentrations (colors), with different panels representing different combinations of light levels and growth oxygen concentrations." width="100%" />
+<img src="../code/Figures/FittedLRCMIT9313.png" alt="Fitted LRC of PSII electron transport (e- PSII-1 s-1) vs measurement light (µmol photons m-2 s-1) for *Prochlorococcus* strain MIT9313 (Clade LLIV) and after growth under different combinations of light level (30, 90, 180 µmol photons m-2 s-1) and oxygen concentration (2, 25, 250 µM), derived from light response curve fits (XXXRefer to Figure). The curves are differentiated by varying oxygen concentrations (colors), with different panels representing different combinations of light levels and growth oxygen concentrations." width="80%" />
 <p class="caption">
 Figure 4: Fitted LRC of PSII electron transport (e- PSII-1 s-1) vs measurement light (µmol photons m-2 s-1) for <em>Prochlorococcus</em> strain MIT9313 (Clade LLIV) and after growth under different combinations of light level (30, 90, 180 µmol photons m-2 s-1) and oxygen concentration (2, 25, 250 µM), derived from light response curve fits (XXXRefer to Figure). The curves are differentiated by varying oxygen concentrations (colors), with different panels representing different combinations of light levels and growth oxygen concentrations.
 </p>
 </div>
 <div class="figure"><span style="display:block;" id="fig:EstimatePmax"></span>
-<img src="../code/Figures/EstimatePmax.png" alt="Analysis of Maximum PSII Electron Transport Rate (Pmax) for *Prochlorococcus* MED4 (Clade HLI) and MIT9313 (Clade LLIV). Pmax,  derived from light response curve fits (FIGURE)), is plotted vs. measurement oxygen concentrations, with error bars representing the standard error of the estimate. Data is grouped by strain and growth light level, colours indicate different growth oxygen levels." width="100%" />
+<img src="../code/Figures/EstimatePmax.png" alt="Analysis of Maximum PSII Electron Transport Rate (Pmax) for *Prochlorococcus* MED4 (Clade HLI) and MIT9313 (Clade LLIV). Pmax,  derived from light response curve fits (FIGURE)), is plotted vs. measurement oxygen concentrations, with error bars representing the standard error of the estimate. Data is grouped by strain and growth light level, colours indicate different growth oxygen levels." width="80%" />
 <p class="caption">
 Figure 5: Analysis of Maximum PSII Electron Transport Rate (Pmax) for <em>Prochlorococcus</em> MED4 (Clade HLI) and MIT9313 (Clade LLIV). Pmax, derived from light response curve fits (FIGURE)), is plotted vs. measurement oxygen concentrations, with error bars representing the standard error of the estimate. Data is grouped by strain and growth light level, colours indicate different growth oxygen levels.
 </p>
@@ -425,7 +425,7 @@ Figure 5: Analysis of Maximum PSII Electron Transport Rate (Pmax) for <em>Prochl
 <p>However, strain MIT9313 exhibits more pronounced differences in Pmax values, particularly evident between the lowest (2 µM) and highest (250 µM) oxygen levels. These findings underscore the strain-specific responses of <em>Prochlorococcus</em> to varying oxygen concentrations, suggesting a significant influence of oxygen levels on the PSII electron transport capacity of these strains. Since Pmax valuex show significant changes in the response to a change in oxygen concentrations, it suggests that the cells are capable of acclimating to different oxygen concentrations over time.</p>
 Or with figures: Figure <a href="#fig:standard-plot"><strong>??</strong></a>, or Figure <a href="#fig:morefigs"><strong>??</strong></a>.
 <div class="figure"><span style="display:block;" id="fig:DualPamLRC"></span>
-<img src="../code/Figures/DualPamLRC.png" alt="PSII electron transport (e- PSII-1 s-1) vs measurement light (µmol photons m-2 s-1) for *Prochlorococcus* strains PCC9511 (Clade HLI) and MIT9313 (Clade LLIII) after growth under different combinations of light level (30, 90, 180 µmol photons m-2 s-1) and oxygen concentration (2, 25, 250 µM). The blue and red points represent the experimental data." width="100%" />
+<img src="../code/Figures/DualPamLRC.png" alt="PSII electron transport (e- PSII-1 s-1) vs measurement light (µmol photons m-2 s-1) for *Prochlorococcus* strains PCC9511 (Clade HLI) and MIT9313 (Clade LLIII) after growth under different combinations of light level (30, 90, 180 µmol photons m-2 s-1) and oxygen concentration (2, 25, 250 µM). The blue and red points represent the experimental data." width="80%" />
 <p class="caption">
 Figure 6: PSII electron transport (e- PSII-1 s-1) vs measurement light (µmol photons m-2 s-1) for <em>Prochlorococcus</em> strains PCC9511 (Clade HLI) and MIT9313 (Clade LLIII) after growth under different combinations of light level (30, 90, 180 µmol photons m-2 s-1) and oxygen concentration (2, 25, 250 µM). The blue and red points represent the experimental data.
 </p>

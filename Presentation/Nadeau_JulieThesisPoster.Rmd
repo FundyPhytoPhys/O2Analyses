@@ -1,5 +1,5 @@
 ---
-title: Growth and Functional Analyses of Photosynthetic Strategies of *Prochlorococcus* Strains Under Varying Oxygen
+title: Growth, Functional and Bioinformatic Analyses of Photosynthetic Strategies of *Prochlorococcus* Strains Under Varying Oxygen
 author:
   - name: '**Julie Nadeau**'
     affil: 1
@@ -59,7 +59,7 @@ Multi-Cultivator monitors OD680 (Chlorophyll and scattering) and OD720 (cell sca
 <p class="forceBreak"></p>
 Applies combinations:
 <p class="forceBreak"></p>
-- Dissolved O2
+- Dissolved O~2~
   - 230-280 µM (full O2)
   - 25-50 µM (intermediate O2)
   - 0.5-5.0 µM (low O2) 

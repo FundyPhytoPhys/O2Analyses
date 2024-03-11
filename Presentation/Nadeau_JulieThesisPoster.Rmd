@@ -31,7 +31,7 @@ Figures<-file.path("..","code","Figures")
 ```
 
 # Introduction
-Photosynthesis is the fundamental process in the biosphere. 
+Photosynthesis is the fundamental process in the biosphere. [@patilMultiparametricScreeningPlatform2020]
 *Prochlorococcus*:
 <p class="forceBreak"></p>
 - Photosynthetic unicellular cyanobacterium 

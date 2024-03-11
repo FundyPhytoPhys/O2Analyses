@@ -102,7 +102,7 @@ Chlorophyll a concentrations determined using the Turner Trilogy or Spectrophoto
 # Results & Discussion
 
 ```{r LRCplot, fig.cap= 'PSII electron transport (e- PSII-1 s-1) vs measurement light (µmol photons m-2 s-1) for *Prochlorococcus* strains MED4 (Clade HLI) and MIT9313 (Clade LLIV) after growth under different combinations of light level (30, 90, 180 µmol photons m-2 s-1) and oxygen concentration (2, 25, 250 uM). The green points represent the experimental data, the black line denotes the fitted model (CITATION), and the red points denote residuals.', out.width='80%'}
-knitr::include_graphics(file.path(Figures,"LRCplot.png"))
+#knitr::include_graphics(file.path(Figures,"LRCplot.png"))
 ```
 
 ```{r FittedLRCMED4, fig.cap= 'Fitted LRC of PSII electron transport (e- PSII-1 s-1) vs measurement light (µmol photons m-2 s-1) for *Prochlorococcus* strain MED4 (Clade HLI) and after growth under different combinations of light level (30, 90, 180 µmol photons m-2 s-1) and oxygen concentration (2, 25, 250 uM), derived from light response curve fits (XXXRefer to Figure). The curves are differentiated by varying oxygen concentrations (colors), with different panels representing different combinations of light levels and growth oxygen concentrations.', out.width='80%'}

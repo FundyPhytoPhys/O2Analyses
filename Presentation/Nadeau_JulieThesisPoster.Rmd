@@ -1,5 +1,5 @@
 ---
-title: Growth, Functional and Bioinformatic Analyses of Photosynthetic Strategies of *Prochlorococcus* Strains Under Varying Oxygen
+title: Growth and Functional Analyses of Photosynthetic Strategies of *Prochlorococcus* Strains Under Varying Oxygen
 author:
   - name: '**Julie Nadeau**'
     affil: 1
@@ -51,7 +51,8 @@ knitr::include_graphics(file.path(Figures,"BiologicalInteraction.png"))
 
 **Bioptical Analysis of Growth Rates**
 <p class="forceBreak"></p>
-Using a Multi-Cultivator, three strains of Prochlorococcus (MED4, MIT9313, SS120) are monitored for OD680 (Chlorophyll and scattering) under a 12h photoperiod and blue light (450 ± 45 nm). Combinations of:
+Using a Multi-Cultivator, two strains of Prochlorococcus (MED4, MIT9313) are monitored for OD680 (Chlorophyll and scattering) and OD720 (cell scattering).
+under a 12h photoperiod and blue light (450 ± 45 nm). Combinations of:
 <p class="forceBreak"></p>
 - Dissolved O~2~
   - 230-280 µM (full O~2~)
@@ -60,9 +61,7 @@ Using a Multi-Cultivator, three strains of Prochlorococcus (MED4, MIT9313, SS120
 <p class="forceBreak"></p>
 - Light level 
 <p class="forceBreak"></p>
-  - 30 µmol photons m-2 s-1
-  - 90 µmol photons m-2 s-1
-  - 180 µmol photons m-2 s-1
+  - 30, 90, 180 µmol photons m-2 s-1
 <p class="forceBreak"></p>
 all at 22°C, to each of 8 separate tubes.
 

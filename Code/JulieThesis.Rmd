@@ -63,3 +63,10 @@ knitr::include_graphics(file.path(Figures,"DualPamLRC.png"))
 ```
 
 
+
+
+
+
+for next steps 
+
+In addition to the experiments conducted so far, transcriptomic analyses could provide insights into the molecular mechanisms underlying different *Prochlorococcus* strains responses to varying oxygen concentrations. By examining changes in gene expression patterns, particularly those associated with oxygen metabolism and photosynthesis regulation, researchers can identify key genes and pathways involved in the cellular response to different oxygen levels. Transcriptomic analyses would allow for a comprehensive understanding of how different *Prochlorococcus* strains modulates there gene expression profile to adapt to fluctuating environmental conditions, providing a deeper understanding into the cellular strategies employed by different *Prochlorococcus* strains to thrive in diverse marine ecosystems.

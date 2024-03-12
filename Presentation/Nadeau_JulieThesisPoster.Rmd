@@ -19,7 +19,9 @@ column_numbers: 3
 output: 
   posterdown::posterdown_html:
     self_contained: false
-bibliography: packages.bib
+bibliography: [JulieIndependent.bib, Packages.bib]
+csl: plos-one.csl
+
 ---
 
 ```{r setup, include=FALSE}
@@ -41,10 +43,6 @@ Photosynthesis is the fundamental process in the biosphere. [@patilMultiparametr
 ```{r BiologicalInteraction, fig.cap= 'The biological interactions of *Prochlorococcus* with some key players in the marine carbon cycle. Adapted from (Cai et al., 2023).', out.width='80%'}
 knitr::include_graphics(file.path(Figures,"BiologicalInteraction.png"))
 ```
-We use:
-<p class="forceBreak"></p>
-- Bioptical measures of growth and photosynthesis
-- Bioinformatics analysis of strain capacities
 
 ## Objectives
 
@@ -55,20 +53,12 @@ We use:
 
 **Bioptical Analysis of Growth Rates**
 <p class="forceBreak"></p>
-Three strains of *Prochlorococcus*, MED4, MIT9313, SS120
-<p class="forceBreak"></p>
-Multi-Cultivator monitors OD680 (Chlorophyll and scattering) and OD720 (cell scattering)
-<p class="forceBreak"></p>
-Applies combinations:
+Using a Multi-Cultivator, three strains of Prochlorococcus (MED4, MIT9313, SS120) are monitored for OD680 (Chlorophyll and scattering) under a 12h photoperiod and blue light (450 ± 45 nm). Combinations of:
 <p class="forceBreak"></p>
 - Dissolved O~2~
   - 230-280 µM (full O~2~)
   - 25-50 µM (intermediate O~2~)
   - 0.5-5.0 µM (low O~2~) 
-<p class="forceBreak"></p>
-- Photoperiod 
-<p class="forceBreak"></p>
-  - 12 h
 <p class="forceBreak"></p>
 - Light level 
 <p class="forceBreak"></p>
@@ -76,13 +66,7 @@ Applies combinations:
   - 90 µmol photons m-2 s-1
   - 180 µmol photons m-2 s-1
 <p class="forceBreak"></p>
-- Waveband 
-<p class="forceBreak"></p>
-  - 450 ∓ 45 nm (Blue)
-  
 all at 22°C, to each of 8 separate tubes.
-
-Centrifuged samples and the cell pellets frozen in liquid nitrogen and preserved in an -80 oC freezer. Enables future transcriptomic analyses.
 
 **Bioptical Functional Measurements**
 <p class="forceBreak"></p>
@@ -91,44 +75,42 @@ Centrifuged samples and the cell pellets frozen in liquid nitrogen and preserved
   - 230-280 µM (full O~2~)
   - 25-50 µM (intermediate O~2~) 
   - 0.5-5.0 µM (low O~2~) 
-<p class="forceBreak"></p>
-- Whole Cell Absorbance Spectra using Olis Spectrophotometer. The oxygen levels tested included: 
-  - 230-280 µM (full O~2~) 
-  - 0.5-5.0 µM (low O~2~) 
-
-Chlorophyll a concentrations determined using the Turner Trilogy or Spectrophotometer on each sample
-
-
+  
 # Results & Discussion
 
 ```{r LRCplot, fig.cap= 'PSII electron transport (e- PSII-1 s-1) vs measurement light (µmol photons m-2 s-1) for *Prochlorococcus* strains MED4 (Clade HLI) and MIT9313 (Clade LLIV) after growth under different combinations of light level (30, 90, 180 µmol photons m-2 s-1) and oxygen concentration (2, 25, 250 uM). The green points represent the experimental data, the black line denotes the fitted model (CITATION), and the red points denote residuals.', out.width='80%'}
 #knitr::include_graphics(file.path(Figures,"LRCplot.png"))
 ```
 
+
+```{r FittedLRC, fig.cap= 'Fitted LRC of PSII electron transport (e- PSII-1 s-1) vs measurement light (µmol photons m-2 s-1) for *Prochlorococcus* strains MIT9313 (Clade LLIV) and MED4 (and after growth under different combinations of light level (30, 90, 180 µmol photons m-2 s-1) and oxygen concentration (2, 25, 250 µM), derived from light response curve fits. The curves are differentiated by varying oxygen concentrations (colors), with different panels representing different combinations of light levels and growth oxygen concentrations.', out.width='80%'}
+knitr::include_graphics(file.path(Figures,"FittedLRC.png"))
+```
+
 ```{r FittedLRCMED4, fig.cap= 'Fitted LRC of PSII electron transport (e- PSII-1 s-1) vs measurement light (µmol photons m-2 s-1) for *Prochlorococcus* strain MED4 (Clade HLI) and after growth under different combinations of light level (30, 90, 180 µmol photons m-2 s-1) and oxygen concentration (2, 25, 250 uM), derived from light response curve fits (XXXRefer to Figure). The curves are differentiated by varying oxygen concentrations (colors), with different panels representing different combinations of light levels and growth oxygen concentrations.', out.width='80%'}
-knitr::include_graphics(file.path(Figures,"FittedLRCMED4.png"))
+#knitr::include_graphics(file.path(Figures,"FittedLRCMED4.png"))
 ```
 
 ```{r FittedLRCMIT9313, fig.cap= 'Fitted LRC of PSII electron transport (e- PSII-1 s-1) vs measurement light (µmol photons m-2 s-1) for *Prochlorococcus* strain MIT9313 (Clade LLIV) and after growth under different combinations of light level (30, 90, 180 µmol photons m-2 s-1) and oxygen concentration (2, 25, 250 µM), derived from light response curve fits (XXXRefer to Figure). The curves are differentiated by varying oxygen concentrations (colors), with different panels representing different combinations of light levels and growth oxygen concentrations.', out.width='80%'}
-knitr::include_graphics(file.path(Figures,"FittedLRCMIT9313.png"))
+#knitr::include_graphics(file.path(Figures,"FittedLRCMIT9313.png"))
 ```
 
 ```{r EstimatePmax, fig.cap= 'Analysis of Maximum PSII Electron Transport Rate (Pmax) for *Prochlorococcus* MED4 (Clade HLI) and MIT9313 (Clade LLIV). Pmax,  derived from light response curve fits (FIGURE)), is plotted vs. measurement oxygen concentrations, with error bars representing the standard error of the estimate. Data is grouped by strain and growth light level, colours indicate different growth oxygen levels.', out.width='80%'}
 knitr::include_graphics(file.path(Figures,"EstimatePmax.png"))
 ```
+- Strain MED4 shows consistent Pmax values across different oxygen concentrations, indicating constitutive adaptation to varying oxygen levels.
+- Strain MIT9313 shows differences in Pmax values, particularly between the lowest (2 µM) and highest (250 µM) oxygen concentrations, indicating acclimating adaptation to varying oxygen levels.
+- These findings underscore the influence of oxygen concentrations on the PSII electron transport capacity of *Prochlorococcus* strains, with significant changes in Pmax values suggesting the cells' capability to acclimate to different oxygen concentrations over time.
 
-Across both strains, a trend is observed, indicating that Pmax values exhibit variation corresponding to changes in oxygen concentration. Specifically, strain MED4 demonstrates relatively consistent Pmax values across different oxygen concentrations, although with minor fluctuations. Since Pmax remains reletively stable across varying oxygen concentrations, this suggests that the cells are constitutively adapted to cope with changes in oxygen levels.
-
-However, strain MIT9313 exhibits more pronounced differences in Pmax values, particularly evident between the lowest (2 µM) and highest (250 µM) oxygen levels. These findings underscore the strain-specific responses of *Prochlorococcus* to varying oxygen concentrations, suggesting a significant influence of oxygen levels on the PSII electron transport capacity of these strains. Since Pmax valuex show significant changes in the response to a change in oxygen concentrations, it suggests that the cells are capable of acclimating to different oxygen concentrations over time.
-
-Or with figures: Figure \@ref(fig:standard-plot), or Figure \@ref(fig:morefigs).
 ```{r DualPamLRC, fig.cap= 'PSII electron transport (e- PSII-1 s-1) vs measurement light (µmol photons m-2 s-1) for *Prochlorococcus* strains PCC9511 (Clade HLI) and MIT9313 (Clade LLIII) after growth under different combinations of light level (30, 90, 180 µmol photons m-2 s-1) and oxygen concentration (2, 25, 250 µM). The blue and red points represent the experimental data.', out.width='80%'}
 knitr::include_graphics(file.path(Figures,"DualPamLRC.png"))
 ```
 
 # Next Steps
 
-In addition to the experiments conducted so far, transcriptomic analyses could provide insights into the molecular mechanisms underlying different *Prochlorococcus* strains responses to varying oxygen concentrations. By examining changes in gene expression patterns, particularly those associated with oxygen metabolism and photosynthesis regulation, researchers can identify key genes and pathways involved in the cellular response to different oxygen levels. Transcriptomic analyses would allow for a comprehensive understanding of how different *Prochlorococcus* strains modulates there gene expression profile to adapt to fluctuating environmental conditions, providing a deeper understanding into the cellular strategies employed by different *Prochlorococcus* strains to thrive in diverse marine ecosystems.
+- Cell pellets were obtained by centrifuging samples, frozen in liquid nitrogen, and preserved in an -80°C freezer, facilitating future transcriptomic analyses.
+- Whole Cell Absorbance Spectra were measured using an Olis Spectrophotometer, with oxygen levels tested ranging from 230-280 µM (full O2) to 0.5-5.0 µM (low O2), providing comprehensive data on cellular responses to varying oxygen concentrations.
+- Chlorophyll a concentrations were determined for each sample using either the Turner Trilogy or Spectrophotometer, aiding in the characterization of photosynthetic pigment content and its relation to oxygen levels.
 
 # Conclusion
 

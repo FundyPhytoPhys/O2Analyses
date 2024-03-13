@@ -475,7 +475,7 @@ FittedLRC <- ETRModels %>%
 #  labs(colour = "Legend", title = "Light response curves of PSII electron transport for *Prochlorococcus* ") + 
 #  scale_colour_manual(values = line_colours) +
   scale_x_continuous(expand = c(0,0)) +
-  facet_grid(cols = vars(Strain, Par_ue), rows = vars(O2_uM)) +
+  facet_grid(cols = vars(Strain, O2_uM), rows = vars(factor(Par_ue, levels = c(180, 90, 30)))) +
   theme_bw() +
 theme(axis.text = element_text(size=12), # customize font size on x- and y- axis
         axis.title = element_text(size=16), # customize font size on x- and y- axis title
@@ -574,7 +574,9 @@ EstimatePmax <- ETRModelsParam |>
   geom_point(aes(x = MeasureO2_uM, y = estimate_Pmax, colour = as.factor(O2_uM))) +
   geom_line(aes(x = MeasureO2_uM, y = estimate_Pmax, colour = as.factor(O2_uM))) +
   geom_errorbar(aes(x = MeasureO2_uM, y = estimate_Pmax, ymin = (estimate_Pmax - std.error_Pmax), ymax = (estimate_Pmax + std.error_Pmax), colour = as.factor(O2_uM)), width = 0.3) +
-  facet_grid(rows = vars(Par_ue), cols = vars(Strain)) + 
+  facet_grid(rows = vars(O2_uM), cols = vars(Strain)) + 
+  #scale_y_continuous(sec.axis = sec_axis(~ . , name = "Growth Light (µmol photons m-2 s-1)", breaks = NULL, labels = NULL)) +
+  #scale_x_discrete(sec.axis = sec_axis(~ . , name = "*Prochlorococcus* Strain", labels = NULL)) + #ask naaman
   #labs(title = ModType) +
   theme_bw() +
   theme(strip.background = element_rect(fill="white"), # customize colour of facet strip (default gray when using "theme_bw")

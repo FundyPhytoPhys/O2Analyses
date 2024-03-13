@@ -472,11 +472,18 @@ FittedLRC <- ETRModels %>%
   geom_point(aes(y = ETRqpOxbo, colour = MeasureO2_uM), size = 0.5) +
  # geom_point(aes(y = `.resid`, colour = "residual"), size = 0.5) +
  # geom_hline(yintercept = 0, linetype = "dashed") + 
-  labs(colour = "Legend", title = "Light response curves of PSII electron transport for *Prochlorococcus* ") + 
+#  labs(colour = "Legend", title = "Light response curves of PSII electron transport for *Prochlorococcus* ") + 
 #  scale_colour_manual(values = line_colours) +
   scale_x_continuous(expand = c(0,0)) +
   facet_grid(cols = vars(Strain, Par_ue), rows = vars(O2_uM)) +
-  theme_bw()
+  theme_bw() +
+theme(axis.text = element_text(size=12), # customize font size on x- and y- axis
+        axis.title = element_text(size=16), # customize font size on x- and y- axis title
+        strip.background = element_rect(fill="white"), # customize colour of facet strip (default gray when using "theme_bw")
+        strip.text = element_text(size=9), # customize font size on the facets strip
+        legend.background = element_rect(fill="transparent"), # customize colour of legend background 
+        legend.position = c(0.08,0.85), # customize legend position 
+        legend.text = element_text(size=9)) # customize font size on legend
 FittedLRC
 ```
 
@@ -569,7 +576,13 @@ EstimatePmax <- ETRModelsParam |>
   geom_errorbar(aes(x = MeasureO2_uM, y = estimate_Pmax, ymin = (estimate_Pmax - std.error_Pmax), ymax = (estimate_Pmax + std.error_Pmax), colour = as.factor(O2_uM)), width = 0.3) +
   facet_grid(rows = vars(Par_ue), cols = vars(Strain)) + 
   #labs(title = ModType) +
-  theme_bw()
+  theme_bw() +
+  theme(strip.background = element_rect(fill="white"), # customize colour of facet strip (default gray when using "theme_bw")
+        strip.text = element_text(size=9), # customize font size on the facets strip
+        legend.background = element_rect(fill="transparent"), # customize colour of legend background 
+        legend.position = c(0.12,0.86), # customize legend position 
+        legend.text = element_text(size=9)) # customize font size on legend
+EstimatePmax
 ``` 
 To include caption in chunk label, chunk name has to be 1 single 'word' of continuous characters; no spaces, and each figure has to be in its own chunk.
 

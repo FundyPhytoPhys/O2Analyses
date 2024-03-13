@@ -63,6 +63,8 @@ knitr::include_graphics(file.path(Figures,"DualPamLRC.png"))
 ```
 
 
+some pmax 
+- These findings underscore the influence of oxygen concentrations on the PSII electron transport capacity of *Prochlorococcus* strains, with significant changes in Pmax values suggesting the cells' capability to acclimate to different oxygen concentrations over time.
 
 
 

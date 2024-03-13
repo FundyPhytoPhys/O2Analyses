@@ -466,6 +466,8 @@ FittedLRCMIT9313 <- ETRModels %>%
 FittedLRC <- ETRModels %>%
   #filter(Strain == "MIT9313") %>%
   unnest(LRC_Augment) %>%
+  mutate(GrowthLight_lab = "Growth Light (µmol photons m^-2 s^-1)",
+         MeasuredO2_uM_lab = "~Prochlorococcus~ Strain; Growth O2 (µM)") %>% 
   ggplot(aes(x = ActPARCorr)) +
  # geom_point(aes(y = ETRqpOxbo, colour =  "ETRqpOxbo")) +
   geom_line(aes(y = `.fitted`, colour = MeasureO2_uM)) +
@@ -475,14 +477,12 @@ FittedLRC <- ETRModels %>%
 #  labs(colour = "Legend", title = "Light response curves of PSII electron transport for *Prochlorococcus* ") + 
 #  scale_colour_manual(values = line_colours) +
   scale_x_continuous(expand = c(0,0)) +
-  facet_grid(cols = vars(Strain, O2_uM), rows = vars(factor(Par_ue, levels = c(180, 90, 30)))) +
+  facet_nested(cols = vars(MeasuredO2_uM_lab, Strain, O2_uM), rows = vars(GrowthLight_lab, Par_ue)) +
+  labs(y = "Fitted LRC",
+       x =  "PAR (µe)") +
   theme_bw() +
-theme(axis.text = element_text(size=12), # customize font size on x- and y- axis
-        axis.title = element_text(size=16), # customize font size on x- and y- axis title
-        strip.background = element_rect(fill="white"), # customize colour of facet strip (default gray when using "theme_bw")
-        strip.text = element_text(size=9), # customize font size on the facets strip
-        legend.background = element_rect(fill="transparent"), # customize colour of legend background 
-        legend.position = c(0.08,0.85), # customize legend position 
+theme(legend.background = element_rect(fill="transparent"), # customize colour of legend background 
+        legend.position = c(0.90,0.20), # customize legend position 
         legend.text = element_text(size=9)) # customize font size on legend
 FittedLRC
 ```
@@ -565,22 +565,25 @@ ETRModelsParam |>
 ```
 
 
-```{r PmaxPlot, fig.cap = "Analysis of Maximum PSII Electron Transport Rate (Pmax) for *Prochlorococcus* MED4 (Clade HLI) and MIT9313 (Clade LLIV). Pmax,  derived from light response curve fits (XXXRefer to Figure), is plotted vs. measurement oxygen concentrations, with error bars representing the standard error of the estimate. Data is grouped by strain and growth light level, colours indicate different growth oxygen levels.", out.height="800pt", out.width="100%", echo = FALSE}
+```{r PmaxPlot, fig.cap = "Analysis of Maximum PSII Electron Transport Rate (Pmax) for *Prochlorococcus* MED4 (Clade HLI) and MIT9313 (Clade LLIV). Pmax,  derived from light response curve fits, is plotted vs. measurement oxygen concentrations, with error bars representing the standard error of the estimate. Data is grouped by strain and growth light level, colours indicate different growth oxygen levels.", out.height="800pt", out.width="100%", echo = FALSE}
 EstimatePmax <- ETRModelsParam |>
   filter(ModelType == ModType) |>
   #filter(AIClow == 1) |>
   filter(std.error_Pmax < 1 * estimate_Pmax) |>
+  mutate(MeasuredO2_uM_lab = "Growth O2 (µM)",
+         Strain_lab = "~Prochlorococcus~ Strain") %>% 
   ggplot() +
   geom_point(aes(x = MeasureO2_uM, y = estimate_Pmax, colour = as.factor(O2_uM))) +
   geom_line(aes(x = MeasureO2_uM, y = estimate_Pmax, colour = as.factor(O2_uM))) +
   geom_errorbar(aes(x = MeasureO2_uM, y = estimate_Pmax, ymin = (estimate_Pmax - std.error_Pmax), ymax = (estimate_Pmax + std.error_Pmax), colour = as.factor(O2_uM)), width = 0.3) +
-  facet_grid(rows = vars(O2_uM), cols = vars(Strain)) + 
+  facet_nested(rows = vars(MeasuredO2_uM_lab, O2_uM), cols = vars(Strain_lab, Strain)) + 
   #scale_y_continuous(sec.axis = sec_axis(~ . , name = "Growth Light (µmol photons m-2 s-1)", breaks = NULL, labels = NULL)) +
   #scale_x_discrete(sec.axis = sec_axis(~ . , name = "*Prochlorococcus* Strain", labels = NULL)) + #ask naaman
   #labs(title = ModType) +
+  labs(y = "Pmax Estimate",
+       x =  "Measured O2 (µM)",) +
   theme_bw() +
-  theme(strip.background = element_rect(fill="white"), # customize colour of facet strip (default gray when using "theme_bw")
-        strip.text = element_text(size=9), # customize font size on the facets strip
+  theme(
         legend.background = element_rect(fill="transparent"), # customize colour of legend background 
         legend.position = c(0.12,0.86), # customize legend position 
         legend.text = element_text(size=9)) # customize font size on legend

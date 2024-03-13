@@ -434,7 +434,7 @@ DualPAMMeta |>
   theme_bw()
 ```
 
-```{r ETRIvsETRII, fig.cap = "PSI electron transport ("e-" ~ PSI^{-1} ~s^{-1}) vs PSII electron transport (e- PSII^-1 s^-1) for *Prochlorococcus* strains MED4  and MIT9313 after growth under different combinations of light level (30, 90 µmol photons m^-2 s^-1) and oxygen concentration (2, 25, 250 µM). Mesurement under 2.5 (red), 25 (blue), or 250 (green) µM O~2~.", out.height="800pt", out.width="100%", echo = FALSE}
+```{r ETRIvsETRII, fig.cap = "PSI electron transport ("e-" ~ PSI^{-1} ~s^{-1}) vs PSII electron transport ("e-" ~ PSII^{-1} ~s^{-1}) for *Prochlorococcus* strains MED4  and MIT9313 after growth under different combinations of light level (30, 90 µmol photons m^{-2} ~s^{-1}) and oxygen concentration (2, 25, 250 µM). Mesurement under 2.5 (red), 25 (blue), or 250 (green) µM "O"~[2].", out.height="800pt", out.width="100%", echo = FALSE}
 # YIIvsYI <- DualPAMMeta |>
 #   filter(MeasureO2_uM %in% c(2, 25, 250)) |>
 #   filter(!(SampleID %in% NoO2Runs)) |>
@@ -466,8 +466,12 @@ ETRIvsETRII <- DualPAMMeta |>
   #coord_cartesian(xlim = c(0, 1), ylim = c(0, 1), ) +
   facet_nested(cols = vars(MeasuredO2_uM_lab, Strain, O2_uM), rows = vars(GrowthLight_lab, Par_ue)) +
   labs(y = "e-" ~ PSI^{-1} ~s^{-1},# "e- PSI^-1 s^-1",
-       x =  "e-" ~ PSII^{-1} ~s^{-1},"e- PSII^-1 s^-1") +
-  theme_bw()
+       x =  "e-" ~ PSII^{-1} ~s^{-1},"e- PSII^-1 s^-1",) +
+  theme_bw() +
+  theme(
+        legend.background = element_rect(fill="transparent"), # customize colour of legend background 
+        legend.position = c(0.96,0.25), # customize legend position 
+        legend.text = element_text(size=9)) # customize font size on legend
 ETRIvsETRII
 
 
@@ -521,9 +525,6 @@ DualPamLRC <- DualPAMMeta |>
 ggsave(filename = file.path(PlotsPathOut, "DualPamLRC.png"), plot = DualPamLRC)
 ```
 
-```{r save spectra plots}
-ggsave(filename = file.path(PlotsPathOut, "YIIvsYI.png"), plot = YIIvsYI)
-```
 
 
 ```{r save spectra plots}

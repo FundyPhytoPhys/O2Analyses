@@ -38,8 +38,8 @@ Photosynthesis is the fundamental process in the biosphere. [@patilMultiparametr
 - Important in global carbon cycling, *Prochlorococcus* contributes significantly to primary production in the open oceans. 
 - Strains occupy a wide range of habitats.
 - With climate change, ocean warming causing a decrease of oxygen solubility at the surface, *Prochlorococcus* is expected to benefit, increasing its distribution and global abundance.
-```{r BiologicalInteraction, fig.cap= 'The biological interactions of *Prochlorococcus* with some key players in the marine carbon cycle. Adapted from (Cai et al., 2023).', out.width='80%'}
-knitr::include_graphics(file.path(Figures,"BiologicalInteraction.png"))
+```{r prochlorococcusPoducingO2, fig.cap= 'The biological interactions of *Prochlorococcus* with oxygen and light... Adapted from (Cai et al., 2023).', out.width='80%'}
+knitr::include_graphics(file.path(Figures,"prochlorococcusProducingO2.png"))
 ```
 
 ## Objectives

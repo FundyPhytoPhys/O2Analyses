@@ -19,6 +19,8 @@ output:
     self_contained: false
 bibliography: [JulieIndependent.bib, Packages.bib]
 csl: plos-one.csl
+main_topsize: 0.2 #percent coverage of the poster
+main_bottomsize: 0.01
 
 ---
 

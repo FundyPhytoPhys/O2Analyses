@@ -60,10 +60,14 @@ DualPAMMeta <- readRDS(file = file.path("..", "Data", "ProcessedData", "PICO_O2A
 
 colnames(DualPAMMeta)
 
-DualPAMMEta <- DualPAMMeta |>
+DualPAMMeta <- DualPAMMeta |>
   select(-c(`...46`, `...47`)) |>
   select(-c("ID.y", "MediaDate","Source","SourceSalinity","Optode","OptodeCh","InocpH","FinalpH","ExpEndDate" )) |>
-  rename(ID = ID.x)
+  rename(ID = ID.x) |>
+  mutate(Strain = if_else(Strain == "PCC9511", "MED4", Strain)) |>
+  mutate(O2_uM = case_when(O2 == 21 ~ 250, 
+                        O2 == 2 ~ 25,
+                        O2 == 0.2 ~ 2))
 
 ```
 
@@ -97,7 +101,7 @@ DualPAMMeta |>
   filter(!(SampleID %in% NoO2Runs)) |>
   filter(!SampleID %in% BadRuns) |>
   filter(OptodeMeasure == 1) |>
-  filter(Strain == "PCC9511") |>
+  filter(Strain == "MED4") |>
   ggplot() +
   geom_point(aes(x = PAR, y = YI), colour = "blue") +
   #geom_point(aes(x = PAR, y = YII), colour = "red") +
@@ -122,7 +126,7 @@ DualPAMMeta |>
   filter(MeasureO2_uM %in% c(2, 25, 250)) |>
   filter(!(SampleID %in% NoO2Runs)) |>
   filter(!SampleID %in% BadRuns) |>
-    filter(Strain == "PCC9511") |>
+    filter(Strain == "MED4") |>
     filter(OptodeMeasure == 1) |>
   ggplot() +
   geom_point(aes(x = YI, y = YII, colour = as.factor(OptodeMeasure))) +
@@ -430,26 +434,66 @@ DualPAMMeta |>
   theme_bw()
 ```
 
-```{r YIIvsYI, fig.cap = "PSII electron transport (e- PSII-1 s-1) vs PSI electron transport (e- PSII-1 s-1) for *Prochlorococcus* strains PCC9511 (Clade ...) and MIT9313 (Clade LLV) after growth under different combinations of light level (30, 90, 180 µmol photons m-2 s-1) and oxygen concentration (2, 25, 250 µM). The blue and red points represent the experimental data.", out.height="800pt", out.width="100%", echo = FALSE}
-YIIvsYI <- DualPAMMeta |>
+```{r ETRIvsETRII, fig.cap = "PSI electron transport ("e-" ~ PSI^{-1} ~s^{-1}) vs PSII electron transport (e- PSII^-1 s^-1) for *Prochlorococcus* strains MED4  and MIT9313 after growth under different combinations of light level (30, 90 µmol photons m^-2 s^-1) and oxygen concentration (2, 25, 250 µM). Mesurement under 2.5 (red), 25 (blue), or 250 (green) µM O~2~.", out.height="800pt", out.width="100%", echo = FALSE}
+# YIIvsYI <- DualPAMMeta |>
+#   filter(MeasureO2_uM %in% c(2, 25, 250)) |>
+#   filter(!(SampleID %in% NoO2Runs)) |>
+#   filter(!SampleID %in% BadRuns) |>
+#   filter(OptodeMeasure == 1) |>
+#   #filter(O2_Category != "Low") |>
+#   #filter(Par_ue == 30) |>
+#   ggplot() +
+#   geom_point(aes(x = YII, y = YI)) +
+#   geom_smooth(aes(x = (YII), y = (YI)), method = "lm") +
+#   coord_cartesian(xlim = c(0, 1), ylim = c(0, 1), ) +
+#   facet_grid(cols = vars(Strain, O2_uM), rows = vars(Par_ue)) +
+#   theme_bw()
+# YIIvsYI
+
+
+ETRIvsETRII <- DualPAMMeta |>
   filter(MeasureO2_uM %in% c(2, 25, 250)) |>
   filter(!(SampleID %in% NoO2Runs)) |>
   filter(!SampleID %in% BadRuns) |>
   filter(OptodeMeasure == 1) |>
+  mutate(GrowthLight_lab = "Growth Light (µmol photons m^-2 s^-1)",
+         MeasuredO2_uM_lab = "Strain; Growth O2 (µM)") %>% 
   #filter(O2_Category != "Low") |>
-  filter(Par_ue == 30) |>
+  #filter(Par_ue == 30) |>
   ggplot() +
-  geom_point(aes(x = qP, y = (YI))) +
-  geom_smooth(aes(x = qP, y = (YI)), method = "lm") +
-  coord_cartesian(xlim = c(0, 1), ylim = c(0, 1), ) +
-  facet_grid(cols = vars(Strain, Par_ue, O2_Category), rows = vars(MeasureO2_uM)) +
+  geom_point(aes(x = ETRII, y = ETRI, color = as.factor(MeasureO2_uM))) +
+  #geom_smooth(aes(x = ETRII, y = (ETRI)), method = "lm") +
+  #coord_cartesian(xlim = c(0, 1), ylim = c(0, 1), ) +
+  facet_nested(cols = vars(MeasuredO2_uM_lab, Strain, O2_uM), rows = vars(GrowthLight_lab, Par_ue)) +
+  labs(y = "e-" ~ PSI^{-1} ~s^{-1},# "e- PSI^-1 s^-1",
+       x =  "e-" ~ PSII^{-1} ~s^{-1},"e- PSII^-1 s^-1") +
   theme_bw()
-  
+ETRIvsETRII
+
+
+
+
+# ETRIvsPar_ue <- DualPAMMeta |>
+#   filter(MeasureO2_uM %in% c(2, 25, 250)) |>
+#   filter(!(SampleID %in% NoO2Runs)) |>
+#   filter(!SampleID %in% BadRuns) |>
+#   filter(OptodeMeasure == 1) |>
+#   #filter(O2_Category != "Low") |>
+#   #filter(Par_ue == 30) |>
+#   ggplot() +
+#   geom_point(aes(x = PAR, y = ETRI, color = as.factor(MeasureO2_uM))) +
+#   #geom_smooth(aes(x = ETRII, y = (ETRI)), method = "lm") +
+#   #coord_cartesian(xlim = c(0, 1), ylim = c(0, 1), ) +
+#   facet_grid(cols = vars(Strain, O2_uM), rows = vars(factor(Par_ue, levels = c(180, 90, 30)))) +
+#   theme_bw()
+# ETRIvsPar_ue
+
   #google to fix aspect ratio 1:1 
   #filter for same subset
 ```
+for mED4 changes are happening with etrI 
 
-``` {r DualPamLRC, fig.cap = "PSII electron transport (e- PSII-1 s-1) vs measurement light (µmol photons m-2 s-1) for *Prochlorococcus* strains PCC9511 (Clade ...) and MIT9313 (Clade LLIII) after growth under different combinations of light level (30, 90, 180 µmol photons m-2 s-1) and oxygen concentration (2, 25, 250 µM). The blue and red points represent the experimental data.", out.height="800pt", out.width="100%", echo = FALSE}
+``` {r DualPamLRC, fig.cap = "PSII electron transport (e- PSII-1 s-1) vs measurement light (µmol photons m-2 s-1) for *Prochlorococcus* strains MED4 (Clade ...) and MIT9313 (Clade LLIII) after growth under different combinations of light level (30, 90, 180 µmol photons m-2 s-1) and oxygen concentration (2, 25, 250 µM). The blue and red points represent the experimental data.", out.height="800pt", out.width="100%", echo = FALSE}
 DualPamLRC <- DualPAMMeta |>
   filter(MeasureO2_uM %in% c(2, 25, 250)) |>
   #filter(!(SampleID %in% NoO2Runs)) |>
@@ -461,7 +505,7 @@ DualPamLRC <- DualPAMMeta |>
   geom_point(aes(x = PAR, y = YI), colour = "blue") +
   geom_point(aes(x = PAR, y = qP), colour = "red") +
   #geom_smooth(aes(x = PAR, y = qP), method = "lm") +
-  facet_grid(cols = vars(Strain, Par_ue, O2_Category), rows = vars(MeasureO2_uM, )) +
+  facet_grid(cols = vars(Strain, MeasureO2_uM), rows = vars(factor(Par_ue, levels = c(180, 90, 30)))) +
   theme_bw()
   
 ```
@@ -479,4 +523,9 @@ ggsave(filename = file.path(PlotsPathOut, "DualPamLRC.png"), plot = DualPamLRC)
 
 ```{r save spectra plots}
 ggsave(filename = file.path(PlotsPathOut, "YIIvsYI.png"), plot = YIIvsYI)
+```
+
+
+```{r save spectra plots}
+ggsave(filename = file.path(PlotsPathOut, "ETRIvsETRII.png"), plot = ETRIvsETRII)
 ```

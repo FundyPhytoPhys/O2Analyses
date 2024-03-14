@@ -477,7 +477,7 @@ FittedLRC <- ETRModels %>%
 #  labs(colour = "Legend", title = "Light response curves of PSII electron transport for *Prochlorococcus* ") + 
 #  scale_colour_manual(values = line_colours) +
   scale_x_continuous(expand = c(0,0)) +
-  facet_nested(cols = vars(MeasuredO2_uM_lab, Strain, O2_uM), rows = vars(GrowthLight_lab, Par_ue)) +
+  facet_nested(cols = vars(MeasuredO2_uM_lab, Strain, O2_uM), rows = vars(GrowthLight_lab, Par_ue), labeller = labeller(Par_ue_lab = label_parsed)) +
   labs(y = "e-" ~ PSII^{-1} ~s^{-1},
        x =  "Measurement Light (µmol photons m^-2 s^-1)") +
   theme_bw() +
@@ -570,21 +570,29 @@ EstimatePmax <- ETRModelsParam |>
   filter(ModelType == ModType) |>
   #filter(AIClow == 1) |>
   filter(std.error_Pmax < 1 * estimate_Pmax) |>
-  mutate(Par_ue_lab = "Measurement Light (µmol photons m^-2 s^-1)",
-         Strain_lab = "~Prochlorococcus~ Strain, Growth O2 (µM)") %>% 
+  mutate(Par_ue_lab = "Measurement Light~(µmol~photons~m^{-2}~s^{-1})",
+         Strain_lab = ("Prochlorococcus Strain, Growth O2 (µM)")) %>% 
   ggplot() +
   geom_point(aes(x = MeasureO2_uM, y = estimate_Pmax)) +
   geom_line(aes(x = MeasureO2_uM, y = estimate_Pmax)) +
   geom_errorbar(aes(x = MeasureO2_uM, y = estimate_Pmax, ymin = (estimate_Pmax - std.error_Pmax), ymax = (estimate_Pmax + std.error_Pmax)), width = 0.3) +
-  facet_nested(rows = vars(Par_ue_lab, Par_ue), cols = vars(Strain_lab, Strain, O2_uM)) + 
+  facet_nested(rows = vars(Par_ue_lab, Par_ue), cols = vars(Strain_lab, Strain, O2_uM), labeller = labeller(Par_ue_lab = label_parsed)) + 
   #scale_y_continuous(sec.axis = sec_axis(~ . , name = "Growth Light (µmol photons m-2 s-1)", breaks = NULL, labels = NULL)) +
   #scale_x_discrete(sec.axis = sec_axis(~ . , name = "*Prochlorococcus* Strain", labels = NULL)) + #ask naaman
   #labs(title = ModType) +
-  labs(y = "Pmax (e-" ~ PSII^{-1} ~s^{-1},
-       x =  "Measured O2 (µM)") +
+  labs(y = "Pmax (e-" ~ PSII^{-1} ~s^{-1}~")",
+       x =  "Measured" ~ O[2] ~"(µM)") +
   theme_bw() 
 EstimatePmax
 ``` 
+```{r}
+ParLabel = "PAR~(µmol~photons~m^{-2}~s^{-1})",
+         Par_ue = factor(Par_ue, levels = c(30, 90, 180)))
+
+
+```
+
+
 To include caption in chunk label, chunk name has to be 1 single 'word' of continuous characters; no spaces, and each figure has to be in its own chunk.
 
 caption: Analysis of Maximum Electron Transport Rate for *Prochlorococcus*

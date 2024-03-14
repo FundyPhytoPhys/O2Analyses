@@ -458,6 +458,8 @@ ETRIvsETRII <- DualPAMMeta |>
   filter(OptodeMeasure == 1) |>
   mutate(GrowthLight_lab = "Growth~Light~(µmol~photons~m^{-2}~s^{-1})",
          MeasuredO2_uM_lab = ("italic(Prochlorococcus)~Strain~','~Growth~O[2]~(µM)")) %>% 
+  mutate(ParLabel = "PAR~(µmol~photons~m^{-2}~s^{-1})",
+         Par_ue = factor(Par_ue, levels = c(90, 30))) |>
   #filter(O2_Category != "Low") |>
   #filter(Par_ue == 30) |>
   ggplot() +
@@ -467,13 +469,14 @@ ETRIvsETRII <- DualPAMMeta |>
   facet_nested(cols = vars(MeasuredO2_uM_lab, Strain, O2_uM), rows = vars(GrowthLight_lab, Par_ue),labeller = labeller(GrowthLight_lab = label_parsed, MeasuredO2_uM_lab = label_parsed)) +
   labs(y = "e-" ~ PSI^{-1} ~s^{-1},
        x =  "e-" ~ PSII^{-1} ~s^{-1}, 
-       color = "Measurement O2 (µM)") +
+       color = "Measurement 
+      O2 (µM)") +
   theme_bw() +
   theme(
         legend.background = element_rect(fill="transparent"), # customize colour of legend background 
-        legend.position = c(0.90,0.25), # customize legend position 
-        legend.text = element_text(size=7), # customize font size on legend
-        legend.title = element_text(size = 8))
+        legend.position = c(0.90,0.80), # customize legend position 
+        legend.text = element_text(size=9), # customize font size on legend
+        legend.title = element_text(size = 9))
       
 ETRIvsETRII
 

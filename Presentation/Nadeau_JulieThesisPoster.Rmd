@@ -1,4 +1,6 @@
 ---
+poster_height: "36in"
+poster.width: ".." 
 title: Growth and Functional Analyses of Photosynthetic Strategies of *Prochlorococcus* Strains Under Varying Oxygen
 author:
   - name: '**Julie Nadeau**'

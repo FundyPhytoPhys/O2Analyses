@@ -62,7 +62,7 @@ library(photobiology) #photobiology::w_length2rgb
 # library(googledrive)
 library(minpack.lm) #non linear model fitting
 library(broom)
-
+library(ggh4x)
 
 ```
 
@@ -466,8 +466,8 @@ FittedLRCMIT9313 <- ETRModels %>%
 FittedLRC <- ETRModels %>%
   #filter(Strain == "MIT9313") %>%
   unnest(LRC_Augment) %>%
-  mutate(GrowthLight_lab = "Growth Light (µmol photons m^-2 s^-1)",
-         MeasuredO2_uM_lab = "~Prochlorococcus~ Strain; Growth O2 (µM)") %>% 
+  mutate(GrowthLight_lab = "Growth~Light~(µmol~photons~m^{-2}~s^{-1})",
+         MeasuredO2_uM_lab = ("italic(Prochlorococcus)~Strain~','~Growth~O[2]~(µM)")) %>% 
   ggplot(aes(x = ActPARCorr)) +
  # geom_point(aes(y = ETRqpOxbo, colour =  "ETRqpOxbo")) +
   geom_line(aes(y = `.fitted`, colour = MeasureO2_uM)) +
@@ -477,7 +477,7 @@ FittedLRC <- ETRModels %>%
 #  labs(colour = "Legend", title = "Light response curves of PSII electron transport for *Prochlorococcus* ") + 
 #  scale_colour_manual(values = line_colours) +
   scale_x_continuous(expand = c(0,0)) +
-  facet_nested(cols = vars(MeasuredO2_uM_lab, Strain, O2_uM), rows = vars(GrowthLight_lab, Par_ue), labeller = labeller(Par_ue_lab = label_parsed)) +
+  facet_nested(cols = vars(MeasuredO2_uM_lab, Strain, O2_uM), rows = vars(GrowthLight_lab, Par_ue), labeller = labeller(GrowthLight_lab = label_parsed, MeasuredO2_uM_lab = label_parsed)) +
   labs(y = "e-" ~ PSII^{-1} ~s^{-1},
        x =  "Measurement Light (µmol photons m^-2 s^-1)") +
   theme_bw() +
@@ -570,13 +570,13 @@ EstimatePmax <- ETRModelsParam |>
   filter(ModelType == ModType) |>
   #filter(AIClow == 1) |>
   filter(std.error_Pmax < 1 * estimate_Pmax) |>
-  mutate(Par_ue_lab = "Measurement Light~(µmol~photons~m^{-2}~s^{-1})",
-         Strain_lab = ("Prochlorococcus Strain, Growth O2 (µM)")) %>% 
+  mutate(Par_ue_lab = "Measurement~Light~(µmol~photons~m^{-2}~s^{-1})",
+         Strain_lab = ("italic(Prochlorococcus)~Strain~','~Growth~O[2]~(µM)")) %>% 
   ggplot() +
   geom_point(aes(x = MeasureO2_uM, y = estimate_Pmax)) +
   geom_line(aes(x = MeasureO2_uM, y = estimate_Pmax)) +
   geom_errorbar(aes(x = MeasureO2_uM, y = estimate_Pmax, ymin = (estimate_Pmax - std.error_Pmax), ymax = (estimate_Pmax + std.error_Pmax)), width = 0.3) +
-  facet_nested(rows = vars(Par_ue_lab, Par_ue), cols = vars(Strain_lab, Strain, O2_uM), labeller = labeller(Par_ue_lab = label_parsed)) + 
+  facet_nested(rows = vars(Par_ue_lab, Par_ue), cols = vars(Strain_lab, Strain, O2_uM), labeller = labeller(Par_ue_lab = label_parsed, Strain_lab = label_parsed)) + 
   #scale_y_continuous(sec.axis = sec_axis(~ . , name = "Growth Light (µmol photons m-2 s-1)", breaks = NULL, labels = NULL)) +
   #scale_x_discrete(sec.axis = sec_axis(~ . , name = "*Prochlorococcus* Strain", labels = NULL)) + #ask naaman
   #labs(title = ModType) +

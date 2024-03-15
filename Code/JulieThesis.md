@@ -93,4 +93,16 @@ knitr::include_graphics(file.path(Figures,"DualPamLRC.png"))
 <p class="caption">PSII electron transport (e- PSII-1 s-1) vs measurement light (µmol photons m-2 s-1) for *Prochlorococcus* strains PCC9511 (Clade HLI) and MIT9313 (Clade LLIII) after growth under different combinations of light level (30, 90, 180 µmol photons m-2 s-1) and oxygen concentration (2, 25, 250 µM). The blue and red points represent the experimental data.</p>
 </div>
 
+fitted LRC 
+- MED4 and MIT9313 show significant short term responses of electron transport to decreasing oxygen. 
+- Growth under 2 µM O~2~ diminishes the short term effects of changing measurement oxygen, indicating growth acclimation to oxygen status. 
+
+pmax 
+- Strain MED4 shows increasing Pmax values across increasing measurement oxygen concentrations, indicating short term responses to varying oxygen levels. Pmax also incresses with increasing light levels and with growth at 25 µM O~2~. Consistent with (citation).
+- Strain MIT9313 shows interactive effects of measurement oxygen, growth oxygen concentration and growth light on Pmax values. particularly between the lowest (2 µM) and highest (250 µM) oxygen concentrations, indicating acclimating adaptation to varying oxygen levels.
+- These findings underscore the influence of longterm growth and short term oxygen concentrations on the PSII electron transport capacity of *Prochlorococcus* strains, with significant changes in Pmax values indicating cellular capability to acclimate to different oxygen concentrations over time.
+
+ETRI ETRII
+- Directly comparing PSI to PSII electron transport shows that in MED4 growth under 25 µM O~2~ decreases PSI electron transport. 
+- In contrast, in MIT9313, PSI electron transport remains more consistent across growth O~2~ concentration. 
 

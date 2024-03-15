@@ -64,7 +64,12 @@ under 22°C, 12h photoperiod of blue light (450 ± 45 nm), and combinations of d
 - Exposed samples under 250, 25, 2 µM O~2~, and a series of increasing light levels to track 'light response' curves of Photosystem II electron transport, using Solisense FRRf  Instrument.
 - Photosystem I and Photosystem II electron transport in parallel, using Dual-PAM-100 Instrument. 
 
-  
+
+
+<p class="forceBreak"></p>
+<p class="forceBreak"></p>
+<p class="forceBreak"></p>
+<p class="forceBreak"></p>
 # Results & Discussion
 
 ```{r FittedLRC, fig.cap= 'Light Response Curves of PSII electron transport (e- PSII^-1^ s^-1^) vs measurement light (µmol photons m^-2^ s^-1^) for *Prochlorococcus* strains MED4 and MIT9313, after growth under combinations of light level (rows, 30, 90, 180 µmol photons m^-2^ s^-1^) and oxygen concentration (columns, 2, 25, 250 µM). The curves were measured under 2 (red), 25 (green), or 250 (blue) µM O~2~. Lines show Platt curve fits.', out.width='75%'}
@@ -86,9 +91,8 @@ knitr::include_graphics(file.path(Figures,"ETRIvsETRII.png"))
 # Conclusion & Next Steps
 *Prochlorococcus* shows both long and short term responses to oxygen. 
 <p class="forceBreak"></p>
-- Cell pellets were obtained by centrifuging samples frozen in liquid nitrogen and stored at -80°C for future transcriptomic analyses.
-- Whole Cell Absorbance Spectra were measured using an Integrating Cavity Spectrophotometer at 250 or 2 µM O2 to monitor electron carrier reduction status.
-- Chlorophyll a concentrations were determined for each sample to assess photosynthetic pigment content and its correlation with oxygen levels.
+- Cell pellets for future transcriptomic analyses.
+- Monitoring electron carrier reduction status through Whole Cell Absorbance Spectra.
 
 ```{r, include=FALSE}
 knitr::write_bib(c('knitr','rmarkdown','posterdown','pagedown'), 'packages.bib')

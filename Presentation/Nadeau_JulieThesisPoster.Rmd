@@ -1,8 +1,8 @@
 ---
 title_textsize: "65pt"
-body_textsize: "40px"
+body_textsize: "43px"
 reference_textsize: "5px"
-sectitle_textsize: "50px"
+sectitle_textsize: "55px"
 poster_height: "36in"
 poster.width: ".." 
 title: Growth and Functional Analyses of Photosynthetic Strategies of *Prochlorococcus* Strains Under Varying Oxygen
@@ -32,6 +32,22 @@ csl: plos-one.csl
 knitr::opts_chunk$set(echo = FALSE)
 ```
 
+```{r, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,
+                      warning = FALSE,
+                      tidy = FALSE,
+                      message = FALSE,
+                      fig.align = 'center',
+                      out.width = "100%")
+options(knitr.table.format = "PDF") 
+```
+
+```{css, echo=FALSE}
+p.caption {
+  font-size: 28px;
+}
+```
+
 ``` {r, figure paths}
 Figures<-file.path("..","code","Figures")
 ```
@@ -57,8 +73,8 @@ knitr::include_graphics(file.path(Figures,"interactions.png"))
 
 **Bioptical Analysis of Growth Rates**
 
-Using a Multi-Cultivator, two strains of Prochlorococcus (MED4, MIT9313) were monitored for OD680 (Chlorophyll and scattering) and OD720 (cell scattering).
-under 22°C, 12h photoperiod of blue light (450 ± 45 nm), and combinations of dissolved O~2~ (250, 25, 2 µM) and light levels (30, 90, 180 µmol photons m-2 s-1)
+Using a Multi-Cultivator, two strains of *Prochlorococcus* (MED4, MIT9313) were monitored for OD680 (Chlorophyll and scattering) and OD720 (cell scattering).
+Under 22°C, 12h photoperiod of blue light (450 ± 45 nm), and combinations of dissolved O~2~ (250, 25, 2 µM) and light levels (30, 90, 180 µmol photons m-2 s-1).
 
 
 **Bioptical Functional Measurements**
@@ -92,3 +108,5 @@ knitr::include_graphics(file.path(Figures,"ETRIvsETRII.png"))
 knitr::write_bib(c('knitr','rmarkdown','posterdown','pagedown'), 'packages.bib')
 ```
 # References
+<font size="6.5"> <div id="refs"></div> </font>
+

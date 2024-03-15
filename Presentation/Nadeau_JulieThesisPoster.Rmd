@@ -1,6 +1,6 @@
 ---
 title_textsize: "65pt"
-body_textsize: "43px"
+body_textsize: "44px"
 reference_textsize: "5px"
 sectitle_textsize: "55px"
 poster_height: "36in"

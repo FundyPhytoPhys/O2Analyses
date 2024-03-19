@@ -53,7 +53,7 @@ DataOut <- file.path("..", "Data", "ProcessedData")
 PlotsPathOut <- file.path("Figures")
 
 NoO2Runs <- c("JuNa1201", "JuNa1202", "JuNa1203", "JuNa1204", "JuNa1205")
-BadRuns <- c("JuNa1215")
+BadRuns <- c("JuNa1211", "JuNa1213", "JuNa1214", "JuNa1215") #JuNa1211", "JuNa1213", "JuNa1214", YPSI = 1 under 2 O2
 DubiousRuns <- c("JuNa1206", "JuNa1207", "JuNa1208", "JuNa1209", "JuNa1210")
 
 DualPAMMeta <- readRDS(file = file.path("..", "Data", "ProcessedData", "PICO_O2Analyses_DualPAMMeta.Rds"))
@@ -65,9 +65,10 @@ DualPAMMeta <- DualPAMMeta |>
   select(-c("ID.y", "MediaDate","Source","SourceSalinity","Optode","OptodeCh","InocpH","FinalpH","ExpEndDate" )) |>
   rename(ID = ID.x) |>
   mutate(Strain = if_else(Strain == "PCC9511", "MED4", Strain)) |>
-  mutate(O2_uM = case_when(O2 == 21 ~ 250, 
-                        O2 == 2 ~ 25,
-                        O2 == 0.2 ~ 2))
+  mutate(O2_uM = case_when(O2 == 21 ~ 250,
+                           O2 == 2 ~ 25,
+                           O2 == 0.2 ~ 2))
+ 
 
 ```
 
@@ -103,7 +104,7 @@ DualPAMMeta |>
   filter(OptodeMeasure == 1) |>
   filter(Strain == "MED4") |>
   ggplot() +
-  geom_point(aes(x = PAR, y = YI), colour = "blue") +
+  geom_point(aes(x = PAR, y = YI, colour = SampleID)) +
   #geom_point(aes(x = PAR, y = YII), colour = "red") +
   facet_grid(cols = vars(MeasureO2_uM), rows = vars(Strain, Par_ue, O2_Category)) +
   scale_y_continuous(sec.axis = sec_axis(~ . , name = "Strain, Growthlight_uE, O2_Category", breaks = NULL, labels = NULL)) +
@@ -117,8 +118,8 @@ DualPAMMeta |>
   filter(OptodeMeasure == 1) |>
   filter(Strain == "MIT9313") |>
   ggplot() +
-  geom_point(aes(x = PAR, y = YI), colour = "blue") +
-  geom_point(aes(x = PAR, y = YII), colour = "red") +
+  geom_point(aes(x = PAR, y = YI, colour = SampleID)) +
+  #geom_point(aes(x = PAR, y = YII), colour = "red") +
   facet_grid(cols = vars(MeasureO2_uM), rows = vars(Strain, Par_ue, O2_Category)) +
   theme_bw()
 

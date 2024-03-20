@@ -53,7 +53,7 @@ DataOut <- file.path("..", "Data", "ProcessedData")
 PlotsPathOut <- file.path("Figures")
 
 NoO2Runs <- c("JuNa1201", "JuNa1202", "JuNa1203", "JuNa1204", "JuNa1205")
-BadRuns <- c("JuNa1211", "JuNa1213", "JuNa1214", "JuNa1215") #JuNa1211", "JuNa1213", "JuNa1214", YPSI = 1 under 2 O2
+BadRuns <- c("JuNa1211", "JuNa1213", "JuNa1214", "JuNa1215", "JuNa1224","JuNa1249", "JuNa1239") 
 DubiousRuns <- c("JuNa1206", "JuNa1207", "JuNa1208", "JuNa1209", "JuNa1210")
 
 DualPAMMeta <- readRDS(file = file.path("..", "Data", "ProcessedData", "PICO_O2Analyses_DualPAMMeta.Rds"))
@@ -102,13 +102,13 @@ DualPAMMeta |>
   filter(!(SampleID %in% NoO2Runs)) |>
   filter(!SampleID %in% BadRuns) |>
   filter(OptodeMeasure == 1) |>
-  filter(Strain == "MED4") |>
+  #filter(Strain == "MED4") |>
   ggplot() +
   geom_point(aes(x = PAR, y = YI, colour = SampleID)) +
   #geom_point(aes(x = PAR, y = YII), colour = "red") +
   facet_grid(cols = vars(MeasureO2_uM), rows = vars(Strain, Par_ue, O2_Category)) +
-  scale_y_continuous(sec.axis = sec_axis(~ . , name = "Strain, Growthlight_uE, O2_Category", breaks = NULL, labels = NULL)) +
-  scale_x_continuous(sec.axis = sec_axis(~ . , name = "MeasureO2_uM", breaks = NULL, labels = NULL)) +
+  # scale_y_continuous(sec.axis = sec_axis(~ . , name = "Strain, Growthlight_uE, O2_Category", breaks = NULL, labels = NULL)) +
+  # scale_x_continuous(sec.axis = sec_axis(~ . , name = "MeasureO2_uM", breaks = NULL, labels = NULL)) +
   theme_bw()
 
 DualPAMMeta |>
@@ -467,7 +467,7 @@ ETRIvsETRII <- DualPAMMeta |>
   geom_point(aes(x = ETRII, y = ETRI, color = as.factor(MeasureO2_uM))) +
   #geom_smooth(aes(x = ETRII, y = (ETRI)), method = "lm") +
   #coord_cartesian(xlim = c(0, 1), ylim = c(0, 1), ) +
-  facet_nested(cols = vars(MeasuredO2_uM_lab, Strain, O2_uM), rows = vars(GrowthLight_lab, Par_ue),labeller = labeller(GrowthLight_lab = label_parsed, MeasuredO2_uM_lab = label_parsed)) +
+  ggh4x::facet_nested(cols = vars(MeasuredO2_uM_lab, Strain, O2_uM), rows = vars(GrowthLight_lab, Par_ue),labeller = labeller(GrowthLight_lab = label_parsed, MeasuredO2_uM_lab = label_parsed)) +
   labs(y = "e-" ~ PSI^{-1} ~s^{-1},
        x =  "e-" ~ PSII^{-1} ~s^{-1}, 
        color = "Measurement 
@@ -518,6 +518,8 @@ DualPamLRC <- DualPAMMeta |>
   #geom_smooth(aes(x = PAR, y = qP), method = "lm") +
   facet_grid(cols = vars(Strain, MeasureO2_uM), rows = vars(factor(Par_ue, levels = c(180, 90, 30)))) +
   theme_bw()
+
+DualPamLRC
   
 ```
 

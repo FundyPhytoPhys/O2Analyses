@@ -306,6 +306,7 @@ Y_PAR_FitValues |>
 Y_PAR_FitValues |>
   ggplot() +
   geom_point(aes(x = YIPARHalf, y = YIIPARHalf, colour = as.factor(MeasureO2_uM))) +
+  coord_fixed(ratio = 1, xlim = NULL, ylim = NULL, expand = TRUE, clip = "on") +
   facet_grid(cols = vars(Strain), rows = vars(Par_ue, O2_Category)) +
   theme_bw()
 
@@ -436,20 +437,34 @@ DualPAMMeta |>
 ```
 
 ```{r ETRIvsETRII, fig.cap = "PSI electron transport ("e-" ~ PSI^{-1} ~s^{-1}) vs PSII electron transport ("e-" ~ PSII^{-1} ~s^{-1}) for *Prochlorococcus* strains MED4  and MIT9313 (columns) after growth under different combinations of oxygen concentration (columns, 2, 25, 250 µM) and light level (rows, 30, 90 µmol photons m^{-2} ~s^{-1}). Mesurement under 2 (red), 25 (green), or 250 (blue) µM "O"~[2].", out.height="800pt", out.width="100%", echo = FALSE}
-# YIIvsYI <- DualPAMMeta |>
-#   filter(MeasureO2_uM %in% c(2, 25, 250)) |>
-#   filter(!(SampleID %in% NoO2Runs)) |>
-#   filter(!SampleID %in% BadRuns) |>
-#   filter(OptodeMeasure == 1) |>
-#   #filter(O2_Category != "Low") |>
-#   #filter(Par_ue == 30) |>
-#   ggplot() +
-#   geom_point(aes(x = YII, y = YI)) +
-#   geom_smooth(aes(x = (YII), y = (YI)), method = "lm") +
-#   coord_cartesian(xlim = c(0, 1), ylim = c(0, 1), ) +
-#   facet_grid(cols = vars(Strain, O2_uM), rows = vars(Par_ue)) +
-#   theme_bw()
-# YIIvsYI
+DualPAMMeta |>
+  filter(MeasureO2_uM %in% c(2, 25, 250)) |>
+  filter(!(SampleID %in% NoO2Runs)) |>
+  filter(!SampleID %in% BadRuns) |>
+  filter(OptodeMeasure == 1) |>
+  mutate(GrowthLight_lab = "Growth~Light~(µmol~photons~m^{-2}~s^{-1})",
+         MeasuredO2_uM_lab = ("italic(Prochlorococcus)~Strain~','~Growth~O[2]~(µM)")) %>% 
+  mutate(ParLabel = "PAR~(µmol~photons~m^{-2}~s^{-1})",
+         Par_ue = factor(Par_ue, levels = c(90, 30))) |>
+  #filter(O2_Category != "Low") |>
+  #filter(Par_ue == 30) |>
+  ggplot() +
+  geom_point(aes(x = qP, y = YI, color = as.factor(MeasureO2_uM))) +
+  #geom_smooth(aes(x = ETRII, y = (ETRI)), method = "lm") +
+  coord_cartesian(xlim = c(0, 1), ylim = c(0, 1), ) +
+  ggh4x::facet_nested(cols = vars(MeasuredO2_uM_lab, Strain, O2_uM), rows = vars(GrowthLight_lab, Par_ue),labeller = labeller(GrowthLight_lab = label_parsed, MeasuredO2_uM_lab = label_parsed)) +
+  labs(y = "YI",
+       x =  "qP", 
+       color = "Measurement 
+      O2 (µM)") +
+  theme_bw() +
+  theme(
+        legend.background = element_rect(fill="transparent"), # customize colour of legend background 
+        legend.position = c(0.90,0.80), # customize legend position 
+        legend.text = element_text(size=9), # customize font size on legend
+        legend.title = element_text(size = 9))
+      
+
 
 
 ETRIvsETRII <- DualPAMMeta |>
@@ -467,6 +482,7 @@ ETRIvsETRII <- DualPAMMeta |>
   geom_point(aes(x = ETRII, y = ETRI, color = as.factor(MeasureO2_uM))) +
   #geom_smooth(aes(x = ETRII, y = (ETRI)), method = "lm") +
   #coord_cartesian(xlim = c(0, 1), ylim = c(0, 1), ) +
+  #coord_fixed(ratio = 1, xlim = NULL, ylim = NULL, expand = TRUE, clip = "on") +
   ggh4x::facet_nested(cols = vars(MeasuredO2_uM_lab, Strain, O2_uM), rows = vars(GrowthLight_lab, Par_ue),labeller = labeller(GrowthLight_lab = label_parsed, MeasuredO2_uM_lab = label_parsed)) +
   labs(y = "e-" ~ PSI^{-1} ~s^{-1},
        x =  "e-" ~ PSII^{-1} ~s^{-1}, 
@@ -507,7 +523,7 @@ for mED4 changes are happening with etrI
 ``` {r DualPamLRC, fig.cap = "PSII electron transport (e- PSII-1 s-1) vs measurement light (µmol photons m-2 s-1) for *Prochlorococcus* strains MED4 (Clade ...) and MIT9313 (Clade LLIII) after growth under different combinations of light level (30, 90, 180 µmol photons m-2 s-1) and oxygen concentration (2, 25, 250 µM). The blue and red points represent the experimental data.", out.height="800pt", out.width="100%", echo = FALSE}
 DualPamLRC <- DualPAMMeta |>
   filter(MeasureO2_uM %in% c(2, 25, 250)) |>
-  #filter(!(SampleID %in% NoO2Runs)) |>
+  filter(!(SampleID %in% NoO2Runs)) |>
   filter(!SampleID %in% BadRuns) |>
   filter(OptodeMeasure == 1) |>
   #filter(O2_Category != "Low") |>
